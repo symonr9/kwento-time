@@ -8,6 +8,8 @@ A mobile-first, **local-first** relationship intelligence app for iOS and Androi
 
 Users log conversation notes via on-device AI voice input or text. The app remembers who said what, surfaces talking points before social events, and nudges users to follow up. **All data lives on the device.**
 
+> **Product/business/infra charter:** [PROJECT.md](PROJECT.md). **Feature specs:** [docs/](docs/) (e.g. [Social Forecast](docs/features/social-forecast.md)). **This file** is the engineering guide (architecture + conventions).
+
 ---
 
 ## ⚠️ Read the docs first
@@ -23,6 +25,16 @@ This project runs **Expo SDK 56** (React 19.2, React Native 0.85.3) — newer th
 3. **AI is opt-in and on the boundary.** Transcription (Whisper.rn) runs on-device for free. GPT-4o is called **only after the user confirms** a transcript. Both the raw transcript and the structured summary are persisted — the raw transcript is the source of truth for re-processing as prompts improve.
 4. **Determinism on-device.** Health scores, topic expiry, and reminder scheduling are deterministic jobs that run locally (nightly background fetch). No backend job queue.
 5. **Performance is a feature.** Target 1,000 users max, but each device may hold **1,000+ people and 10,000+ conversation notes.** Queries must stay fast at that scale — index deliberately, paginate lists, avoid N+1 reads.
+
+### Two AI surfaces — keep them separate
+
+| | Capture-time **extraction** | Briefing-time **narration** (Social Forecast) |
+|---|---|---|
+| Model | Cloud **GPT-4o** (opt-in, post-confirm) | **Offline tiny LLM** (`llama.rn`, fully offline) |
+| Job | Extract structured rows | Synthesize/prioritize/narrate already-retrieved data |
+| DB access | Writes structured rows | **Never reads or writes the DB** |
+
+**Deterministic-retrieval rule (Social Forecast):** a deterministic SQL + scoring layer retrieves and ranks the data; the LLM is a *narrator over a fixed fact set* and gets a bounded context, never the database. A non-LLM template narrator must produce the same briefing when no model is present. See [docs/features/social-forecast.md](docs/features/social-forecast.md).
 
 ## Hybrid AI pipeline (the critical path)
 
@@ -45,6 +57,8 @@ Keep the UX instant: never block the UI on the network. Write the transcript bef
 - **Drizzle ORM** (SQLite adapter) — typed, schema-first query builder.
 - **Whisper.rn** — on-device transcription (free, offline).
 - **OpenAI SDK (GPT-4o)** — entity extraction, called from device (optionally via Cloudflare Worker proxy).
+- **llama.rn** (GGUF on-device LLM) — Social Forecast narration, fully offline. Native module → dev-client rebuild, no Expo Go/web. Alternatives: react-native-executorch, Cactus.
+- **expo-speech** — offline OS text-to-speech for hands-free briefing playback.
 - **Expo Background Fetch** + scheduled tasks — nightly recompute (health scores, expiry, reminders).
 - **expo-notifications** — local push (no Expo Push Service / server).
 - **expo-local-authentication** — biometric lock (Face ID / Touch ID) on app open.
@@ -92,8 +106,8 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 | [src/constants/](src/constants/CLAUDE.md) | Theme, colors, spacing, app-wide constants |
 | [src/hooks/](src/hooks/CLAUDE.md) | Shared React hooks |
 | [src/db/](src/db/CLAUDE.md) | Drizzle schema, SQLite client, migrations, query layer |
-| [src/features/](src/features/CLAUDE.md) | Domain feature modules (people, conversations, topics, places, voice, …) |
-| [src/services/](src/services/CLAUDE.md) | Device/external integrations (AI, audio, notifications, background, auth, backup) |
+| [src/features/](src/features/CLAUDE.md) | Domain feature modules (people, conversations, topics, places, voice, forecast, …) |
+| [src/services/](src/services/CLAUDE.md) | Device/external integrations (AI, audio, llm, speech, notifications, background, auth, backup) |
 | [src/lib/](src/lib/CLAUDE.md) | Pure utilities & helpers (no side effects) |
 | [src/types/](src/types/CLAUDE.md) | Shared cross-cutting TypeScript types |
 
@@ -114,6 +128,7 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 4. Place Mode + "How Are You?" page.
 5. Topic-expiry jobs + local notification scheduling + health-score engine.
 6. Biometric lock + freemium gating + iCloud sync / JSON export + TestFlight / App Store submission.
+7. **Social Forecast** — deterministic retrieval + scoring + template narrator + TTS (ships first, offline), then on-device LLM synthesis + downloadable model registry. Builds on Place Mode (4); benefits from extraction (3). Spec: [docs/features/social-forecast.md](docs/features/social-forecast.md).
 
 ## Developer context
 

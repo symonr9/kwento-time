@@ -13,7 +13,10 @@ features/
   reminders/       # follow-ups + reminder scheduling logic
   my-life/         # "How Are You?" — user's own life items (light/medium/personal)
   voice/           # record → transcribe → confirm flow (UI side of the AI pipeline)
+  forecast/        # Social Forecast — deterministic retrieval+scoring, narration, hands-free playback UI
 ```
+
+> **`forecast/` holds the deterministic brains** (pure `scoring.ts` / `context.ts` / `narrator.ts`) and the form/playback UI. It calls `@/db/queries/forecast` (the only DB access) and the `@/services/llm` + `@/services/speech` services. The on-device LLM never touches the DB — see [docs/features/social-forecast.md](../../docs/features/social-forecast.md).
 
 ## Conventions for a feature folder
 
