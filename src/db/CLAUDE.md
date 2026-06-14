@@ -6,12 +6,21 @@ The **single source of truth** for the app. All persistence flows through here. 
 
 ```
 db/
-  client.ts          # open expo-sqlite DB + create the Drizzle instance (singleton)
+  client.ts          # opens expo-sqlite (WAL + foreign_keys ON) and the Drizzle instance (singleton)
+  migrate.tsx        # <MigrationGate> — runs useMigrations() before the app renders
   schema/            # Drizzle table definitions — one file per entity, re-exported from index.ts
   queries/           # typed query/repository functions — the ONLY public DB API
-  migrations/        # drizzle-kit generated SQL migrations (+ meta)
-  drizzle.config.ts  # drizzle-kit config (schema path, out dir, dialect: sqlite)
+  migrations/        # drizzle-kit OUTPUT: *.sql + meta/ + migrations.js (do not hand-edit)
 ```
+`drizzle.config.ts` lives at the **project root** (not here) — that's where drizzle-kit expects it.
+
+## Changing the schema
+
+1. Edit/add a table in `schema/` and export it from `schema/index.ts`.
+2. Run `npx drizzle-kit generate` → writes a new `NNNN_*.sql` + updates `migrations/migrations.js`.
+3. Commit both the schema change and the generated migration. They apply automatically on next app launch via `<MigrationGate>` (`drizzle-orm/expo-sqlite/migrator`).
+
+Build glue (already wired): `babel.config.js` inlines `.sql` via `babel-plugin-inline-import`; `metro.config.js` adds `sql` to `sourceExts`. Booleans use `{ mode: 'boolean' }`, timestamps `{ mode: 'timestamp_ms' }` (↔ JS `Date`); see `schema/timestamps.ts`.
 
 ## Rules
 
