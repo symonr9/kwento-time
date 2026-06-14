@@ -1,15 +1,20 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { MigrationGate } from '@/db/migrate';
 
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <MigrationGate>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          {/* Add screens here as you build them, e.g.
+              <Stack.Screen name="person/[id]" options={{ title: 'Person' }} /> */}
+        </Stack>
+      </MigrationGate>
     </ThemeProvider>
   );
 }
