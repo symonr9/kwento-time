@@ -30,7 +30,7 @@ This project runs **Expo SDK 56** (React 19.2, React Native 0.85.3) — newer th
 
 | | Capture-time **extraction** | Briefing-time **narration** (Social Forecast) |
 |---|---|---|
-| Model | Cloud **GPT-4o** (opt-in, post-confirm) | **Offline tiny LLM** (`llama.rn`, fully offline) |
+| Model | Cloud **GPT-4o** (opt-in, post-confirm) | **Deterministic templates** (default, free) **or** offline tiny LLM (`llama.rn`, Premium + trial — never bundled, downloaded post-install) |
 | Job | Extract structured rows | Synthesize/prioritize/narrate already-retrieved data |
 | DB access | Writes structured rows | **Never reads or writes the DB** |
 
