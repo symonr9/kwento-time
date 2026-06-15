@@ -1,9 +1,29 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, isNull } from 'drizzle-orm';
 
 import { db } from '../client';
 import { conversations, people, type Conversation, type NewConversation } from '../schema';
+import { bumpLastContacted } from './people';
 
-export function conversationsForPersonQuery(personId: number) {
+/**
+ * Log a conversation and bump the person's `lastContactedAt` in the same
+ * call — every entry point (manual note, voice memo transcript) should go
+ * through this rather than inserting directly.
+ */
+export async function logConversation(data: NewConversation): Promise<Conversation> {
+  const [row] = await db.insert(conversations).values(data).returning();
+  if (row.personId) {
+    await bumpLastContacted(row.personId, row.occurredAt);
+  }
+  return row;
+}
+
+export async function getConversationById(id: number) {
+  const [row] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  return row;
+}
+
+/** Full conversation history for a person, most recent first. */
+export async function getConversationsForPerson(personId: number) {
   return db
     .select()
     .from(conversations)
@@ -11,33 +31,46 @@ export function conversationsForPersonQuery(personId: number) {
     .orderBy(desc(conversations.occurredAt));
 }
 
-export function listConversationsForPerson(personId: number): Promise<Conversation[]> {
-  return conversationsForPersonQuery(personId);
+/** Recent conversations across everyone, with the person's name — for an activity feed. */
+export async function getRecentConversations(limit = 20) {
+  return db
+    .select({
+      id: conversations.id,
+      summary: conversations.summary,
+      occurredAt: conversations.occurredAt,
+      personId: conversations.personId,
+      personName: people.name,
+    })
+    .from(conversations)
+    .leftJoin(people, eq(conversations.personId, people.id))
+    .orderBy(desc(conversations.occurredAt))
+    .limit(limit);
 }
 
-export async function getConversation(id: number): Promise<Conversation | null> {
-  const rows = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
-  return rows[0] ?? null;
+/** Conversations still waiting on the GPT-4o structured-summary extraction pass. */
+export async function getConversationsPendingSummary() {
+  return db
+    .select()
+    .from(conversations)
+    .where(isNull(conversations.summary))
+    .orderBy(desc(conversations.occurredAt));
 }
 
-/**
- * Logs a conversation and, when tied to a person, bumps their `lastContactedAt`
- * so list ordering and (later) the health score reflect the contact. Both
- * writes happen in one transaction to keep the contact record consistent.
- */
-export async function createConversation(input: NewConversation): Promise<Conversation> {
-  return db.transaction(async (tx) => {
-    const [row] = await tx.insert(conversations).values(input).returning();
-    if (row.personId != null) {
-      await tx
-        .update(people)
-        .set({ lastContactedAt: row.occurredAt })
-        .where(eq(people.id, row.personId));
-    }
-    return row;
-  });
+/** Write back the structured summary once extraction finishes (or re-runs). */
+export async function setConversationSummary(id: number, summary: string) {
+  const [row] = await db
+    .update(conversations)
+    .set({ summary })
+    .where(eq(conversations.id, id))
+    .returning();
+  return row;
 }
 
-export async function deleteConversation(id: number): Promise<void> {
+export async function updateConversation(id: number, data: Partial<NewConversation>) {
+  const [row] = await db.update(conversations).set(data).where(eq(conversations.id, id)).returning();
+  return row;
+}
+
+export async function deleteConversation(id: number) {
   await db.delete(conversations).where(eq(conversations.id, id));
 }

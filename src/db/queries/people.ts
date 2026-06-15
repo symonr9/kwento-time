@@ -1,51 +1,95 @@
-import { asc, desc, eq, like } from 'drizzle-orm';
+import { asc, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
 
 import { db } from '../client';
 import { people, type NewPerson, type Person } from '../schema';
 
-/**
- * Query builder for the people list — most-recently-contacted first, with
- * never-contacted people last (SQLite sorts NULLs last under DESC), then by
- * name. Returned as a builder so screens can feed it to `useLiveQuery`.
- */
-export function peopleListQuery() {
-  return db.select().from(people).orderBy(desc(people.lastContactedAt), asc(people.name));
-}
-
-export function listPeople(): Promise<Person[]> {
-  return peopleListQuery();
-}
-
-export async function searchPeople(term: string): Promise<Person[]> {
-  const q = `%${term.trim()}%`;
-  return db.select().from(people).where(like(people.name, q)).orderBy(asc(people.name));
-}
-
-export async function getPerson(id: number): Promise<Person | null> {
-  const rows = await db.select().from(people).where(eq(people.id, id)).limit(1);
-  return rows[0] ?? null;
-}
-
-export async function createPerson(input: NewPerson): Promise<Person> {
-  const [row] = await db.insert(people).values(input).returning();
+/** Add a new person to remember. */
+export async function createPerson(data: NewPerson): Promise<Person> {
+  const [row] = await db.insert(people).values(data).returning();
   return row;
 }
 
-/** Partial update; `updatedAt` is refreshed automatically by the schema. */
-export async function updatePerson(
-  id: number,
-  patch: Partial<Omit<NewPerson, 'id' | 'createdAt'>>,
-): Promise<Person | null> {
-  const [row] = await db.update(people).set(patch).where(eq(people.id, id)).returning();
-  return row ?? null;
+/** Fetch a single person by id, or `undefined` if not found. */
+export async function getPersonById(id: number) {
+  const [row] = await db.select().from(people).where(eq(people.id, id)).limit(1);
+  return row;
 }
 
-/** Deletes the person; tags/places/conversations cascade via foreign keys. */
-export async function deletePerson(id: number): Promise<void> {
+/** Everyone, alphabetical — the default "all people" list view. */
+export async function getAllPeople() {
+  return db.select().from(people).orderBy(asc(people.name));
+}
+
+/** Case-insensitive name/nickname search for the "find a person" UI. */
+export async function searchPeopleByName(query: string) {
+  return db
+    .select()
+    .from(people)
+    .where(or(like(people.name, `%${query}%`), like(people.nickname, `%${query}%`)))
+    .orderBy(asc(people.name));
+}
+
+/** Update profile fields (name, notes, avatar, birthday, etc.). */
+export async function updatePerson(id: number, data: Partial<NewPerson>) {
+  const [row] = await db.update(people).set(data).where(eq(people.id, id)).returning();
+  return row;
+}
+
+/** Remove a person — cascades to their tags, places, conversations, topics, etc. */
+export async function deletePerson(id: number) {
   await db.delete(people).where(eq(people.id, id));
 }
 
-export async function countPeople(): Promise<number> {
-  const rows = await db.select({ id: people.id }).from(people);
-  return rows.length;
+/** Stamp "I just talked to this person" — call whenever a conversation is logged. */
+export async function bumpLastContacted(id: number, when: Date = new Date()) {
+  const [row] = await db
+    .update(people)
+    .set({ lastContactedAt: when })
+    .where(eq(people.id, id))
+    .returning();
+  return row;
+}
+
+/** Overwrite a person's connection score (recomputed by the nightly job). */
+export async function setConnectionScore(id: number, score: number) {
+  const [row] = await db
+    .update(people)
+    .set({ connectionScore: score })
+    .where(eq(people.id, id))
+    .returning();
+  return row;
+}
+
+/**
+ * People worth reaching out to: never contacted, or not contacted in
+ * `staleDays` days. Lowest connection score / most-overdue first, for a
+ * "people you've drifted from" surface.
+ */
+export async function getPeopleToReachOutTo(staleDays = 30) {
+  const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
+  return db
+    .select()
+    .from(people)
+    .where(or(isNull(people.lastContactedAt), lt(people.lastContactedAt, cutoff)))
+    .orderBy(asc(people.connectionScore), asc(people.lastContactedAt));
+}
+
+/**
+ * People whose birthday falls within the next `daysAhead` days, regardless of
+ * whether `birthday` includes a year (`YYYY-MM-DD` or `--MM-DD`). Compares on
+ * the trailing `MM-DD` so it wraps correctly across year boundaries.
+ */
+export async function getUpcomingBirthdays(daysAhead = 14) {
+  const today = new Date();
+  const mmddWindow: string[] = [];
+  for (let i = 0; i <= daysAhead; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    mmddWindow.push(d.toISOString().slice(5, 10)); // "MM-DD"
+  }
+  return db
+    .select()
+    .from(people)
+    .where(inArray(sql`substr(${people.birthday}, -5)`, mmddWindow))
+    .orderBy(asc(people.name));
 }
