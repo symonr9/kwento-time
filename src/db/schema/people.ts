@@ -4,7 +4,7 @@ import { timestamps } from './timestamps';
 
 /**
  * A person the user wants to remember and stay connected with.
- * `healthScore` (0–100) is recomputed locally by the nightly background job;
+ * `connectionScore` (0–100) is recomputed locally by the nightly background job;
  * `lastContactedAt` is bumped whenever a conversation is logged.
  */
 export const people = sqliteTable(
@@ -18,7 +18,7 @@ export const people = sqliteTable(
     birthday: text('birthday'),
     avatarUri: text('avatar_uri'),
     notes: text('notes'),
-    healthScore: integer('health_score').notNull().default(0),
+    connectionScore: integer('connection_score').notNull().default(0),
     lastContactedAt: integer('last_contacted_at', { mode: 'timestamp_ms' }),
     ...timestamps,
   },

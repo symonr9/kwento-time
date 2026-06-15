@@ -33,7 +33,7 @@ Build glue (already wired): `babel.config.js` inlines `.sql` via `babel-plugin-i
 
 ## Core entities
 
-`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (rawTranscript, summary, audioPath, createdAt) · `Topic` (talkingPoint, category, isActive) · `TopicExpiry` (state: active/expiring/extended/archived, timestamps) · `FollowUp` (question, resolved) · `Reminder` (scheduledAt, type, sent) · `MyLifeItem` (content, tone, isActive).
+`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (summary, createdAt) · `Topic` (talkingPoint, category, isActive) · `TopicExpiry` (state: active/expiring/extended/archived, timestamps) · `FollowUp` (question, resolved) · `Reminder` (scheduledAt, type, sent) · `MyLifeItem` (content, tone, isActive).
 
 Store **both** the raw transcript and the GPT-4o summary on `Conversation` — raw is the source of truth for future re-extraction.
 

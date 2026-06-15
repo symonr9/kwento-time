@@ -24,5 +24,31 @@ export const followUps = sqliteTable(
   ],
 );
 
+export const followUpExpiry = sqliteTable(
+  'follow_up_expiry',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    followUpId: integer('follow_up_id')
+      .notNull()
+      .unique()
+      .references(() => followUps.id, { onDelete: 'cascade' }),
+    state: text('state', { enum: ['active', 'expiring', 'extended', 'archived'] })
+      .notNull()
+      .default('active'),
+    activatedAt: integer('activated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    extendedAt: integer('extended_at', { mode: 'timestamp_ms' }),
+    archivedAt: integer('archived_at', { mode: 'timestamp_ms' }),
+  },
+  (t) => [
+    index('follow_up_expiry_state_idx').on(t.state),
+    index('follow_up_expiry_expires_idx').on(t.expiresAt),
+  ],
+);
+
 export type FollowUp = typeof followUps.$inferSelect;
 export type NewFollowUp = typeof followUps.$inferInsert;
+export type FollowUpExpiry = typeof followUpExpiry.$inferSelect;
+export type FollowUpExpiryState = FollowUpExpiry['state'];

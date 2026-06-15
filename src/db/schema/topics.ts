@@ -9,18 +9,27 @@ export const topics = sqliteTable(
   'topics',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }),
+    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }), // Nullable
     conversationId: integer('conversation_id').references(() => conversations.id, {
       onDelete: 'set null',
-    }),
+    }), // Nullable
+    isForUser: integer('is_for_user', {
+      mode: 'boolean',
+    }).notNull().default(false),
     content: text('content').notNull(),
     category: text('category'),
-    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    importance: integer('importance').notNull().default(1),
+    tone: text('tone', { enum: ['light', 'medium', 'personal'] })
+      .notNull()
+      .default('light'),
+    lastMentionedAt: integer('last_mentioned_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+    resolved: integer('resolved', { mode: 'boolean' }).notNull().default(false),
+    resolvedAt: integer('resolved_at', { mode: 'timestamp_ms' }),
     ...timestamps,
   },
   (t) => [
     index('topics_person_idx').on(t.personId),
-    index('topics_active_idx').on(t.isActive),
+    index('topics_resolved_idx').on(t.resolved),
   ],
 );
 

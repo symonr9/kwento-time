@@ -13,13 +13,7 @@ export const conversations = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }),
-    rawTranscript: text('raw_transcript').notNull(),
     summary: text('summary'),
-    /** Local file path or base64 of the recorded audio (voice notes only). */
-    audioUri: text('audio_uri'),
-    source: text('source', { enum: ['manual', 'voice'] })
-      .notNull()
-      .default('manual'),
     occurredAt: integer('occurred_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
