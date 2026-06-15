@@ -19,6 +19,6 @@ async function createDrizzle() {
 }
 
 /** Typed Drizzle client — the only handle the query layer should import. */
-const db = createDrizzle();
+const db = await createDrizzle();
 
 export { db, schema };
