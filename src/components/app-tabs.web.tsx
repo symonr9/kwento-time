@@ -25,12 +25,6 @@ const tabs = [
     icon: { ios: 'person.2', android: 'group', web: 'group' },
   },
   { name: 'places', href: '/places', label: 'Places', icon: { ios: 'map', android: 'map', web: 'map' } },
-  {
-    name: 'settings',
-    href: '/settings',
-    label: 'Settings',
-    icon: { ios: 'gearshape', android: 'settings', web: 'settings' },
-  },
 ] as const;
 
 export default function AppTabs() {
@@ -64,11 +58,14 @@ export function TabButton({ children, icon, isFocused, ...props }: TabButtonProp
         style={styles.tabButtonView}>
         <SymbolView
           name={icon}
-          size={18}
+          size={26}
           tintColor={isFocused ? theme.text : theme.textSecondary}
           fallback={<View style={[styles.iconFallback, { backgroundColor: theme.textSecondary }]} />}
         />
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        <ThemedText
+          type="smallBold"
+          themeColor={isFocused ? 'text' : 'textSecondary'}
+          style={styles.tabLabel}>
           {children}
         </ThemedText>
       </ThemedView>
@@ -82,9 +79,6 @@ export function CustomTabList(props: TabListProps) {
   return (
     <View {...props} style={[styles.tabListContainer, { paddingBottom: Math.max(insets.bottom, Spacing.two) }]}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Kwento Time
-        </ThemedText>
         {props.children}
       </ThemedView>
     </View>
@@ -96,7 +90,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
     paddingTop: Spacing.two,
     justifyContent: 'center',
     alignItems: 'center',
@@ -108,6 +102,7 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
     flexGrow: 1,
     gap: Spacing.one,
     maxWidth: MaxContentWidth,
@@ -115,27 +110,30 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(122, 154, 184, 0.28)',
     boxShadow: '0 16px 36px rgba(36, 48, 58, 0.14)',
   },
-  brandText: {
-    marginRight: 'auto',
-    paddingHorizontal: Spacing.two,
-  },
   pressed: {
     opacity: 0.7,
   },
   tabButtonView: {
-    minWidth: 84,
+    flex: 1,
+    minWidth: 0,
+    minHeight: 64,
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.one,
     borderRadius: Radius.medium,
     borderCurve: 'continuous',
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.half,
+  },
+  tabLabel: {
+    textAlign: 'center',
+    fontSize: 12,
+    lineHeight: 16,
   },
   iconFallback: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
     borderRadius: Radius.small,
   },
 });

@@ -1,4 +1,7 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Link } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
@@ -23,6 +26,7 @@ export type TabTemplateScreenProps = {
   description: string;
   metrics: TemplateMetric[];
   sections: TemplateSection[];
+  showSettingsAction?: boolean;
 };
 
 export function TabTemplateScreen({
@@ -31,15 +35,43 @@ export function TabTemplateScreen({
   description,
   metrics,
   sections,
+  showSettingsAction = true,
 }: TabTemplateScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, Spacing.three) + Spacing.two }]}
       contentInsetAdjustmentBehavior="automatic">
       <View style={styles.inner}>
+        <View style={styles.header}>
+          <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+          {showSettingsAction ? (
+            <Link href="/settings" asChild>
+              <Pressable
+                accessibilityLabel="Open settings"
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.settingsButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.border,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}>
+                <SymbolView
+                  name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
+                  size={20}
+                  tintColor={theme.text}
+                  fallback={<View style={[styles.settingsFallback, { backgroundColor: theme.text }]} />}
+                />
+              </Pressable>
+            </Link>
+          ) : null}
+        </View>
+
         <View style={styles.hero}>
           <ThemedText type="smallBold" themeColor="primary">
             {eyebrow}
@@ -91,7 +123,6 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.five,
     paddingBottom: BottomTabInset + Spacing.four,
     alignItems: 'center',
   },
@@ -100,9 +131,36 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     gap: Spacing.three,
   },
+  header: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  headerMark: {
+    width: 40,
+    height: 4,
+    borderRadius: Radius.small,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 8px 18px rgba(36, 48, 58, 0.08)',
+  },
+  settingsFallback: {
+    width: 18,
+    height: 18,
+    borderRadius: Radius.small,
+  },
   hero: {
     gap: Spacing.two,
-    paddingVertical: Spacing.three,
+    paddingBottom: Spacing.three,
   },
   title: {
     fontSize: 36,

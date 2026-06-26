@@ -38,15 +38,6 @@ export default function AppTabs() {
           selectedColor={colors.highlight}
         />
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'gearshape', selected: 'gearshape.fill' }}
-          md="settings"
-          selectedColor={colors.primary}
-        />
-      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

@@ -6,6 +6,7 @@ export default function SettingsScreen() {
       eyebrow="Settings"
       title="Keep local data calm and private."
       description="A neutral starting point for privacy, backup, export, notifications, and premium controls."
+      showSettingsAction={false}
       metrics={[
         { label: 'Local-first', value: 'On', tone: 'primaryMuted' },
         { label: 'Backups', value: 'Off', tone: 'accentMuted' },
