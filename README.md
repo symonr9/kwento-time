@@ -173,3 +173,11 @@ Builds and store submissions run through **EAS**. Profiles live in [eas.json](ea
 | Native config (`app.json`) changes not applied | Rebuild the dev client; for local Android, delete the app and `npx expo run:android` again. |
 | Dependency / SDK mismatch warnings | `npx expo-doctor` and `npx expo install --check`. |
 | Device can't reach the dev server | Same Wi‑Fi as your laptop; or use `npx expo start --tunnel`. |
+
+### NoModificationAllowedError: No modification allowed
+This error appeared when trying to run my app after setting up Drizzle with SQLite3 on the 
+web. This error happens if **there are multiple localhost tabs running at the same time**.
+
+On the web, Expo SQLite uses the browser's Origin Private File System (OPFS) via a web worker. This error occurs because OPFS only permits one active connection or stream to a database file at a time.
+
+ If Tab A holds the SQLite OPFS access handle open, Tab B will instantly crash with NoModificationAllowedError.
