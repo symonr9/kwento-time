@@ -1,5 +1,13 @@
 @AGENTS.md
 
+# Agent Compatibility
+
+This file is the canonical engineering guide for both Claude and Codex. Codex
+should interpret every `CLAUDE.md` instruction as repository guidance, including
+nested `CLAUDE.md` files in the directories it edits. When a heading or sentence
+says "Claude", read it as "the coding agent" unless the instruction is
+explicitly about a Claude-only tool or workflow.
+
 # Kwento Time
 
 A mobile-first, **local-first** relationship intelligence app for iOS and Android. The name comes from the Filipino word _kwento_ (story / chat). It is **not a CRM** — it is a warm, personal relationship memory layer that works entirely offline.
