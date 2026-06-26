@@ -152,6 +152,21 @@ export default function HomeScreen() {
             <ThemedText themeColor="textSecondary">
               Capture recent conversations and what is current in your own life.
             </ThemedText>
+            <Link href="/forecast/index" asChild>
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  {
+                    backgroundColor: theme.primary,
+                    opacity: pressed ? 0.78 : 1,
+                  },
+                ]}>
+                <ThemedText type="smallBold" style={styles.primaryButtonText}>
+                  Briefing
+                </ThemedText>
+              </Pressable>
+            </Link>
           </View>
 
           {isLoading ? (
@@ -463,6 +478,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  primaryButton: {
+    minHeight: 48,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
   },
   stateCard: {
     alignItems: 'center',

@@ -12,6 +12,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="conversations/new" options={{ headerShown: false }} />
+          <Stack.Screen name="forecast/index" options={{ headerShown: false }} />
           <Stack.Screen name="follow-ups/new" options={{ headerShown: false }} />
           <Stack.Screen name="my-life/new" options={{ headerShown: false }} />
           <Stack.Screen name="people/[id]" options={{ headerShown: false }} />
