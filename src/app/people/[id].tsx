@@ -12,12 +12,17 @@ import { getOpenFollowUpsForPerson, resolveFollowUp } from '@/db/queries/follow-
 import { getPersonById } from '@/db/queries/people';
 import { getPlacesForPerson } from '@/db/queries/places';
 import { getTagsForPerson } from '@/db/queries/tags';
-import { getActiveTopicsForPerson } from '@/db/queries/topics';
-import type { Conversation, FollowUp, Person, Topic } from '@/db/schema';
+import {
+  extendTopicExpiry,
+  getActiveTopicsWithExpiryForPerson,
+  resolveTopic,
+} from '@/db/queries/topics';
+import type { Conversation, FollowUp, Person } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PersonPlace = Awaited<ReturnType<typeof getPlacesForPerson>>[number];
 type PersonTag = Awaited<ReturnType<typeof getTagsForPerson>>[number];
+type PersonTopic = Awaited<ReturnType<typeof getActiveTopicsWithExpiryForPerson>>[number];
 
 type PersonDetails = {
   person: Person | null;
@@ -25,7 +30,7 @@ type PersonDetails = {
   followUps: FollowUp[];
   places: PersonPlace[];
   tags: PersonTag[];
-  topics: Topic[];
+  topics: PersonTopic[];
 };
 
 const initialDetails: PersonDetails = {
@@ -72,7 +77,7 @@ export default function PersonDetailsScreen() {
           getOpenFollowUpsForPerson(personId),
           getPlacesForPerson(personId),
           getTagsForPerson(personId),
-          getActiveTopicsForPerson(personId),
+          getActiveTopicsWithExpiryForPerson(personId),
         ]);
 
         if (isActive) {
@@ -121,6 +126,28 @@ export default function PersonDetailsScreen() {
       await loadPerson();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to resolve follow-up.');
+    }
+  }
+
+  async function handleExtendTopic(id: number) {
+    setError(null);
+
+    try {
+      await extendTopicExpiry(id);
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to extend topic.');
+    }
+  }
+
+  async function handleResolveTopic(id: number) {
+    setError(null);
+
+    try {
+      await resolveTopic(id);
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to resolve topic.');
     }
   }
 
@@ -271,7 +298,7 @@ export default function PersonDetailsScreen() {
 
               <Section title="Talking points" count={topics.length}>
                 {topics.length > 0 ? (
-                  topics.map((topic) => (
+                  topics.map(({ topic, expiry }) => (
                     <SurfaceCard key={topic.id} style={styles.row}>
                       <View style={styles.rowHeader}>
                         <ThemedText type="smallBold">{topic.category ?? 'Topic'}</ThemedText>
@@ -282,6 +309,37 @@ export default function PersonDetailsScreen() {
                       <ThemedText type="small" themeColor="textSecondary" selectable>
                         {topic.content}
                       </ThemedText>
+                      {expiry ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {expiry.state} until {formatShortDate(expiry.expiresAt)}
+                        </ThemedText>
+                      ) : null}
+                      <View style={styles.actionRow}>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => void handleExtendTopic(topic.id)}
+                          style={({ pressed }) => [
+                            styles.secondaryButton,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">Still relevant</ThemedText>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => void handleResolveTopic(topic.id)}
+                          style={({ pressed }) => [
+                            styles.secondaryButton,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">Resolve</ThemedText>
+                        </Pressable>
+                      </View>
                     </SurfaceCard>
                   ))
                 ) : (
@@ -501,12 +559,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
   },
   secondaryButton: {
+    flexGrow: 1,
     minHeight: 40,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
   symbolFallback: {
     width: 18,

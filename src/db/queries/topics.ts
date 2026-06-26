@@ -1,7 +1,7 @@
-import { and, desc, eq, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, lte, or } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { topicExpiry, topics, type NewTopic, type TopicExpiryState } from '../schema';
+import { people, topicExpiry, topics, type NewTopic, type TopicExpiryState } from '../schema';
 
 const DEFAULT_LIFESPAN_DAYS = 30;
 const EXPIRING_WINDOW_DAYS = 7;
@@ -43,6 +43,17 @@ export async function getActiveTopicsForPerson(personId: number) {
   return db
     .select()
     .from(topics)
+    .where(and(eq(topics.personId, personId), eq(topics.resolved, false), eq(topics.isForUser, false)))
+    .orderBy(desc(topics.importance), desc(topics.lastMentionedAt));
+}
+
+/** Open talking points about a person with lifecycle metadata for management UI. */
+export async function getActiveTopicsWithExpiryForPerson(personId: number) {
+  const db = await getDb();
+  return db
+    .select({ topic: topics, expiry: topicExpiry })
+    .from(topics)
+    .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
     .where(and(eq(topics.personId, personId), eq(topics.resolved, false), eq(topics.isForUser, false)))
     .orderBy(desc(topics.importance), desc(topics.lastMentionedAt));
 }
@@ -126,6 +137,34 @@ export async function getTopicsEnteringExpiringWindow(now = new Date()) {
     .from(topicExpiry)
     .innerJoin(topics, eq(topics.id, topicExpiry.topicId))
     .where(and(eq(topicExpiry.state, 'active'), lte(topicExpiry.expiresAt, horizon), eq(topics.resolved, false)));
+}
+
+/** Dashboard feed for topics that are already expiring or entering the 7-day window. */
+export async function getTopicsExpiringSoonWithPeople(now = new Date(), limit = 10) {
+  const db = await getDb();
+  const horizon = new Date(now.getTime() + EXPIRING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  return db
+    .select({
+      topicId: topics.id,
+      content: topics.content,
+      importance: topics.importance,
+      personId: topics.personId,
+      personName: people.name,
+      state: topicExpiry.state,
+      expiresAt: topicExpiry.expiresAt,
+    })
+    .from(topicExpiry)
+    .innerJoin(topics, eq(topics.id, topicExpiry.topicId))
+    .leftJoin(people, eq(topics.personId, people.id))
+    .where(
+      and(
+        eq(topics.resolved, false),
+        or(eq(topicExpiry.state, 'expiring'), lte(topicExpiry.expiresAt, horizon)),
+      ),
+    )
+    .orderBy(asc(topicExpiry.expiresAt), desc(topics.importance))
+    .limit(limit);
 }
 
 /** Topics in the "expiring" window — surfaced as "still relevant?" prompts. */

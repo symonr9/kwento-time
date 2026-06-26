@@ -10,11 +10,13 @@ import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/th
 import { getRecentConversations } from '@/db/queries/conversations';
 import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getActiveMyLifeItems } from '@/db/queries/my-life';
+import { extendTopicExpiry, getTopicsExpiringSoonWithPeople, resolveTopic } from '@/db/queries/topics';
 import type { MyLifeItem } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[number];
 type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
+type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>[number];
 
 function formatShortDate(value: Date) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(value);
@@ -24,6 +26,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [expiringTopics, setExpiringTopics] = useState<ExpiringTopic[]>([]);
   const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,14 +37,16 @@ export default function HomeScreen() {
     setError(null);
 
     try {
-      const [conversationRows, followUpRows, lifeRows] = await Promise.all([
+      const [conversationRows, expiringTopicRows, followUpRows, lifeRows] = await Promise.all([
         getRecentConversations(10),
+        getTopicsExpiringSoonWithPeople(new Date(), 10),
         getAllOpenFollowUpsWithPeople(10),
         getActiveMyLifeItems(),
       ]);
 
       if (isActive) {
         setConversations(conversationRows);
+        setExpiringTopics(expiringTopicRows);
         setFollowUps(followUpRows);
         setLifeItems(lifeRows);
       }
@@ -76,6 +81,28 @@ export default function HomeScreen() {
       await loadHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to resolve follow-up.');
+    }
+  }
+
+  async function handleExtendTopic(id: number) {
+    setError(null);
+
+    try {
+      await extendTopicExpiry(id);
+      await loadHome();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to extend topic.');
+    }
+  }
+
+  async function handleResolveTopic(id: number) {
+    setError(null);
+
+    try {
+      await resolveTopic(id);
+      await loadHome();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to resolve topic.');
     }
   }
 
@@ -142,6 +169,66 @@ export default function HomeScreen() {
 
           {!isLoading && !error ? (
             <>
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ThemedText type="smallBold">Expiring soon</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {expiringTopics.length}
+                  </ThemedText>
+                </View>
+
+                {expiringTopics.length === 0 ? (
+                  <SurfaceCard style={styles.stateCard}>
+                    <ThemedText type="smallBold">No expiring topics</ThemedText>
+                    <ThemedText themeColor="textSecondary">
+                      Talking points that need review will show up here.
+                    </ThemedText>
+                  </SurfaceCard>
+                ) : (
+                  <View style={styles.list}>
+                    {expiringTopics.map((item) => (
+                      <SurfaceCard key={item.topicId} tone="highlightMuted" style={styles.row}>
+                        <View style={styles.rowHeader}>
+                          <ThemedText type="smallBold">{item.personName ?? 'Topic'}</ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary">
+                            {formatShortDate(item.expiresAt)}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" themeColor="textSecondary" selectable>
+                          {item.content}
+                        </ThemedText>
+                        <View style={styles.actionRow}>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => void handleExtendTopic(item.topicId)}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              {
+                                backgroundColor: theme.backgroundElement,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}>
+                            <ThemedText type="smallBold">Still relevant</ThemedText>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => void handleResolveTopic(item.topicId)}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              {
+                                backgroundColor: theme.backgroundElement,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}>
+                            <ThemedText type="smallBold">Resolve</ThemedText>
+                          </Pressable>
+                        </View>
+                      </SurfaceCard>
+                    ))}
+                  </View>
+                )}
+              </View>
+
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <ThemedText type="smallBold">Open follow-ups</ThemedText>
@@ -364,12 +451,18 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   secondaryButton: {
+    flexGrow: 1,
     minHeight: 40,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
   stateCard: {
     alignItems: 'center',
