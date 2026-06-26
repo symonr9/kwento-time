@@ -8,11 +8,13 @@ import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getRecentConversations } from '@/db/queries/conversations';
+import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getActiveMyLifeItems } from '@/db/queries/my-life';
 import type { MyLifeItem } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[number];
+type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
 
 function formatShortDate(value: Date) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(value);
@@ -22,46 +24,60 @@ export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadHome = useCallback(async (isActive = true) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [conversationRows, followUpRows, lifeRows] = await Promise.all([
+        getRecentConversations(10),
+        getAllOpenFollowUpsWithPeople(10),
+        getActiveMyLifeItems(),
+      ]);
+
+      if (isActive) {
+        setConversations(conversationRows);
+        setFollowUps(followUpRows);
+        setLifeItems(lifeRows);
+      }
+    } catch (err) {
+      if (isActive) {
+        setError(err instanceof Error ? err.message : 'Unable to load home.');
+      }
+    } finally {
+      if (isActive) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
 
-      async function loadHome() {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-          const [conversationRows, lifeRows] = await Promise.all([
-            getRecentConversations(10),
-            getActiveMyLifeItems(),
-          ]);
-
-          if (isActive) {
-            setConversations(conversationRows);
-            setLifeItems(lifeRows);
-          }
-        } catch (err) {
-          if (isActive) {
-            setError(err instanceof Error ? err.message : 'Unable to load home.');
-          }
-        } finally {
-          if (isActive) {
-            setIsLoading(false);
-          }
-        }
-      }
-
-      void loadHome();
+      void loadHome(isActive);
 
       return () => {
         isActive = false;
       };
-    }, []),
+    }, [loadHome]),
   );
+
+  async function handleResolveFollowUp(id: number) {
+    setError(null);
+
+    try {
+      await resolveFollowUp(id);
+      await loadHome();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to resolve follow-up.');
+    }
+  }
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -128,6 +144,54 @@ export default function HomeScreen() {
             <>
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
+                  <ThemedText type="smallBold">Open follow-ups</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {followUps.length}
+                  </ThemedText>
+                </View>
+
+                {followUps.length === 0 ? (
+                  <SurfaceCard style={styles.stateCard}>
+                    <ThemedText type="smallBold">No open follow-ups</ThemedText>
+                    <ThemedText themeColor="textSecondary">
+                      Add questions from a person or conversation to close the loop later.
+                    </ThemedText>
+                  </SurfaceCard>
+                ) : (
+                  <View style={styles.list}>
+                    {followUps.map((followUp) => (
+                      <SurfaceCard key={followUp.id} style={styles.row}>
+                        <View style={styles.rowHeader}>
+                          <ThemedText type="smallBold">
+                            {followUp.personName ?? 'Follow-up'}
+                          </ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary">
+                            {formatShortDate(followUp.createdAt)}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" themeColor="textSecondary" selectable>
+                          {followUp.question}
+                        </ThemedText>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => void handleResolveFollowUp(followUp.id)}
+                          style={({ pressed }) => [
+                            styles.secondaryButton,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">Mark resolved</ThemedText>
+                        </Pressable>
+                      </SurfaceCard>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
                   <ThemedText type="smallBold">Recent conversations</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {conversations.length}
@@ -156,6 +220,27 @@ export default function HomeScreen() {
                         <ThemedText type="small" themeColor="textSecondary" selectable>
                           {conversation.summary ?? 'No summary yet'}
                         </ThemedText>
+                        <Link
+                          href={{
+                            pathname: '/follow-ups/new',
+                            params: {
+                              conversationId: String(conversation.id),
+                              ...(conversation.personId ? { personId: String(conversation.personId) } : {}),
+                            },
+                          }}
+                          asChild>
+                          <Pressable
+                            accessibilityRole="button"
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              {
+                                backgroundColor: theme.backgroundSelected,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}>
+                            <ThemedText type="smallBold">Add follow-up</ThemedText>
+                          </Pressable>
+                        </Link>
                       </SurfaceCard>
                     ))}
                   </View>
@@ -277,6 +362,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: Spacing.two,
+  },
+  secondaryButton: {
+    minHeight: 40,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
   stateCard: {
     alignItems: 'center',

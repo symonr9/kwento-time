@@ -1,7 +1,7 @@
 import { and, desc, eq, lte } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { followUpExpiry, followUps, type FollowUpExpiryState, type NewFollowUp } from '../schema';
+import { followUpExpiry, followUps, people, type FollowUpExpiryState, type NewFollowUp } from '../schema';
 
 const DEFAULT_LIFESPAN_DAYS = 30;
 const EXPIRING_WINDOW_DAYS = 7;
@@ -48,6 +48,24 @@ export async function getOpenFollowUpsForPerson(personId: number) {
 export async function getAllOpenFollowUps() {
   const db = await getDb();
   return db.select().from(followUps).where(eq(followUps.resolved, false)).orderBy(desc(followUps.createdAt));
+}
+
+/** Every unresolved follow-up with the person's name, for the home dashboard. */
+export async function getAllOpenFollowUpsWithPeople(limit = 20) {
+  const db = await getDb();
+  return db
+    .select({
+      id: followUps.id,
+      question: followUps.question,
+      createdAt: followUps.createdAt,
+      personId: followUps.personId,
+      personName: people.name,
+    })
+    .from(followUps)
+    .leftJoin(people, eq(followUps.personId, people.id))
+    .where(eq(followUps.resolved, false))
+    .orderBy(desc(followUps.createdAt))
+    .limit(limit);
 }
 
 /** Follow-ups that were captured during a particular conversation. */

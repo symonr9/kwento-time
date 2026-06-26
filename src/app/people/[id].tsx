@@ -1,4 +1,4 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsForPerson } from '@/db/queries/conversations';
-import { getOpenFollowUpsForPerson } from '@/db/queries/follow-ups';
+import { getOpenFollowUpsForPerson, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getPersonById } from '@/db/queries/people';
 import { getPlacesForPerson } from '@/db/queries/places';
 import { getTagsForPerson } from '@/db/queries/tags';
@@ -54,61 +54,75 @@ export default function PersonDetailsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadPerson = useCallback(
+    async (isActive = true) => {
+      if (!Number.isInteger(personId) || personId <= 0) {
+        setError('Invalid person.');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const [person, conversations, followUps, places, tags, topics] = await Promise.all([
+          getPersonById(personId),
+          getConversationsForPerson(personId),
+          getOpenFollowUpsForPerson(personId),
+          getPlacesForPerson(personId),
+          getTagsForPerson(personId),
+          getActiveTopicsForPerson(personId),
+        ]);
+
+        if (isActive) {
+          setDetails({
+            person: person ?? null,
+            conversations,
+            followUps,
+            places,
+            tags,
+            topics,
+          });
+          setError(person ? null : 'Person not found.');
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err instanceof Error ? err.message : 'Unable to load person.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [personId],
+  );
+
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
 
-      async function loadPerson() {
-        if (!Number.isInteger(personId) || personId <= 0) {
-          setError('Invalid person.');
-          setIsLoading(false);
-          return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-          const [person, conversations, followUps, places, tags, topics] = await Promise.all([
-            getPersonById(personId),
-            getConversationsForPerson(personId),
-            getOpenFollowUpsForPerson(personId),
-            getPlacesForPerson(personId),
-            getTagsForPerson(personId),
-            getActiveTopicsForPerson(personId),
-          ]);
-
-          if (isActive) {
-            setDetails({
-              person: person ?? null,
-              conversations,
-              followUps,
-              places,
-              tags,
-              topics,
-            });
-            setError(person ? null : 'Person not found.');
-          }
-        } catch (err) {
-          if (isActive) {
-            setError(err instanceof Error ? err.message : 'Unable to load person.');
-          }
-        } finally {
-          if (isActive) {
-            setIsLoading(false);
-          }
-        }
-      }
-
-      void loadPerson();
+      void loadPerson(isActive);
 
       return () => {
         isActive = false;
       };
-    }, [personId]),
+    }, [loadPerson]),
   );
 
   const { person, conversations, followUps, places, tags, topics } = details;
+
+  async function handleResolveFollowUp(id: number) {
+    setError(null);
+
+    try {
+      await resolveFollowUp(id);
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to resolve follow-up.');
+    }
+  }
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -207,7 +221,26 @@ export default function PersonDetailsScreen() {
                 ) : null}
               </Section>
 
-              <Section title="Open follow-ups" count={followUps.length}>
+              <Section
+                title="Open follow-ups"
+                count={followUps.length}
+                action={
+                  <Link
+                    href={{ pathname: '/follow-ups/new', params: { personId: String(person.id) } }}
+                    asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.smallActionButton,
+                        {
+                          backgroundColor: theme.backgroundSelected,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold">Add</ThemedText>
+                    </Pressable>
+                  </Link>
+                }>
                 {followUps.length > 0 ? (
                   followUps.map((followUp) => (
                     <SurfaceCard key={followUp.id} style={styles.row}>
@@ -217,6 +250,18 @@ export default function PersonDetailsScreen() {
                       <ThemedText type="small" themeColor="textSecondary">
                         Added {formatShortDate(followUp.createdAt)}
                       </ThemedText>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => void handleResolveFollowUp(followUp.id)}
+                        style={({ pressed }) => [
+                          styles.secondaryButton,
+                          {
+                            backgroundColor: theme.backgroundSelected,
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}>
+                        <ThemedText type="smallBold">Mark resolved</ThemedText>
+                      </Pressable>
                     </SurfaceCard>
                   ))
                 ) : (
@@ -301,10 +346,12 @@ export default function PersonDetailsScreen() {
 }
 
 function Section({
+  action,
   children,
   count,
   title,
 }: {
+  action?: React.ReactNode;
   children: React.ReactNode;
   count?: number;
   title: string;
@@ -313,11 +360,14 @@ function Section({
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <ThemedText type="smallBold">{title}</ThemedText>
-        {typeof count === 'number' ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {count}
-          </ThemedText>
-        ) : null}
+        <View style={styles.sectionHeaderActions}>
+          {typeof count === 'number' ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {count}
+            </ThemedText>
+          ) : null}
+          {action}
+        </View>
       </View>
       {children}
     </View>
@@ -415,6 +465,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
+  sectionHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   row: {
     minHeight: 64,
     justifyContent: 'center',
@@ -434,6 +489,22 @@ const styles = StyleSheet.create({
     minHeight: 36,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
+  smallActionButton: {
+    minHeight: 32,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.two,
+  },
+  secondaryButton: {
+    minHeight: 40,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
   },
