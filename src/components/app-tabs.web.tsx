@@ -1,13 +1,13 @@
 import {
-  Tabs,
   TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
   TabListProps,
+  Tabs,
+  TabSlot,
+  TabTrigger,
+  TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from './themed-text';
@@ -52,7 +52,7 @@ export function TabButton({ children, icon, isFocused, ...props }: TabButtonProp
   const theme = useTheme();
 
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable {...props} style={({ pressed }) => [styles.tabPressable, pressed && styles.pressed]}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
@@ -102,6 +102,7 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     width: '100%',
     flexGrow: 1,
     gap: Spacing.one,
@@ -113,12 +114,16 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
+  tabPressable: {
+    flex: 1,
+    minWidth: 0,
+  },
   tabButtonView: {
     flex: 1,
     minWidth: 0,
-    minHeight: 64,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.one,
+    minHeight: 16,
+    paddingVertical: Spacing.half,
+    paddingHorizontal: Spacing.half,
     borderRadius: Radius.medium,
     borderCurve: 'continuous',
     flexDirection: 'column',
@@ -128,12 +133,12 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     textAlign: 'center',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 14,
   },
   iconFallback: {
-    width: 24,
-    height: 24,
+    width: 30,
+    height: 30,
     borderRadius: Radius.small,
   },
 });
