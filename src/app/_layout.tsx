@@ -11,6 +11,8 @@ export default function RootLayout() {
       <MigrationGate>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="conversations/new" options={{ headerShown: false }} />
+          <Stack.Screen name="my-life/new" options={{ headerShown: false }} />
           <Stack.Screen name="people/new" options={{ headerShown: false }} />
           <Stack.Screen name="places/new" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />

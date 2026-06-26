@@ -1,7 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { StyleSheet, View, useColorScheme } from 'react-native';
 
-import { FloatingAddPersonButton } from '@/components/ui/floating-add-person-button';
+import { FloatingAddButton } from '@/components/ui/floating-add-button';
 import { Colors } from '@/constants/theme';
 
 export default function AppTabs() {
@@ -41,7 +41,7 @@ export default function AppTabs() {
           />
         </NativeTabs.Trigger>
       </NativeTabs>
-      <FloatingAddPersonButton />
+      <FloatingAddButton />
     </View>
   );
 }

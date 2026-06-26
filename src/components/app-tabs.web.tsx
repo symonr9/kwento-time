@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
-import { FloatingAddPersonButton } from '@/components/ui/floating-add-person-button';
+import { FloatingAddButton } from '@/components/ui/floating-add-button';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -41,7 +41,7 @@ export default function AppTabs() {
           ))}
         </CustomTabList>
       </TabList>
-      <FloatingAddPersonButton />
+      <FloatingAddButton />
     </Tabs>
   );
 }
