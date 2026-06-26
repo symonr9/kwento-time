@@ -136,24 +136,6 @@ export default function PeopleScreen() {
           ) : null}
         </View>
       </ScrollView>
-
-      <Link href="/people/new" asChild>
-        <Pressable
-          accessibilityLabel="Add person"
-          accessibilityRole="button"
-          style={({ pressed }) => [
-            styles.addButton,
-            {
-              backgroundColor: theme.primary,
-              bottom: BottomTabInset + Math.max(insets.bottom, Spacing.two),
-              opacity: pressed ? 0.78 : 1,
-            },
-          ]}>
-          <ThemedText type="subtitle" style={styles.addButtonText}>
-            +
-          </ThemedText>
-        </Pressable>
-      </Link>
     </View>
   );
 }
@@ -217,19 +199,5 @@ const styles = StyleSheet.create({
   },
   stateCard: {
     alignItems: 'center',
-  },
-  addButton: {
-    position: 'absolute',
-    right: Spacing.three,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 14px 28px rgba(36, 48, 58, 0.2)',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    lineHeight: 44,
   },
 });
