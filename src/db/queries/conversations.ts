@@ -1,8 +1,27 @@
 import { desc, eq, isNull } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { conversations, people, type Conversation, type NewConversation } from '../schema';
+import {
+  conversations,
+  followUpExpiry,
+  followUps,
+  people,
+  personPlaces,
+  topicExpiry,
+  topics,
+  type Conversation,
+  type NewConversation,
+} from '../schema';
 import { bumpLastContacted } from './people';
+
+const STRUCTURED_ITEM_LIFESPAN_DAYS = 30;
+
+type StructuredConversationData = {
+  conversation: NewConversation;
+  followUps?: string[];
+  placeId?: number | null;
+  topics?: string[];
+};
 
 /**
  * Log a conversation and bump the person's `lastContactedAt` in the same
@@ -16,6 +35,78 @@ export async function logConversation(data: NewConversation): Promise<Conversati
     await bumpLastContacted(row.personId, row.occurredAt);
   }
   return row;
+}
+
+export async function logStructuredConversation({
+  conversation,
+  followUps: followUpQuestions = [],
+  placeId,
+  topics: topicContents = [],
+}: StructuredConversationData): Promise<Conversation> {
+  const db = await getDb();
+  const now = new Date();
+  const expiresAt = new Date(
+    now.getTime() + STRUCTURED_ITEM_LIFESPAN_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  return db.transaction(async (tx) => {
+    const [row] = await tx.insert(conversations).values(conversation).returning();
+
+    if (row.personId) {
+      await tx.update(people).set({ lastContactedAt: row.occurredAt }).where(eq(people.id, row.personId));
+    }
+
+    if (topicContents.length > 0) {
+      const createdTopics = await tx
+        .insert(topics)
+        .values(
+          topicContents.map((content) => ({
+            content,
+            conversationId: row.id,
+            personId: row.personId ?? undefined,
+          })),
+        )
+        .returning();
+
+      await tx.insert(topicExpiry).values(
+        createdTopics.map((topic) => ({
+          topicId: topic.id,
+          activatedAt: now,
+          expiresAt,
+        })),
+      );
+    }
+
+    if (followUpQuestions.length > 0) {
+      const createdFollowUps = await tx
+        .insert(followUps)
+        .values(
+          followUpQuestions.map((question) => ({
+            question,
+            conversationId: row.id,
+            personId: row.personId ?? undefined,
+          })),
+        )
+        .returning();
+
+      await tx.insert(followUpExpiry).values(
+        createdFollowUps.map((followUp) => ({
+          followUpId: followUp.id,
+          activatedAt: now,
+          expiresAt,
+        })),
+      );
+    }
+
+    if (row.personId && placeId) {
+      await tx
+        .insert(personPlaces)
+        .values({ personId: row.personId, placeId, isPrimary: false })
+        .onConflictDoNothing();
+    }
+
+    return row;
+  });
 }
 
 export async function getConversationById(id: number) {

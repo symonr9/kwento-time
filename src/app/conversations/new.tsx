@@ -6,16 +6,28 @@ import { ThemedText } from '@/components/themed-text';
 import { FormScreen } from '@/components/ui/form-screen';
 import { TextField, formControlStyles } from '@/components/ui/form-controls';
 import { Radius, Spacing } from '@/constants/theme';
-import { logConversation } from '@/db/queries/conversations';
+import { logStructuredConversation } from '@/db/queries/conversations';
 import { getAllPeople } from '@/db/queries/people';
-import type { NewConversation, Person } from '@/db/schema';
+import { getAllPlaces } from '@/db/queries/places';
+import type { NewConversation, Person, Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+
+function splitLines(value: string) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
 
 export default function NewConversationScreen() {
   const theme = useTheme();
   const [summary, setSummary] = useState('');
+  const [topics, setTopics] = useState('');
+  const [followUps, setFollowUps] = useState('');
   const [people, setPeople] = useState<Person[]>([]);
+  const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,20 +35,21 @@ export default function NewConversationScreen() {
     useCallback(() => {
       let isActive = true;
 
-      async function loadPeople() {
+      async function loadFormOptions() {
         try {
-          const rows = await getAllPeople();
+          const [peopleRows, placeRows] = await Promise.all([getAllPeople(), getAllPlaces()]);
           if (isActive) {
-            setPeople(rows);
+            setPeople(peopleRows);
+            setPlaces(placeRows);
           }
         } catch (err) {
           if (isActive) {
-            setError(err instanceof Error ? err.message : 'Unable to load people.');
+            setError(err instanceof Error ? err.message : 'Unable to load form options.');
           }
         }
       }
 
-      void loadPeople();
+      void loadFormOptions();
 
       return () => {
         isActive = false;
@@ -61,7 +74,12 @@ export default function NewConversationScreen() {
     setError(null);
 
     try {
-      await logConversation(conversation);
+      await logStructuredConversation({
+        conversation,
+        followUps: splitLines(followUps),
+        placeId: selectedPlaceId,
+        topics: splitLines(topics),
+      });
       router.replace('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save conversation.');
@@ -132,6 +150,75 @@ export default function NewConversationScreen() {
           })}
         </View>
       </View>
+
+      <View style={styles.field}>
+        <ThemedText type="smallBold">Place</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Optional. A place link is saved when a person is selected.
+        </ThemedText>
+        <View style={styles.personList}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedPlaceId === null }}
+            onPress={() => setSelectedPlaceId(null)}
+            style={[
+              styles.personChip,
+              {
+                backgroundColor: selectedPlaceId === null ? theme.primaryMuted : theme.background,
+                borderColor: theme.border,
+              },
+            ]}>
+            <ThemedText
+              type="smallBold"
+              themeColor={selectedPlaceId === null ? 'text' : 'textSecondary'}>
+              No place
+            </ThemedText>
+          </Pressable>
+
+          {places.map((place) => {
+            const isSelected = selectedPlaceId === place.id;
+
+            return (
+              <Pressable
+                key={place.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                onPress={() => setSelectedPlaceId(place.id)}
+                style={[
+                  styles.personChip,
+                  {
+                    backgroundColor: isSelected ? theme.primaryMuted : theme.background,
+                    borderColor: theme.border,
+                  },
+                ]}>
+                <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
+                  {place.name}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <TextField
+        label="Talking points"
+        value={topics}
+        onChangeText={setTopics}
+        placeholder="One talking point per line"
+        multiline
+        textAlignVertical="top"
+        style={formControlStyles.notesInput}
+      />
+
+      <TextField
+        label="Follow-up questions"
+        value={followUps}
+        onChangeText={setFollowUps}
+        placeholder="One question to ask next time per line"
+        multiline
+        textAlignVertical="top"
+        style={formControlStyles.notesInput}
+      />
     </FormScreen>
   );
 }
