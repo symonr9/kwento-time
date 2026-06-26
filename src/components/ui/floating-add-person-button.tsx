@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,11 +9,14 @@ import { useTheme } from '@/hooks/use-theme';
 export function FloatingAddPersonButton() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const isPlacesTab = pathname === '/places';
+  const href = isPlacesTab ? '/places/new' : '/people/new';
 
   return (
-    <Link href="/people/new" asChild>
+    <Link href={href} asChild>
       <Pressable
-        accessibilityLabel="Add person"
+        accessibilityLabel={isPlacesTab ? 'Add place' : 'Add person'}
         accessibilityRole="button"
         style={({ pressed }) => [
           styles.button,
