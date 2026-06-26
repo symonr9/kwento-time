@@ -123,14 +123,23 @@ export default function PeopleScreen() {
           {!isLoading && !error && people.length > 0 ? (
             <View style={styles.list}>
               {people.map((person) => (
-                <SurfaceCard key={person.id} style={styles.personRow}>
-                  <ThemedText type="smallBold">{person.name}</ThemedText>
-                  {person.nickname ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {person.nickname}
-                    </ThemedText>
-                  ) : null}
-                </SurfaceCard>
+                <Link
+                  key={person.id}
+                  href={{ pathname: '/people/[id]', params: { id: String(person.id) } }}
+                  asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                    <SurfaceCard style={styles.personRow}>
+                      <ThemedText type="smallBold">{person.name}</ThemedText>
+                      {person.nickname ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {person.nickname}
+                        </ThemedText>
+                      ) : null}
+                    </SurfaceCard>
+                  </Pressable>
+                </Link>
               ))}
             </View>
           ) : null}

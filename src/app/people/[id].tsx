@@ -1,0 +1,448 @@
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ThemedText } from '@/components/themed-text';
+import { SurfaceCard } from '@/components/ui/surface-card';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { getConversationsForPerson } from '@/db/queries/conversations';
+import { getOpenFollowUpsForPerson } from '@/db/queries/follow-ups';
+import { getPersonById } from '@/db/queries/people';
+import { getPlacesForPerson } from '@/db/queries/places';
+import { getTagsForPerson } from '@/db/queries/tags';
+import { getActiveTopicsForPerson } from '@/db/queries/topics';
+import type { Conversation, FollowUp, Person, Topic } from '@/db/schema';
+import { useTheme } from '@/hooks/use-theme';
+
+type PersonPlace = Awaited<ReturnType<typeof getPlacesForPerson>>[number];
+type PersonTag = Awaited<ReturnType<typeof getTagsForPerson>>[number];
+
+type PersonDetails = {
+  person: Person | null;
+  conversations: Conversation[];
+  followUps: FollowUp[];
+  places: PersonPlace[];
+  tags: PersonTag[];
+  topics: Topic[];
+};
+
+const initialDetails: PersonDetails = {
+  person: null,
+  conversations: [],
+  followUps: [],
+  places: [],
+  tags: [],
+  topics: [],
+};
+
+function formatShortDate(value: Date | null) {
+  if (!value) {
+    return 'Not yet';
+  }
+
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(value);
+}
+
+export default function PersonDetailsScreen() {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const personId = Number(params.id);
+  const [details, setDetails] = useState<PersonDetails>(initialDetails);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadPerson() {
+        if (!Number.isInteger(personId) || personId <= 0) {
+          setError('Invalid person.');
+          setIsLoading(false);
+          return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const [person, conversations, followUps, places, tags, topics] = await Promise.all([
+            getPersonById(personId),
+            getConversationsForPerson(personId),
+            getOpenFollowUpsForPerson(personId),
+            getPlacesForPerson(personId),
+            getTagsForPerson(personId),
+            getActiveTopicsForPerson(personId),
+          ]);
+
+          if (isActive) {
+            setDetails({
+              person: person ?? null,
+              conversations,
+              followUps,
+              places,
+              tags,
+              topics,
+            });
+            setError(person ? null : 'Person not found.');
+          }
+        } catch (err) {
+          if (isActive) {
+            setError(err instanceof Error ? err.message : 'Unable to load person.');
+          }
+        } finally {
+          if (isActive) {
+            setIsLoading(false);
+          }
+        }
+      }
+
+      void loadPerson();
+
+      return () => {
+        isActive = false;
+      };
+    }, [personId]),
+  );
+
+  const { person, conversations, followUps, places, tags, topics } = details;
+
+  return (
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: Math.max(insets.top, Spacing.three) + Spacing.two,
+            paddingBottom: Math.max(insets.bottom, Spacing.three) + Spacing.four,
+          },
+        ]}
+        contentInsetAdjustmentBehavior="automatic">
+        <View style={styles.inner}>
+          <View style={styles.header}>
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.iconButton,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  borderColor: theme.border,
+                  opacity: pressed ? 0.72 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold">Back</ThemedText>
+            </Pressable>
+          </View>
+
+          {isLoading ? (
+            <SurfaceCard style={styles.stateCard}>
+              <ActivityIndicator color={theme.primary} />
+              <ThemedText themeColor="textSecondary">Loading person...</ThemedText>
+            </SurfaceCard>
+          ) : null}
+
+          {error ? (
+            <SurfaceCard tone="accentMuted" style={styles.stateCard}>
+              <ThemedText selectable>{error}</ThemedText>
+            </SurfaceCard>
+          ) : null}
+
+          {!isLoading && !error && person ? (
+            <>
+              <SurfaceCard style={styles.profileCard}>
+                <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
+                  <ThemedText type="subtitle" style={styles.avatarText}>
+                    {person.name.slice(0, 1).toUpperCase()}
+                  </ThemedText>
+                </View>
+
+                <View style={styles.profileCopy}>
+                  <ThemedText type="smallBold" themeColor="primary">
+                    Person
+                  </ThemedText>
+                  <ThemedText type="title" style={styles.title}>
+                    {person.name}
+                  </ThemedText>
+                  {person.nickname ? (
+                    <ThemedText themeColor="textSecondary">{person.nickname}</ThemedText>
+                  ) : null}
+                </View>
+              </SurfaceCard>
+
+              <View style={styles.metricGrid}>
+                <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
+                  <ThemedText type="smallBold">{person.connectionScore}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Connection score
+                  </ThemedText>
+                </SurfaceCard>
+                <SurfaceCard tone="accentMuted" style={styles.metricCard}>
+                  <ThemedText type="smallBold">{formatShortDate(person.lastContactedAt)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Last contacted
+                  </ThemedText>
+                </SurfaceCard>
+              </View>
+
+              <Section title="Profile">
+                {person.howWeMet ? <Detail label="How we met" value={person.howWeMet} /> : null}
+                {person.birthday ? <Detail label="Birthday" value={person.birthday} /> : null}
+                {person.notes ? <Detail label="Notes" value={person.notes} /> : null}
+                {tags.length > 0 ? (
+                  <View style={styles.chipRow}>
+                    {tags.map((tag) => (
+                      <View key={tag.id} style={[styles.chip, { backgroundColor: theme.backgroundSelected }]}>
+                        <ThemedText type="smallBold">{tag.name}</ThemedText>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                {!person.howWeMet && !person.birthday && !person.notes && tags.length === 0 ? (
+                  <EmptyText text="No profile context yet." />
+                ) : null}
+              </Section>
+
+              <Section title="Open follow-ups" count={followUps.length}>
+                {followUps.length > 0 ? (
+                  followUps.map((followUp) => (
+                    <SurfaceCard key={followUp.id} style={styles.row}>
+                      <ThemedText type="small" selectable>
+                        {followUp.question}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        Added {formatShortDate(followUp.createdAt)}
+                      </ThemedText>
+                    </SurfaceCard>
+                  ))
+                ) : (
+                  <EmptyText text="No open follow-ups." />
+                )}
+              </Section>
+
+              <Section title="Talking points" count={topics.length}>
+                {topics.length > 0 ? (
+                  topics.map((topic) => (
+                    <SurfaceCard key={topic.id} style={styles.row}>
+                      <View style={styles.rowHeader}>
+                        <ThemedText type="smallBold">{topic.category ?? 'Topic'}</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          Importance {topic.importance}
+                        </ThemedText>
+                      </View>
+                      <ThemedText type="small" themeColor="textSecondary" selectable>
+                        {topic.content}
+                      </ThemedText>
+                    </SurfaceCard>
+                  ))
+                ) : (
+                  <EmptyText text="No active talking points." />
+                )}
+              </Section>
+
+              <Section title="Places" count={places.length}>
+                {places.length > 0 ? (
+                  places.map((place) => (
+                    <SurfaceCard key={place.id} style={styles.row}>
+                      <View style={styles.rowHeader}>
+                        <ThemedText type="smallBold">{place.name}</ThemedText>
+                        {place.isPrimary ? (
+                          <ThemedText type="smallBold" themeColor="primary">
+                            Primary
+                          </ThemedText>
+                        ) : null}
+                      </View>
+                      {place.address ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {place.address}
+                        </ThemedText>
+                      ) : null}
+                    </SurfaceCard>
+                  ))
+                ) : (
+                  <EmptyText text="No linked places." />
+                )}
+              </Section>
+
+              <Section title="Recent conversations" count={conversations.length}>
+                {conversations.length > 0 ? (
+                  conversations.map((conversation) => (
+                    <SurfaceCard key={conversation.id} style={styles.row}>
+                      <View style={styles.rowHeader}>
+                        <ThemedText type="smallBold">
+                          {formatShortDate(conversation.occurredAt)}
+                        </ThemedText>
+                        <SymbolView
+                          name={{ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }}
+                          size={18}
+                          tintColor={theme.textSecondary}
+                          fallback={<View style={[styles.symbolFallback, { backgroundColor: theme.textSecondary }]} />}
+                        />
+                      </View>
+                      <ThemedText type="small" themeColor="textSecondary" selectable>
+                        {conversation.summary ?? 'No summary yet'}
+                      </ThemedText>
+                    </SurfaceCard>
+                  ))
+                ) : (
+                  <EmptyText text="No conversations recorded yet." />
+                )}
+              </Section>
+            </>
+          ) : null}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function Section({
+  children,
+  count,
+  title,
+}: {
+  children: React.ReactNode;
+  count?: number;
+  title: string;
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <ThemedText type="smallBold">{title}</ThemedText>
+        {typeof count === 'number' ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {count}
+          </ThemedText>
+        ) : null}
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <SurfaceCard style={styles.row}>
+      <ThemedText type="smallBold">{label}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" selectable>
+        {value}
+      </ThemedText>
+    </SurfaceCard>
+  );
+}
+
+function EmptyText({ text }: { text: string }) {
+  return (
+    <SurfaceCard style={styles.stateCard}>
+      <ThemedText themeColor="textSecondary">{text}</ThemedText>
+    </SurfaceCard>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: Spacing.three,
+    alignItems: 'center',
+  },
+  inner: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    gap: Spacing.three,
+  },
+  header: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    minHeight: 40,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+  },
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    lineHeight: 44,
+  },
+  profileCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one,
+  },
+  title: {
+    fontSize: 36,
+    lineHeight: 42,
+    letterSpacing: 0,
+  },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  metricCard: {
+    minWidth: 144,
+    flexGrow: 1,
+    borderRadius: Radius.small,
+  },
+  section: {
+    gap: Spacing.two,
+  },
+  sectionHeader: {
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  row: {
+    minHeight: 64,
+    justifyContent: 'center',
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  chip: {
+    minHeight: 36,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
+  symbolFallback: {
+    width: 18,
+    height: 18,
+    borderRadius: Radius.small,
+  },
+  stateCard: {
+    alignItems: 'center',
+  },
+});
