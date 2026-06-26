@@ -46,7 +46,7 @@ CREATE TABLE `__new_topics` (
 	FOREIGN KEY (`conversation_id`) REFERENCES `conversations`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-INSERT INTO `__new_topics`("id", "person_id", "conversation_id", "is_for_user", "content", "category", "importance", "tone", "last_mentioned_at", "resolved", "resolved_at", "created_at", "updated_at") SELECT "id", "person_id", "conversation_id", "is_for_user", "content", "category", "importance", "tone", "last_mentioned_at", "resolved", "resolved_at", "created_at", "updated_at" FROM `topics`;--> statement-breakpoint
+INSERT INTO `__new_topics`("id", "person_id", "conversation_id", "is_for_user", "content", "category", "importance", "tone", "last_mentioned_at", "resolved", "resolved_at", "created_at", "updated_at") SELECT "id", "person_id", "conversation_id", 0, "content", "category", 1, 'light', "updated_at", CASE WHEN "is_active" THEN 0 ELSE 1 END, NULL, "created_at", "updated_at" FROM `topics`;--> statement-breakpoint
 DROP TABLE `topics`;--> statement-breakpoint
 ALTER TABLE `__new_topics` RENAME TO `topics`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
@@ -62,7 +62,7 @@ CREATE TABLE `__new_my_life_items` (
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO `__new_my_life_items`("id", "content", "tone", "resolved", "resolved_at", "created_at", "updated_at") SELECT "id", "content", "tone", "resolved", "resolved_at", "created_at", "updated_at" FROM `my_life_items`;--> statement-breakpoint
+INSERT INTO `__new_my_life_items`("id", "content", "tone", "resolved", "resolved_at", "created_at", "updated_at") SELECT "id", "content", "tone", CASE WHEN "is_active" THEN 0 ELSE 1 END, NULL, "created_at", "updated_at" FROM `my_life_items`;--> statement-breakpoint
 DROP TABLE `my_life_items`;--> statement-breakpoint
 ALTER TABLE `__new_my_life_items` RENAME TO `my_life_items`;--> statement-breakpoint
 CREATE INDEX `my_life_items_resolved_idx` ON `my_life_items` (`resolved`);--> statement-breakpoint
