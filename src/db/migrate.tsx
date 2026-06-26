@@ -1,12 +1,12 @@
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import type { ReactNode } from 'react';
+import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-import { db } from './client';
+import { getDb } from './client';
 import migrations from './migrations/migrations';
 
 /**
@@ -15,7 +15,33 @@ import migrations from './migrations/migrations';
  * (a corrupt/locked DB) instead of letting screens query a half-built schema.
  */
 export function MigrationGate({ children }: { children: ReactNode }) {
-  const { success, error } = useMigrations(db, migrations);
+  const [{ success, error }, setState] = useState<{ success: boolean; error?: Error }>({
+    success: false,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function runMigrations() {
+      try {
+        const db = await getDb();
+        await migrate(db, migrations);
+        if (!cancelled) {
+          setState({ success: true });
+        }
+      } catch (caught) {
+        if (!cancelled) {
+          setState({ success: false, error: caught as Error });
+        }
+      }
+    }
+
+    runMigrations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (error) {
     return (

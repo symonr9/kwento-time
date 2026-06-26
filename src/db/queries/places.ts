@@ -1,33 +1,39 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 
-import { db } from '../client';
+import { getDb } from '../client';
 import { people, personPlaces, places, type NewPlace } from '../schema';
 
 export async function createPlace(data: NewPlace) {
+  const db = await getDb();
   const [row] = await db.insert(places).values(data).returning();
   return row;
 }
 
 export async function getAllPlaces() {
+  const db = await getDb();
   return db.select().from(places).orderBy(asc(places.name));
 }
 
 export async function getPlaceById(id: number) {
+  const db = await getDb();
   const [row] = await db.select().from(places).where(eq(places.id, id)).limit(1);
   return row;
 }
 
 export async function updatePlace(id: number, data: Partial<NewPlace>) {
+  const db = await getDb();
   const [row] = await db.update(places).set(data).where(eq(places.id, id)).returning();
   return row;
 }
 
 export async function deletePlace(id: number) {
+  const db = await getDb();
   await db.delete(places).where(eq(places.id, id));
 }
 
 /** Every place a person frequents, their home base (if set) listed first. */
 export async function getPlacesForPerson(personId: number) {
+  const db = await getDb();
   return db
     .select({
       id: places.id,
@@ -44,6 +50,7 @@ export async function getPlacesForPerson(personId: number) {
 
 /** A person's home base, if one is set. */
 export async function getPrimaryPlaceForPerson(personId: number) {
+  const db = await getDb();
   const [row] = await db
     .select({ id: places.id, name: places.name, address: places.address })
     .from(personPlaces)
@@ -58,6 +65,7 @@ export async function getPrimaryPlaceForPerson(personId: number) {
  * they're likely to run into. People whose home base this is come first.
  */
 export async function getPeopleForPlace(placeId: number) {
+  const db = await getDb();
   return db
     .select({
       id: people.id,
@@ -74,6 +82,7 @@ export async function getPeopleForPlace(placeId: number) {
 
 /** Link a person to a place. `isPrimary` defaults to false; updates it if the link exists. */
 export async function addPersonToPlace(personId: number, placeId: number, isPrimary = false) {
+  const db = await getDb();
   await db
     .insert(personPlaces)
     .values({ personId, placeId, isPrimary })
@@ -84,6 +93,7 @@ export async function addPersonToPlace(personId: number, placeId: number, isPrim
 }
 
 export async function removePersonFromPlace(personId: number, placeId: number) {
+  const db = await getDb();
   await db
     .delete(personPlaces)
     .where(and(eq(personPlaces.personId, personId), eq(personPlaces.placeId, placeId)));
@@ -94,6 +104,7 @@ export async function removePersonFromPlace(personId: number, placeId: number) {
  * since only one place should represent "home" at a time.
  */
 export async function setPrimaryPlaceForPerson(personId: number, placeId: number) {
+  const db = await getDb();
   await db
     .update(personPlaces)
     .set({ isPrimary: false })

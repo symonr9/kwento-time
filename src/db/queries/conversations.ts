@@ -1,6 +1,6 @@
 import { desc, eq, isNull } from 'drizzle-orm';
 
-import { db } from '../client';
+import { getDb } from '../client';
 import { conversations, people, type Conversation, type NewConversation } from '../schema';
 import { bumpLastContacted } from './people';
 
@@ -10,6 +10,7 @@ import { bumpLastContacted } from './people';
  * through this rather than inserting directly.
  */
 export async function logConversation(data: NewConversation): Promise<Conversation> {
+  const db = await getDb();
   const [row] = await db.insert(conversations).values(data).returning();
   if (row.personId) {
     await bumpLastContacted(row.personId, row.occurredAt);
@@ -18,12 +19,14 @@ export async function logConversation(data: NewConversation): Promise<Conversati
 }
 
 export async function getConversationById(id: number) {
+  const db = await getDb();
   const [row] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
   return row;
 }
 
 /** Full conversation history for a person, most recent first. */
 export async function getConversationsForPerson(personId: number) {
+  const db = await getDb();
   return db
     .select()
     .from(conversations)
@@ -33,6 +36,7 @@ export async function getConversationsForPerson(personId: number) {
 
 /** Recent conversations across everyone, with the person's name — for an activity feed. */
 export async function getRecentConversations(limit = 20) {
+  const db = await getDb();
   return db
     .select({
       id: conversations.id,
@@ -49,6 +53,7 @@ export async function getRecentConversations(limit = 20) {
 
 /** Conversations still waiting on the GPT-4o structured-summary extraction pass. */
 export async function getConversationsPendingSummary() {
+  const db = await getDb();
   return db
     .select()
     .from(conversations)
@@ -58,6 +63,7 @@ export async function getConversationsPendingSummary() {
 
 /** Write back the structured summary once extraction finishes (or re-runs). */
 export async function setConversationSummary(id: number, summary: string) {
+  const db = await getDb();
   const [row] = await db
     .update(conversations)
     .set({ summary })
@@ -67,10 +73,12 @@ export async function setConversationSummary(id: number, summary: string) {
 }
 
 export async function updateConversation(id: number, data: Partial<NewConversation>) {
+  const db = await getDb();
   const [row] = await db.update(conversations).set(data).where(eq(conversations.id, id)).returning();
   return row;
 }
 
 export async function deleteConversation(id: number) {
+  const db = await getDb();
   await db.delete(conversations).where(eq(conversations.id, id));
 }

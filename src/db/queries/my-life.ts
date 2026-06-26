@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, lte } from 'drizzle-orm';
 
-import { db } from '../client';
+import { getDb } from '../client';
 import {
     myLifeItemExpiry,
     myLifeItems,
@@ -14,6 +14,7 @@ const EXPIRING_WINDOW_DAYS = 7;
 
 /** Add something going on in the user's life, and start its 30-day expiry clock. */
 export async function createMyLifeItem(data: NewMyLifeItem, lifespanDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const [item] = await db.insert(myLifeItems).values(data).returning();
   const activatedAt = new Date();
   const expiresAt = new Date(activatedAt.getTime() + lifespanDays * 24 * 60 * 60 * 1000);
@@ -22,12 +23,14 @@ export async function createMyLifeItem(data: NewMyLifeItem, lifespanDays = DEFAU
 }
 
 export async function getMyLifeItemById(id: number) {
+  const db = await getDb();
   const [row] = await db.select().from(myLifeItems).where(eq(myLifeItems.id, id)).limit(1);
   return row;
 }
 
 /** Item + its expiry record, for a detail view. */
 export async function getMyLifeItemWithExpiry(id: number) {
+  const db = await getDb();
   const [row] = await db
     .select()
     .from(myLifeItems)
@@ -39,6 +42,7 @@ export async function getMyLifeItemWithExpiry(id: number) {
 
 /** Everything currently "live" on the How Are You? page, newest first. */
 export async function getActiveMyLifeItems() {
+  const db = await getDb();
   return db.select().from(myLifeItems).where(eq(myLifeItems.resolved, false)).orderBy(desc(myLifeItems.createdAt));
 }
 
@@ -48,6 +52,7 @@ export async function getActiveMyLifeItems() {
  * close friend.
  */
 export async function getMyLifeItemsByTone(tones: MyLifeTone[]) {
+  const db = await getDb();
   return db
     .select()
     .from(myLifeItems)
@@ -56,12 +61,14 @@ export async function getMyLifeItemsByTone(tones: MyLifeTone[]) {
 }
 
 export async function updateMyLifeItem(id: number, data: Partial<NewMyLifeItem>) {
+  const db = await getDb();
   const [row] = await db.update(myLifeItems).set(data).where(eq(myLifeItems.id, id)).returning();
   return row;
 }
 
 /** Mark an item resolved (no longer current) and archive its expiry record. */
 export async function resolveMyLifeItem(id: number) {
+  const db = await getDb();
   const now = new Date();
   const [row] = await db
     .update(myLifeItems)
@@ -78,6 +85,7 @@ export async function resolveMyLifeItem(id: number) {
 }
 
 export async function deleteMyLifeItem(id: number) {
+  const db = await getDb();
   await db.delete(myLifeItems).where(eq(myLifeItems.id, id));
 }
 
@@ -86,6 +94,7 @@ export async function deleteMyLifeItem(id: number) {
  * flips these to `'expiring'`.
  */
 export async function getMyLifeItemsEnteringExpiringWindow(now = new Date()) {
+  const db = await getDb();
   const horizon = new Date(now.getTime() + EXPIRING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   return db
     .select({ item: myLifeItems, expiry: myLifeItemExpiry })
@@ -102,6 +111,7 @@ export async function getMyLifeItemsEnteringExpiringWindow(now = new Date()) {
 
 /** Items in the "expiring" window — "still going on?" prompts for the nightly review. */
 export async function getExpiringMyLifeItems() {
+  const db = await getDb();
   return db
     .select({ item: myLifeItems, expiry: myLifeItemExpiry })
     .from(myLifeItemExpiry)
@@ -111,6 +121,7 @@ export async function getExpiringMyLifeItems() {
 
 /** Advance an item's lifecycle state (nightly job or explicit user action). */
 export async function setMyLifeItemExpiryState(myLifeItemId: number, state: MyLifeExpiryState) {
+  const db = await getDb();
   const now = new Date();
   const extra =
     state === 'extended' ? { extendedAt: now } : state === 'archived' ? { archivedAt: now } : {};
@@ -122,6 +133,7 @@ export async function setMyLifeItemExpiryState(myLifeItemId: number, state: MyLi
 
 /** User says "yes, still going on" — push the expiry date out and mark extended. */
 export async function extendMyLifeItemExpiry(myLifeItemId: number, extraDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const now = new Date();
   const [current] = await db
     .select()

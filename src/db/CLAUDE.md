@@ -7,7 +7,7 @@ The **single source of truth** for the app. All persistence flows through here. 
 ```
 db/
   client.ts          # opens expo-sqlite (WAL + foreign_keys ON) and the Drizzle instance (singleton)
-  migrate.tsx        # <MigrationGate> — runs useMigrations() before the app renders
+  migrate.tsx        # <MigrationGate> — runs Drizzle migrations before the app renders
   schema/            # Drizzle table definitions — one file per entity, re-exported from index.ts
   queries/           # typed query/repository functions — the ONLY public DB API
   migrations/        # drizzle-kit OUTPUT: *.sql + meta/ + migrations.js (do not hand-edit)

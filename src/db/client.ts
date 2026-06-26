@@ -15,10 +15,17 @@ async function createDrizzle() {
     const expoDb = await openDatabaseAsync(DATABASE_NAME, { enableChangeListener: true });
     await expoDb.execAsync('PRAGMA journal_mode = WAL;');
     await expoDb.execAsync('PRAGMA foreign_keys = ON;');
-    return drizzle(expoDb, { schema });;
+    return drizzle(expoDb, { schema });
 }
 
 /** Typed Drizzle client — the only handle the query layer should import. */
-const db = await createDrizzle();
+const dbPromise = createDrizzle();
 
-export { db, schema };
+export type Db = Awaited<ReturnType<typeof createDrizzle>>;
+
+/** Typed Drizzle client promise; query/migration code should await this via getDb(). */
+export function getDb() {
+    return dbPromise;
+}
+
+export { schema };

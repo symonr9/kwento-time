@@ -1,6 +1,6 @@
 import { and, desc, eq, lte } from 'drizzle-orm';
 
-import { db } from '../client';
+import { getDb } from '../client';
 import { followUpExpiry, followUps, type FollowUpExpiryState, type NewFollowUp } from '../schema';
 
 const DEFAULT_LIFESPAN_DAYS = 30;
@@ -8,6 +8,7 @@ const EXPIRING_WINDOW_DAYS = 7;
 
 /** Create a follow-up question and start its 30-day expiry clock. */
 export async function createFollowUp(data: NewFollowUp, lifespanDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const [followUp] = await db.insert(followUps).values(data).returning();
   const activatedAt = new Date();
   const expiresAt = new Date(activatedAt.getTime() + lifespanDays * 24 * 60 * 60 * 1000);
@@ -16,12 +17,14 @@ export async function createFollowUp(data: NewFollowUp, lifespanDays = DEFAULT_L
 }
 
 export async function getFollowUpById(id: number) {
+  const db = await getDb();
   const [row] = await db.select().from(followUps).where(eq(followUps.id, id)).limit(1);
   return row;
 }
 
 /** Follow-up + its expiry record, for a detail view. */
 export async function getFollowUpWithExpiry(id: number) {
+  const db = await getDb();
   const [row] = await db
     .select()
     .from(followUps)
@@ -33,6 +36,7 @@ export async function getFollowUpWithExpiry(id: number) {
 
 /** Open questions to ask this person next time — newest first. */
 export async function getOpenFollowUpsForPerson(personId: number) {
+  const db = await getDb();
   return db
     .select()
     .from(followUps)
@@ -42,21 +46,25 @@ export async function getOpenFollowUpsForPerson(personId: number) {
 
 /** Every unresolved follow-up across everyone — for a "things to ask" dashboard. */
 export async function getAllOpenFollowUps() {
+  const db = await getDb();
   return db.select().from(followUps).where(eq(followUps.resolved, false)).orderBy(desc(followUps.createdAt));
 }
 
 /** Follow-ups that were captured during a particular conversation. */
 export async function getFollowUpsForConversation(conversationId: number) {
+  const db = await getDb();
   return db.select().from(followUps).where(eq(followUps.conversationId, conversationId));
 }
 
 export async function updateFollowUp(id: number, data: Partial<NewFollowUp>) {
+  const db = await getDb();
   const [row] = await db.update(followUps).set(data).where(eq(followUps.id, id)).returning();
   return row;
 }
 
 /** Mark a follow-up resolved (asked/answered) and archive its expiry record. */
 export async function resolveFollowUp(id: number) {
+  const db = await getDb();
   const now = new Date();
   const [row] = await db
     .update(followUps)
@@ -73,6 +81,7 @@ export async function resolveFollowUp(id: number) {
 }
 
 export async function deleteFollowUp(id: number) {
+  const db = await getDb();
   await db.delete(followUps).where(eq(followUps.id, id));
 }
 
@@ -81,6 +90,7 @@ export async function deleteFollowUp(id: number) {
  * job flips these to `'expiring'`.
  */
 export async function getFollowUpsEnteringExpiringWindow(now = new Date()) {
+  const db = await getDb();
   const horizon = new Date(now.getTime() + EXPIRING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   return db
     .select({ followUp: followUps, expiry: followUpExpiry })
@@ -93,6 +103,7 @@ export async function getFollowUpsEnteringExpiringWindow(now = new Date()) {
 
 /** Follow-ups in the "expiring" window — "still want to ask this?" prompts. */
 export async function getExpiringFollowUps() {
+  const db = await getDb();
   return db
     .select({ followUp: followUps, expiry: followUpExpiry })
     .from(followUpExpiry)
@@ -102,6 +113,7 @@ export async function getExpiringFollowUps() {
 
 /** Advance a follow-up's lifecycle state (nightly job or explicit user action). */
 export async function setFollowUpExpiryState(followUpId: number, state: FollowUpExpiryState) {
+  const db = await getDb();
   const now = new Date();
   const extra =
     state === 'extended' ? { extendedAt: now } : state === 'archived' ? { archivedAt: now } : {};
@@ -110,6 +122,7 @@ export async function setFollowUpExpiryState(followUpId: number, state: FollowUp
 
 /** User says "yes, still want to ask" — push the expiry date out and mark extended. */
 export async function extendFollowUpExpiry(followUpId: number, extraDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const now = new Date();
   const [current] = await db
     .select()

@@ -1,6 +1,6 @@
 import { and, desc, eq, lte } from 'drizzle-orm';
 
-import { db } from '../client';
+import { getDb } from '../client';
 import { topicExpiry, topics, type NewTopic, type TopicExpiryState } from '../schema';
 
 const DEFAULT_LIFESPAN_DAYS = 30;
@@ -8,6 +8,7 @@ const EXPIRING_WINDOW_DAYS = 7;
 
 /** Create a topic and start its 30-day expiry clock. */
 export async function createTopic(data: NewTopic, lifespanDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const [topic] = await db.insert(topics).values(data).returning();
   const activatedAt = new Date();
   const expiresAt = new Date(activatedAt.getTime() + lifespanDays * 24 * 60 * 60 * 1000);
@@ -16,12 +17,14 @@ export async function createTopic(data: NewTopic, lifespanDays = DEFAULT_LIFESPA
 }
 
 export async function getTopicById(id: number) {
+  const db = await getDb();
   const [row] = await db.select().from(topics).where(eq(topics.id, id)).limit(1);
   return row;
 }
 
 /** Topic + its expiry record together, for a detail view. */
 export async function getTopicWithExpiry(id: number) {
+  const db = await getDb();
   const [row] = await db
     .select()
     .from(topics)
@@ -36,6 +39,7 @@ export async function getTopicWithExpiry(id: number) {
  * Highest importance, most-recently-mentioned first.
  */
 export async function getActiveTopicsForPerson(personId: number) {
+  const db = await getDb();
   return db
     .select()
     .from(topics)
@@ -45,6 +49,7 @@ export async function getActiveTopicsForPerson(personId: number) {
 
 /** Things going on in the user's own life, to bring up next time they talk to someone. */
 export async function getOpenTopicsAboutUser() {
+  const db = await getDb();
   return db
     .select()
     .from(topics)
@@ -53,6 +58,7 @@ export async function getOpenTopicsAboutUser() {
 }
 
 export async function getTopicsByCategory(personId: number, category: string) {
+  const db = await getDb();
   return db
     .select()
     .from(topics)
@@ -62,16 +68,19 @@ export async function getTopicsByCategory(personId: number, category: string) {
 
 /** Topics extracted from a particular conversation. */
 export async function getTopicsForConversation(conversationId: number) {
+  const db = await getDb();
   return db.select().from(topics).where(eq(topics.conversationId, conversationId));
 }
 
 export async function updateTopic(id: number, data: Partial<NewTopic>) {
+  const db = await getDb();
   const [row] = await db.update(topics).set(data).where(eq(topics.id, id)).returning();
   return row;
 }
 
 /** A topic came up again — bump `lastMentionedAt` and reset its expiry clock. */
 export async function touchTopic(id: number, lifespanDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const now = new Date();
   await db.update(topics).set({ lastMentionedAt: now }).where(eq(topics.id, id));
 
@@ -84,6 +93,7 @@ export async function touchTopic(id: number, lifespanDays = DEFAULT_LIFESPAN_DAY
 
 /** Mark a topic resolved and archive its expiry record. */
 export async function resolveTopic(id: number) {
+  const db = await getDb();
   const now = new Date();
   const [row] = await db
     .update(topics)
@@ -100,6 +110,7 @@ export async function resolveTopic(id: number) {
 }
 
 export async function deleteTopic(id: number) {
+  const db = await getDb();
   await db.delete(topics).where(eq(topics.id, id));
 }
 
@@ -108,6 +119,7 @@ export async function deleteTopic(id: number) {
  * flips these to `'expiring'`.
  */
 export async function getTopicsEnteringExpiringWindow(now = new Date()) {
+  const db = await getDb();
   const horizon = new Date(now.getTime() + EXPIRING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   return db
     .select({ topic: topics, expiry: topicExpiry })
@@ -118,6 +130,7 @@ export async function getTopicsEnteringExpiringWindow(now = new Date()) {
 
 /** Topics in the "expiring" window — surfaced as "still relevant?" prompts. */
 export async function getExpiringTopics() {
+  const db = await getDb();
   return db
     .select({ topic: topics, expiry: topicExpiry })
     .from(topicExpiry)
@@ -127,6 +140,7 @@ export async function getExpiringTopics() {
 
 /** Advance a topic's lifecycle state (nightly job or explicit user action). */
 export async function setTopicExpiryState(topicId: number, state: TopicExpiryState) {
+  const db = await getDb();
   const now = new Date();
   const extra =
     state === 'extended' ? { extendedAt: now } : state === 'archived' ? { archivedAt: now } : {};
@@ -135,6 +149,7 @@ export async function setTopicExpiryState(topicId: number, state: TopicExpirySta
 
 /** User says "yes, still relevant" — push the expiry date out and mark extended. */
 export async function extendTopicExpiry(topicId: number, extraDays = DEFAULT_LIFESPAN_DAYS) {
+  const db = await getDb();
   const now = new Date();
   const [current] = await db.select().from(topicExpiry).where(eq(topicExpiry.topicId, topicId)).limit(1);
   const base = current?.expiresAt && current.expiresAt > now ? current.expiresAt : now;
