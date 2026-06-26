@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { people, personPlaces, places, type NewPlace } from '../schema';
+import { conversations, followUps, people, personPlaces, places, type NewPlace } from '../schema';
 
 export async function createPlace(data: NewPlace) {
   const db = await getDb();
@@ -78,6 +78,44 @@ export async function getPeopleForPlace(placeId: number) {
     .innerJoin(people, eq(personPlaces.personId, people.id))
     .where(eq(personPlaces.placeId, placeId))
     .orderBy(desc(personPlaces.isPrimary), asc(people.name));
+}
+
+/** Recent conversations involving people linked to this place. */
+export async function getRecentConversationsForPlace(placeId: number, limit = 10) {
+  const db = await getDb();
+  return db
+    .select({
+      id: conversations.id,
+      summary: conversations.summary,
+      occurredAt: conversations.occurredAt,
+      personId: people.id,
+      personName: people.name,
+    })
+    .from(personPlaces)
+    .innerJoin(people, eq(personPlaces.personId, people.id))
+    .innerJoin(conversations, eq(conversations.personId, people.id))
+    .where(eq(personPlaces.placeId, placeId))
+    .orderBy(desc(conversations.occurredAt))
+    .limit(limit);
+}
+
+/** Open follow-ups grouped by the people linked to this place. */
+export async function getOpenFollowUpsForPlace(placeId: number, limit = 20) {
+  const db = await getDb();
+  return db
+    .select({
+      id: followUps.id,
+      question: followUps.question,
+      createdAt: followUps.createdAt,
+      personId: people.id,
+      personName: people.name,
+    })
+    .from(personPlaces)
+    .innerJoin(people, eq(personPlaces.personId, people.id))
+    .innerJoin(followUps, eq(followUps.personId, people.id))
+    .where(and(eq(personPlaces.placeId, placeId), eq(followUps.resolved, false)))
+    .orderBy(desc(followUps.createdAt))
+    .limit(limit);
 }
 
 /** Link a person to a place. `isPrimary` defaults to false; updates it if the link exists. */

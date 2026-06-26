@@ -123,19 +123,28 @@ export default function PlacesScreen() {
           {!isLoading && !error && places.length > 0 ? (
             <View style={styles.list}>
               {places.map((place) => (
-                <SurfaceCard key={place.id} style={styles.placeRow}>
-                  <ThemedText type="smallBold">{place.name}</ThemedText>
-                  {place.address ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {place.address}
-                    </ThemedText>
-                  ) : null}
-                  {place.notes ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {place.notes}
-                    </ThemedText>
-                  ) : null}
-                </SurfaceCard>
+                <Link
+                  key={place.id}
+                  href={{ pathname: '/places/[id]', params: { id: String(place.id) } }}
+                  asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                    <SurfaceCard style={styles.placeRow}>
+                      <ThemedText type="smallBold">{place.name}</ThemedText>
+                      {place.address ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {place.address}
+                        </ThemedText>
+                      ) : null}
+                      {place.notes ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {place.notes}
+                        </ThemedText>
+                      ) : null}
+                    </SurfaceCard>
+                  </Pressable>
+                </Link>
               ))}
             </View>
           ) : null}
