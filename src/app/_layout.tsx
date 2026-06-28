@@ -21,6 +21,8 @@ export default function RootLayout() {
           <Stack.Screen name="places/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="places/new" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="topics/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="topics/new" options={{ headerShown: false }} />
           {/* Add screens here as you build them, e.g.
               <Stack.Screen name="person/[id]" options={{ title: 'Person' }} /> */}
         </Stack>

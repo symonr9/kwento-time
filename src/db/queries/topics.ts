@@ -22,6 +22,29 @@ export async function getTopicById(id: number) {
   return row;
 }
 
+export async function getTopicFormDetails(id: number) {
+  const db = await getDb();
+  const [row] = await db
+    .select({
+      id: topics.id,
+      personId: topics.personId,
+      conversationId: topics.conversationId,
+      isForUser: topics.isForUser,
+      content: topics.content,
+      category: topics.category,
+      importance: topics.importance,
+      tone: topics.tone,
+      resolved: topics.resolved,
+      expiryState: topicExpiry.state,
+      expiresAt: topicExpiry.expiresAt,
+    })
+    .from(topics)
+    .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
+    .where(eq(topics.id, id))
+    .limit(1);
+  return row;
+}
+
 /** Topic + its expiry record together, for a detail view. */
 export async function getTopicWithExpiry(id: number) {
   const db = await getDb();

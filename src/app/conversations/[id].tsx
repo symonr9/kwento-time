@@ -258,7 +258,32 @@ export default function ConversationDetailsScreen() {
                 )}
               </Section>
 
-              <Section title="Talking points" count={topics.length}>
+              <Section
+                title="Talking points"
+                count={topics.length}
+                action={
+                  <Link
+                    href={{
+                      pathname: '/topics/new',
+                      params: {
+                        conversationId: String(conversation.id),
+                        ...(conversation.personId ? { personId: String(conversation.personId) } : {}),
+                      },
+                    }}
+                    asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.smallActionButton,
+                        {
+                          backgroundColor: theme.backgroundSelected,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold">Add</ThemedText>
+                    </Pressable>
+                  </Link>
+                }>
                 {topics.length > 0 ? (
                   topics.map((topic) => (
                     <SurfaceCard key={topic.id} style={styles.row}>
@@ -275,6 +300,19 @@ export default function ConversationDetailsScreen() {
                         {topic.resolved ? 'Resolved' : topic.expiryState ?? 'Active'}
                         {topic.expiresAt ? ` until ${formatShortDate(topic.expiresAt)}` : ''}
                       </ThemedText>
+                      <Link href={{ pathname: '/topics/[id]', params: { id: String(topic.id) } }} asChild>
+                        <Pressable
+                          accessibilityRole="button"
+                          style={({ pressed }) => [
+                            styles.secondaryButton,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">Edit</ThemedText>
+                        </Pressable>
+                      </Link>
                     </SurfaceCard>
                   ))
                 ) : (
