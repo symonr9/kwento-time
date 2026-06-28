@@ -374,22 +374,32 @@ export default function PersonDetailsScreen() {
               <Section title="Recent conversations" count={conversations.length}>
                 {conversations.length > 0 ? (
                   conversations.map((conversation) => (
-                    <SurfaceCard key={conversation.id} style={styles.row}>
-                      <View style={styles.rowHeader}>
-                        <ThemedText type="smallBold">
-                          {formatShortDate(conversation.occurredAt)}
-                        </ThemedText>
-                        <SymbolView
-                          name={{ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }}
-                          size={18}
-                          tintColor={theme.textSecondary}
-                          fallback={<View style={[styles.symbolFallback, { backgroundColor: theme.textSecondary }]} />}
-                        />
-                      </View>
-                      <ThemedText type="small" themeColor="textSecondary" selectable>
-                        {conversation.summary ?? 'No summary yet'}
-                      </ThemedText>
-                    </SurfaceCard>
+                    <Link
+                      key={conversation.id}
+                      href={{
+                        pathname: '/conversations/[id]',
+                        params: { id: String(conversation.id) },
+                      }}
+                      asChild>
+                      <Pressable accessibilityRole="button" style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                        <SurfaceCard style={styles.row}>
+                          <View style={styles.rowHeader}>
+                            <ThemedText type="smallBold">
+                              {formatShortDate(conversation.occurredAt)}
+                            </ThemedText>
+                            <SymbolView
+                              name={{ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }}
+                              size={18}
+                              tintColor={theme.textSecondary}
+                              fallback={<View style={[styles.symbolFallback, { backgroundColor: theme.textSecondary }]} />}
+                            />
+                          </View>
+                          <ThemedText type="small" themeColor="textSecondary" selectable>
+                            {conversation.summary ?? 'No summary yet'}
+                          </ThemedText>
+                        </SurfaceCard>
+                      </Pressable>
+                    </Link>
                   ))
                 ) : (
                   <EmptyText text="No conversations recorded yet." />

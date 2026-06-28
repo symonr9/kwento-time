@@ -310,40 +310,29 @@ export default function HomeScreen() {
                 ) : (
                   <View style={styles.list}>
                     {conversations.map((conversation) => (
-                      <SurfaceCard key={conversation.id} style={styles.row}>
-                        <View style={styles.rowHeader}>
-                          <ThemedText type="smallBold">
-                            {conversation.personName ?? 'Conversation'}
-                          </ThemedText>
-                          <ThemedText type="small" themeColor="textSecondary">
-                            {formatShortDate(conversation.occurredAt)}
-                          </ThemedText>
-                        </View>
-                        <ThemedText type="small" themeColor="textSecondary" selectable>
-                          {conversation.summary ?? 'No summary yet'}
-                        </ThemedText>
-                        <Link
-                          href={{
-                            pathname: '/follow-ups/new',
-                            params: {
-                              conversationId: String(conversation.id),
-                              ...(conversation.personId ? { personId: String(conversation.personId) } : {}),
-                            },
-                          }}
-                          asChild>
-                          <Pressable
-                            accessibilityRole="button"
-                            style={({ pressed }) => [
-                              styles.secondaryButton,
-                              {
-                                backgroundColor: theme.backgroundSelected,
-                                opacity: pressed ? 0.72 : 1,
-                              },
-                            ]}>
-                            <ThemedText type="smallBold">Add follow-up</ThemedText>
-                          </Pressable>
-                        </Link>
-                      </SurfaceCard>
+                      <Link
+                        key={conversation.id}
+                        href={{
+                          pathname: '/conversations/[id]',
+                          params: { id: String(conversation.id) },
+                        }}
+                        asChild>
+                        <Pressable accessibilityRole="button" style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                          <SurfaceCard style={styles.row}>
+                            <View style={styles.rowHeader}>
+                              <ThemedText type="smallBold">
+                                {conversation.personName ?? 'Conversation'}
+                              </ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary">
+                                {formatShortDate(conversation.occurredAt)}
+                              </ThemedText>
+                            </View>
+                            <ThemedText type="small" themeColor="textSecondary" selectable>
+                              {conversation.summary ?? 'No summary yet'}
+                            </ThemedText>
+                          </SurfaceCard>
+                        </Pressable>
+                      </Link>
                     ))}
                   </View>
                 )}

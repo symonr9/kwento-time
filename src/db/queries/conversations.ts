@@ -1,4 +1,4 @@
-import { desc, eq, isNull } from 'drizzle-orm';
+import { asc, desc, eq, isNull } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import {
@@ -113,6 +113,64 @@ export async function getConversationById(id: number) {
   const db = await getDb();
   const [row] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
   return row;
+}
+
+export async function getConversationDetails(id: number) {
+  const db = await getDb();
+  const [conversation] = await db
+    .select({
+      id: conversations.id,
+      summary: conversations.summary,
+      occurredAt: conversations.occurredAt,
+      createdAt: conversations.createdAt,
+      updatedAt: conversations.updatedAt,
+      personId: conversations.personId,
+      personName: people.name,
+      personNickname: people.nickname,
+    })
+    .from(conversations)
+    .leftJoin(people, eq(conversations.personId, people.id))
+    .where(eq(conversations.id, id))
+    .limit(1);
+
+  const [conversationTopics, conversationFollowUps] = await Promise.all([
+    db
+      .select({
+        id: topics.id,
+        content: topics.content,
+        category: topics.category,
+        importance: topics.importance,
+        tone: topics.tone,
+        resolved: topics.resolved,
+        createdAt: topics.createdAt,
+        expiryState: topicExpiry.state,
+        expiresAt: topicExpiry.expiresAt,
+      })
+      .from(topics)
+      .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
+      .where(eq(topics.conversationId, id))
+      .orderBy(desc(topics.importance), asc(topics.createdAt)),
+    db
+      .select({
+        id: followUps.id,
+        question: followUps.question,
+        resolved: followUps.resolved,
+        resolvedAt: followUps.resolvedAt,
+        createdAt: followUps.createdAt,
+        expiryState: followUpExpiry.state,
+        expiresAt: followUpExpiry.expiresAt,
+      })
+      .from(followUps)
+      .leftJoin(followUpExpiry, eq(followUpExpiry.followUpId, followUps.id))
+      .where(eq(followUps.conversationId, id))
+      .orderBy(asc(followUps.createdAt)),
+  ]);
+
+  return {
+    conversation: conversation ?? null,
+    followUps: conversationFollowUps,
+    topics: conversationTopics,
+  };
 }
 
 /** Full conversation history for a person, most recent first. */
