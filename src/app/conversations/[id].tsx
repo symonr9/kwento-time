@@ -174,6 +174,45 @@ export default function ConversationDetailsScreen() {
                 </SurfaceCard>
               </Section>
 
+              <Section title="Capture details">
+                <SurfaceCard style={styles.row}>
+                  <View style={styles.rowHeader}>
+                    <ThemedText type="smallBold">Source</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {conversation.source}
+                    </ThemedText>
+                  </View>
+                  {conversation.audioUri ? (
+                    <ThemedText type="small" themeColor="textSecondary" selectable>
+                      Audio: {conversation.audioUri}
+                    </ThemedText>
+                  ) : null}
+                  {conversation.placeId && conversation.placeName ? (
+                    <Link
+                      href={{ pathname: '/places/[id]', params: { id: String(conversation.placeId) } }}
+                      asChild>
+                      <Pressable
+                        accessibilityRole="button"
+                        style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                        <ThemedText type="smallBold">{conversation.placeName}</ThemedText>
+                      </Pressable>
+                    </Link>
+                  ) : (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      No place linked.
+                    </ThemedText>
+                  )}
+                </SurfaceCard>
+              </Section>
+
+              <Section title="Raw transcript">
+                <SurfaceCard style={styles.row}>
+                  <ThemedText type="small" themeColor="textSecondary" selectable>
+                    {conversation.rawTranscript ?? 'No raw transcript saved yet.'}
+                  </ThemedText>
+                </SurfaceCard>
+              </Section>
+
               {conversation.personId ? (
                 <Section title="Person">
                   <Link

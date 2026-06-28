@@ -330,6 +330,10 @@ export default function HomeScreen() {
                             <ThemedText type="small" themeColor="textSecondary" selectable>
                               {conversation.summary ?? 'No summary yet'}
                             </ThemedText>
+                            <ThemedText type="small" themeColor="textSecondary">
+                              {conversation.source}
+                              {conversation.placeName ? ` at ${conversation.placeName}` : ''}
+                            </ThemedText>
                           </SurfaceCard>
                         </Pressable>
                       </Link>

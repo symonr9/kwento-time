@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, or } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import { conversations, followUps, people, personPlaces, places, type NewPlace } from '../schema';
@@ -91,10 +91,10 @@ export async function getRecentConversationsForPlace(placeId: number, limit = 10
       personId: people.id,
       personName: people.name,
     })
-    .from(personPlaces)
-    .innerJoin(people, eq(personPlaces.personId, people.id))
-    .innerJoin(conversations, eq(conversations.personId, people.id))
-    .where(eq(personPlaces.placeId, placeId))
+    .from(conversations)
+    .leftJoin(people, eq(conversations.personId, people.id))
+    .leftJoin(personPlaces, and(eq(personPlaces.personId, people.id), eq(personPlaces.placeId, placeId)))
+    .where(or(eq(conversations.placeId, placeId), eq(personPlaces.placeId, placeId)))
     .orderBy(desc(conversations.occurredAt))
     .limit(limit);
 }

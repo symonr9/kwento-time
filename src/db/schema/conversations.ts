@@ -1,6 +1,7 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { people } from './people';
+import { places } from './places';
 import { timestamps } from './timestamps';
 
 /**
@@ -13,7 +14,11 @@ export const conversations = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }),
+    placeId: integer('place_id').references(() => places.id, { onDelete: 'set null' }),
+    rawTranscript: text('raw_transcript'),
     summary: text('summary'),
+    audioUri: text('audio_uri'),
+    source: text('source', { enum: ['manual', 'voice', 'import'] }).notNull().default('manual'),
     occurredAt: integer('occurred_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -21,6 +26,7 @@ export const conversations = sqliteTable(
   },
   (t) => [
     index('conversations_person_idx').on(t.personId),
+    index('conversations_place_idx').on(t.placeId),
     index('conversations_occurred_idx').on(t.occurredAt),
   ],
 );

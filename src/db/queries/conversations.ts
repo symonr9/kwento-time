@@ -7,6 +7,7 @@ import {
   followUps,
   people,
   personPlaces,
+  places,
   topicExpiry,
   topics,
   type Conversation,
@@ -50,7 +51,13 @@ export async function logStructuredConversation({
   );
 
   return db.transaction(async (tx) => {
-    const [row] = await tx.insert(conversations).values(conversation).returning();
+    const [row] = await tx
+      .insert(conversations)
+      .values({
+        ...conversation,
+        placeId: conversation.placeId ?? placeId ?? undefined,
+      })
+      .returning();
 
     if (row.personId) {
       await tx.update(people).set({ lastContactedAt: row.occurredAt }).where(eq(people.id, row.personId));
@@ -120,16 +127,22 @@ export async function getConversationDetails(id: number) {
   const [conversation] = await db
     .select({
       id: conversations.id,
+      audioUri: conversations.audioUri,
       summary: conversations.summary,
+      rawTranscript: conversations.rawTranscript,
+      source: conversations.source,
       occurredAt: conversations.occurredAt,
       createdAt: conversations.createdAt,
       updatedAt: conversations.updatedAt,
       personId: conversations.personId,
       personName: people.name,
       personNickname: people.nickname,
+      placeId: conversations.placeId,
+      placeName: places.name,
     })
     .from(conversations)
     .leftJoin(people, eq(conversations.personId, people.id))
+    .leftJoin(places, eq(conversations.placeId, places.id))
     .where(eq(conversations.id, id))
     .limit(1);
 
@@ -190,12 +203,16 @@ export async function getRecentConversations(limit = 20) {
     .select({
       id: conversations.id,
       summary: conversations.summary,
+      source: conversations.source,
       occurredAt: conversations.occurredAt,
       personId: conversations.personId,
       personName: people.name,
+      placeId: conversations.placeId,
+      placeName: places.name,
     })
     .from(conversations)
     .leftJoin(people, eq(conversations.personId, people.id))
+    .leftJoin(places, eq(conversations.placeId, places.id))
     .orderBy(desc(conversations.occurredAt))
     .limit(limit);
 }

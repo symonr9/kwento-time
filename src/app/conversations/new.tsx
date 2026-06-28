@@ -22,6 +22,8 @@ function splitLines(value: string) {
 export default function NewConversationScreen() {
   const theme = useTheme();
   const [summary, setSummary] = useState('');
+  const [rawTranscript, setRawTranscript] = useState('');
+  const [audioUri, setAudioUri] = useState('');
   const [topics, setTopics] = useState('');
   const [followUps, setFollowUps] = useState('');
   const [people, setPeople] = useState<Person[]>([]);
@@ -66,8 +68,12 @@ export default function NewConversationScreen() {
     }
 
     const conversation: NewConversation = {
+      audioUri: audioUri.trim() || undefined,
+      placeId: selectedPlaceId ?? undefined,
+      rawTranscript: rawTranscript.trim() || trimmedSummary,
       summary: trimmedSummary,
       personId: selectedPersonId ?? undefined,
+      source: 'manual',
     };
 
     setIsSaving(true);
@@ -100,6 +106,16 @@ export default function NewConversationScreen() {
         value={summary}
         onChangeText={setSummary}
         placeholder="What did you talk about?"
+        multiline
+        textAlignVertical="top"
+        style={formControlStyles.notesInput}
+      />
+
+      <TextField
+        label="Raw transcript"
+        value={rawTranscript}
+        onChangeText={setRawTranscript}
+        placeholder="Optional. Paste the full note or transcript here."
         multiline
         textAlignVertical="top"
         style={formControlStyles.notesInput}
@@ -154,7 +170,7 @@ export default function NewConversationScreen() {
       <View style={styles.field}>
         <ThemedText type="smallBold">Place</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Optional. A place link is saved when a person is selected.
+          Optional. Saved directly on the conversation and linked to the person when one is selected.
         </ThemedText>
         <View style={styles.personList}>
           <Pressable
@@ -199,6 +215,13 @@ export default function NewConversationScreen() {
           })}
         </View>
       </View>
+
+      <TextField
+        label="Audio URI"
+        value={audioUri}
+        onChangeText={setAudioUri}
+        placeholder="Optional placeholder for a future recording"
+      />
 
       <TextField
         label="Talking points"
