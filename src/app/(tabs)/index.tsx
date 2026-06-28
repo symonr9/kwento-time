@@ -152,21 +152,6 @@ export default function HomeScreen() {
             <ThemedText themeColor="textSecondary">
               Capture recent conversations and what is current in your own life.
             </ThemedText>
-            <Link href="/forecast/index" asChild>
-              <Pressable
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  {
-                    backgroundColor: theme.primary,
-                    opacity: pressed ? 0.78 : 1,
-                  },
-                ]}>
-                <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                  Briefing
-                </ThemedText>
-              </Pressable>
-            </Link>
           </View>
 
           {isLoading ? (
@@ -184,6 +169,75 @@ export default function HomeScreen() {
 
           {!isLoading && !error ? (
             <>
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ThemedText type="smallBold">Today at a glance</ThemedText>
+                </View>
+                <View style={styles.metricGrid}>
+                  <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
+                    <ThemedText type="smallBold">{followUps.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Follow-ups
+                    </ThemedText>
+                  </SurfaceCard>
+                  <SurfaceCard tone="highlightMuted" style={styles.metricCard}>
+                    <ThemedText type="smallBold">{expiringTopics.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Topics to review
+                    </ThemedText>
+                  </SurfaceCard>
+                  <SurfaceCard tone="accentMuted" style={styles.metricCard}>
+                    <ThemedText type="smallBold">{conversations.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Recent notes
+                    </ThemedText>
+                  </SurfaceCard>
+                </View>
+                <View style={styles.quickActions}>
+                  <Link href="/conversations/new" asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.quickActionButton,
+                        {
+                          backgroundColor: theme.primary,
+                          opacity: pressed ? 0.78 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold" style={styles.primaryButtonText}>
+                        Conversation
+                      </ThemedText>
+                    </Pressable>
+                  </Link>
+                  <Link href="/forecast/index" asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.quickActionButton,
+                        {
+                          backgroundColor: theme.backgroundSelected,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold">Briefing</ThemedText>
+                    </Pressable>
+                  </Link>
+                  <Link href="/my-life/new" asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.quickActionButton,
+                        {
+                          backgroundColor: theme.backgroundSelected,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold">Life update</ThemedText>
+                    </Pressable>
+                  </Link>
+                </View>
+              </View>
+
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <ThemedText type="smallBold">Expiring soon</ThemedText>
@@ -449,6 +503,30 @@ const styles = StyleSheet.create({
   list: {
     gap: Spacing.two,
   },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  metricCard: {
+    minWidth: 144,
+    flexGrow: 1,
+    borderRadius: Radius.small,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  quickActionButton: {
+    flexGrow: 1,
+    minHeight: 48,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
   row: {
     minHeight: 84,
     justifyContent: 'center',
@@ -471,14 +549,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  primaryButton: {
-    minHeight: 48,
-    borderRadius: Radius.medium,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
   },
   primaryButtonText: {
     color: '#FFFFFF',
