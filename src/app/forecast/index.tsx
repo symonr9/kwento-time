@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import {
 } from '@/features/forecast';
 import type { Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+import { speakForecastScript, stopForecastSpeech } from '@/services/speech';
 
 const lengthOptions: { label: string; value: ForecastLength }[] = [
   { label: 'Short', value: 'short' },
@@ -33,6 +34,7 @@ export default function ForecastScreen() {
   const [length, setLength] = useState<ForecastLength>('medium');
   const [context, setContext] = useState<BriefingContext | null>(null);
   const [script, setScript] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,46 @@ export default function ForecastScreen() {
     }, []),
   );
 
+  useEffect(() => {
+    return () => {
+      void stopForecastSpeech();
+    };
+  }, []);
+
+  async function playScript(nextScript: string) {
+    setError(null);
+
+    try {
+      await speakForecastScript(nextScript, {
+        onDone: () => setIsSpeaking(false),
+        onError: (err) => {
+          setIsSpeaking(false);
+          setError(err.message);
+        },
+        onStart: () => setIsSpeaking(true),
+        onStopped: () => setIsSpeaking(false),
+      });
+    } catch (err) {
+      setIsSpeaking(false);
+      setError(err instanceof Error ? err.message : 'Unable to play forecast.');
+    }
+  }
+
+  async function handleStopSpeech() {
+    try {
+      await stopForecastSpeech();
+      setIsSpeaking(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to stop playback.');
+    }
+  }
+
+  async function handleReplay() {
+    if (script) {
+      await playScript(script);
+    }
+  }
+
   async function handleGenerate() {
     if (!selectedPlaceId) {
       setError('Add or select a place before generating a forecast.');
@@ -84,8 +126,10 @@ export default function ForecastScreen() {
       const retrieved = await getForecastRetrieval(selectedPlaceId, generatedAt);
       const scored = scoreForecastData(retrieved, generatedAt);
       const nextContext = buildBriefingContext(retrieved, scored, length);
+      const nextScript = narrateBriefing(nextContext);
       setContext(nextContext);
-      setScript(narrateBriefing(nextContext));
+      setScript(nextScript);
+      await playScript(nextScript);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate forecast.');
     } finally {
@@ -200,7 +244,7 @@ export default function ForecastScreen() {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <ThemedText type="smallBold" style={styles.generateButtonText}>
-                    Generate
+                    Generate and play
                   </ThemedText>
                 )}
               </Pressable>
@@ -209,6 +253,64 @@ export default function ForecastScreen() {
 
           {script && context ? (
             <>
+              <View style={styles.metricGrid}>
+                <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
+                  <ThemedText type="smallBold">{context.people.length}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    People in briefing
+                  </ThemedText>
+                </SurfaceCard>
+                <SurfaceCard tone="accentMuted" style={styles.metricCard}>
+                  <ThemedText type="smallBold">{context.length.seconds}s</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Target length
+                  </ThemedText>
+                </SurfaceCard>
+              </View>
+
+              <SurfaceCard style={styles.playbackCard}>
+                <View style={styles.rowHeader}>
+                  <View style={styles.playbackTitle}>
+                    <ThemedText type="smallBold">Playback</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {isSpeaking ? 'Speaking now' : 'Ready'}
+                    </ThemedText>
+                  </View>
+                  <View
+                    style={[
+                      styles.playbackDot,
+                      { backgroundColor: isSpeaking ? theme.primary : theme.textSecondary },
+                    ]}
+                  />
+                </View>
+                <View style={styles.actionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={handleReplay}
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      {
+                        backgroundColor: theme.backgroundSelected,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}>
+                    <ThemedText type="smallBold">Replay</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={handleStopSpeech}
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      {
+                        backgroundColor: theme.backgroundSelected,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}>
+                    <ThemedText type="smallBold">Stop</ThemedText>
+                  </Pressable>
+                </View>
+              </SurfaceCard>
+
               <SurfaceCard tone="highlightMuted" style={styles.scriptCard}>
                 <ThemedText type="smallBold">Transcript</ThemedText>
                 <ThemedText selectable>{script}</ThemedText>
@@ -316,6 +418,41 @@ const styles = StyleSheet.create({
   },
   generateButtonText: {
     color: '#FFFFFF',
+  },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  metricCard: {
+    minWidth: 144,
+    flexGrow: 1,
+    borderRadius: Radius.small,
+  },
+  playbackCard: {
+    gap: Spacing.three,
+  },
+  playbackTitle: {
+    gap: Spacing.one,
+  },
+  playbackDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  secondaryButton: {
+    flexGrow: 1,
+    minHeight: 48,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
   scriptCard: {
     gap: Spacing.two,
