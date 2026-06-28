@@ -10,14 +10,20 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsForPerson } from '@/db/queries/conversations';
 import { getOpenFollowUpsForPerson, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getPersonById } from '@/db/queries/people';
-import { getPlacesForPerson } from '@/db/queries/places';
+import {
+  addPersonToPlace,
+  getAllPlaces,
+  getPlacesForPerson,
+  removePersonFromPlace,
+  setPrimaryPlaceForPerson,
+} from '@/db/queries/places';
 import { getTagsForPerson } from '@/db/queries/tags';
 import {
   extendTopicExpiry,
   getActiveTopicsWithExpiryForPerson,
   resolveTopic,
 } from '@/db/queries/topics';
-import type { Conversation, FollowUp, Person } from '@/db/schema';
+import type { Conversation, FollowUp, Person, Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PersonPlace = Awaited<ReturnType<typeof getPlacesForPerson>>[number];
@@ -25,6 +31,7 @@ type PersonTag = Awaited<ReturnType<typeof getTagsForPerson>>[number];
 type PersonTopic = Awaited<ReturnType<typeof getActiveTopicsWithExpiryForPerson>>[number];
 
 type PersonDetails = {
+  allPlaces: Place[];
   person: Person | null;
   conversations: Conversation[];
   followUps: FollowUp[];
@@ -34,6 +41,7 @@ type PersonDetails = {
 };
 
 const initialDetails: PersonDetails = {
+  allPlaces: [],
   person: null,
   conversations: [],
   followUps: [],
@@ -71,17 +79,19 @@ export default function PersonDetailsScreen() {
       setError(null);
 
       try {
-        const [person, conversations, followUps, places, tags, topics] = await Promise.all([
+        const [person, conversations, followUps, places, allPlaces, tags, topics] = await Promise.all([
           getPersonById(personId),
           getConversationsForPerson(personId),
           getOpenFollowUpsForPerson(personId),
           getPlacesForPerson(personId),
+          getAllPlaces(),
           getTagsForPerson(personId),
           getActiveTopicsWithExpiryForPerson(personId),
         ]);
 
         if (isActive) {
           setDetails({
+            allPlaces,
             person: person ?? null,
             conversations,
             followUps,
@@ -116,7 +126,9 @@ export default function PersonDetailsScreen() {
     }, [loadPerson]),
   );
 
-  const { person, conversations, followUps, places, tags, topics } = details;
+  const { allPlaces, person, conversations, followUps, places, tags, topics } = details;
+  const linkedPlaceIds = new Set(places.map((place) => place.id));
+  const availablePlaces = allPlaces.filter((place) => !linkedPlaceIds.has(place.id));
 
   async function handleResolveFollowUp(id: number) {
     setError(null);
@@ -148,6 +160,39 @@ export default function PersonDetailsScreen() {
       await loadPerson();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to resolve topic.');
+    }
+  }
+
+  async function handleAddPlace(placeId: number) {
+    setError(null);
+
+    try {
+      await addPersonToPlace(personId, placeId);
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to link place.');
+    }
+  }
+
+  async function handleRemovePlace(placeId: number) {
+    setError(null);
+
+    try {
+      await removePersonFromPlace(personId, placeId);
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to remove place.');
+    }
+  }
+
+  async function handleSetPrimaryPlace(placeId: number) {
+    setError(null);
+
+    try {
+      await setPrimaryPlaceForPerson(personId, placeId);
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to set primary place.');
     }
   }
 
@@ -364,11 +409,61 @@ export default function PersonDetailsScreen() {
                           {place.address}
                         </ThemedText>
                       ) : null}
+                      <View style={styles.actionRow}>
+                        {!place.isPrimary ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => void handleSetPrimaryPlace(place.id)}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              {
+                                backgroundColor: theme.backgroundSelected,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}>
+                            <ThemedText type="smallBold">Make primary</ThemedText>
+                          </Pressable>
+                        ) : null}
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => void handleRemovePlace(place.id)}
+                          style={({ pressed }) => [
+                            styles.secondaryButton,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">Remove</ThemedText>
+                        </Pressable>
+                      </View>
                     </SurfaceCard>
                   ))
                 ) : (
                   <EmptyText text="No linked places." />
                 )}
+                {availablePlaces.length > 0 ? (
+                  <View style={styles.linkPanel}>
+                    <ThemedText type="smallBold">Add place</ThemedText>
+                    <View style={styles.chipRow}>
+                      {availablePlaces.map((place) => (
+                        <Pressable
+                          key={place.id}
+                          accessibilityRole="button"
+                          onPress={() => void handleAddPlace(place.id)}
+                          style={({ pressed }) => [
+                            styles.chip,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">{place.name}</ThemedText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
               </Section>
 
               <Section title="Recent conversations" count={conversations.length}>
@@ -559,6 +654,9 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+  },
+  linkPanel: {
+    gap: Spacing.two,
   },
   smallActionButton: {
     minHeight: 32,

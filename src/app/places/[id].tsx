@@ -7,13 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { getAllPeople } from '@/db/queries/people';
 import {
+  addPersonToPlace,
   getOpenFollowUpsForPlace,
   getPeopleForPlace,
   getPlaceById,
   getRecentConversationsForPlace,
+  removePersonFromPlace,
+  setPrimaryPlaceForPerson,
 } from '@/db/queries/places';
-import type { Place } from '@/db/schema';
+import type { Person, Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PlacePerson = Awaited<ReturnType<typeof getPeopleForPlace>>[number];
@@ -21,6 +25,7 @@ type PlaceConversation = Awaited<ReturnType<typeof getRecentConversationsForPlac
 type PlaceFollowUp = Awaited<ReturnType<typeof getOpenFollowUpsForPlace>>[number];
 
 type PlaceDetails = {
+  allPeople: Person[];
   conversations: PlaceConversation[];
   followUps: PlaceFollowUp[];
   people: PlacePerson[];
@@ -28,6 +33,7 @@ type PlaceDetails = {
 };
 
 const initialDetails: PlaceDetails = {
+  allPeople: [],
   conversations: [],
   followUps: [],
   people: [],
@@ -62,15 +68,17 @@ export default function PlaceDetailsScreen() {
         setError(null);
 
         try {
-          const [place, people, conversations, followUps] = await Promise.all([
+          const [place, people, allPeople, conversations, followUps] = await Promise.all([
             getPlaceById(placeId),
             getPeopleForPlace(placeId),
+            getAllPeople(),
             getRecentConversationsForPlace(placeId, 10),
             getOpenFollowUpsForPlace(placeId, 20),
           ]);
 
           if (isActive) {
             setDetails({
+              allPeople,
               conversations,
               followUps,
               people,
@@ -97,10 +105,63 @@ export default function PlaceDetailsScreen() {
     }, [placeId]),
   );
 
-  const { conversations, followUps, people, place } = details;
+  const { allPeople, conversations, followUps, people, place } = details;
+  const linkedPersonIds = new Set(people.map((person) => person.id));
+  const availablePeople = allPeople.filter((person) => !linkedPersonIds.has(person.id));
   const primaryPeople = people.filter((person) => person.isPrimary);
   const topFollowUps = followUps.slice(0, 3);
   const topConversations = conversations.slice(0, 3);
+
+  async function loadPlaceDetails() {
+    const [nextPlace, nextPeople, nextAllPeople, nextConversations, nextFollowUps] = await Promise.all([
+      getPlaceById(placeId),
+      getPeopleForPlace(placeId),
+      getAllPeople(),
+      getRecentConversationsForPlace(placeId, 10),
+      getOpenFollowUpsForPlace(placeId, 20),
+    ]);
+
+    setDetails({
+      allPeople: nextAllPeople,
+      conversations: nextConversations,
+      followUps: nextFollowUps,
+      people: nextPeople,
+      place: nextPlace ?? null,
+    });
+  }
+
+  async function handleAddPerson(personId: number) {
+    setError(null);
+
+    try {
+      await addPersonToPlace(personId, placeId);
+      await loadPlaceDetails();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to link person.');
+    }
+  }
+
+  async function handleRemovePerson(personId: number) {
+    setError(null);
+
+    try {
+      await removePersonFromPlace(personId, placeId);
+      await loadPlaceDetails();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to remove person.');
+    }
+  }
+
+  async function handleSetPrimaryPerson(personId: number) {
+    setError(null);
+
+    try {
+      await setPrimaryPlaceForPerson(personId, placeId);
+      await loadPlaceDetails();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to set primary place.');
+    }
+  }
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -251,11 +312,61 @@ export default function PlaceDetailsScreen() {
                           {person.nickname}
                         </ThemedText>
                       ) : null}
+                      <View style={styles.actionRow}>
+                        {!person.isPrimary ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => void handleSetPrimaryPerson(person.id)}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              {
+                                backgroundColor: theme.backgroundSelected,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}>
+                            <ThemedText type="smallBold">Make primary</ThemedText>
+                          </Pressable>
+                        ) : null}
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => void handleRemovePerson(person.id)}
+                          style={({ pressed }) => [
+                            styles.secondaryButton,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">Remove</ThemedText>
+                        </Pressable>
+                      </View>
                     </SurfaceCard>
                   ))
                 ) : (
                   <EmptyText text="No linked people yet." />
                 )}
+                {availablePeople.length > 0 ? (
+                  <View style={styles.linkPanel}>
+                    <ThemedText type="smallBold">Add person</ThemedText>
+                    <View style={styles.chipRow}>
+                      {availablePeople.map((person) => (
+                        <Pressable
+                          key={person.id}
+                          accessibilityRole="button"
+                          onPress={() => void handleAddPerson(person.id)}
+                          style={({ pressed }) => [
+                            styles.chip,
+                            {
+                              backgroundColor: theme.backgroundSelected,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}>
+                          <ThemedText type="smallBold">{person.name}</ThemedText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
               </Section>
 
               <Section title="Open follow-ups" count={followUps.length}>
@@ -420,6 +531,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  secondaryButton: {
+    flexGrow: 1,
+    minHeight: 40,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
+  linkPanel: {
+    gap: Spacing.two,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  chip: {
+    minHeight: 36,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
   stateCard: {
     alignItems: 'center',
