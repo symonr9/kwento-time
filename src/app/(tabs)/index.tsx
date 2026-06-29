@@ -1,4 +1,4 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -26,6 +26,9 @@ type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[num
 type PendingExtraction = Awaited<ReturnType<typeof getConversationsPendingExtraction>>[number];
 type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
 type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>[number];
+
+const forecastHref = '/forecast' as Href;
+const tagsHref = '/tags' as Href;
 
 function formatShortDate(value: Date) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(value);
@@ -339,7 +342,7 @@ export default function HomeScreen() {
                     />
                   </Link>
 
-                  <Link href="/forecast/index" asChild>
+                  <Link href={forecastHref} asChild>
                     <IconActionButton
                       icon={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
                       label="Briefing"
@@ -355,7 +358,7 @@ export default function HomeScreen() {
                     />
                   </Link>
 
-                  <Link href="/tags/index" asChild>
+                  <Link href={tagsHref} asChild>
                     <IconActionButton
                       icon={{ ios: 'tag', android: 'sell', web: 'tag' }}
                       label="Tags"
