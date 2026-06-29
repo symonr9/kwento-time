@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationDetails } from '@/db/queries/conversations';
@@ -190,7 +191,7 @@ export default function ConversationDetailsScreen() {
                 </SurfaceCard>
               </Section>
 
-              <Section title="Capture details">
+              <Section title="Capture details" defaultExpanded={false}>
                 <SurfaceCard style={styles.row}>
                   <View style={styles.rowHeader}>
                     <ThemedText type="smallBold">Source</ThemedText>
@@ -233,7 +234,7 @@ export default function ConversationDetailsScreen() {
                 </SurfaceCard>
               </Section>
 
-              <Section title="Raw transcript">
+              <Section title="Raw transcript" defaultExpanded={false}>
                 <SurfaceCard style={styles.row}>
                   <ThemedText type="small" themeColor="textSecondary" selectable>
                     {conversation.rawTranscript ?? 'No raw transcript saved yet.'}
@@ -263,6 +264,7 @@ export default function ConversationDetailsScreen() {
               <Section
                 title="Follow-ups"
                 count={followUps.length}
+                defaultExpanded={followUps.length > 0}
                 action={
                   <Link
                     href={{
@@ -338,6 +340,7 @@ export default function ConversationDetailsScreen() {
               <Section
                 title="Talking points"
                 count={topics.length}
+                defaultExpanded={topics.length > 0}
                 action={
                   <Link
                     href={{
@@ -408,28 +411,19 @@ function Section({
   action,
   children,
   count,
+  defaultExpanded = true,
   title,
 }: {
   action?: React.ReactNode;
   children: React.ReactNode;
   count?: number;
+  defaultExpanded?: boolean;
   title: string;
 }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <ThemedText type="smallBold">{title}</ThemedText>
-        <View style={styles.sectionHeaderActions}>
-          {typeof count === 'number' ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {count}
-            </ThemedText>
-          ) : null}
-          {action}
-        </View>
-      </View>
+    <ExpandableSection action={action} count={count} defaultExpanded={defaultExpanded} title={title}>
       {children}
-    </View>
+    </ExpandableSection>
   );
 }
 

@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { ExpandableSection } from '@/components/ui/expandable-section';
 import { IconActionButton } from '@/components/ui/icon-action-button';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -376,10 +377,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Today at a glance</ThemedText>
-                </View>
+              <ExpandableSection title="Today at a glance">
                 <View style={styles.metricGrid}>
                   <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
                     <ThemedText type="title">{followUps.length}</ThemedText>
@@ -406,15 +404,12 @@ export default function HomeScreen() {
                     </ThemedText>
                   </SurfaceCard>
                 </View>
-              </View>
+              </ExpandableSection>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Needs structure</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {pendingExtractions.length}
-                  </ThemedText>
-                </View>
+              <ExpandableSection
+                title="Needs structure"
+                count={pendingExtractions.length}
+                defaultExpanded={pendingExtractions.length > 0}>
 
                 {pendingExtractions.length === 0 ? (
                   <SurfaceCard style={styles.stateCard}>
@@ -458,15 +453,9 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </ExpandableSection>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Upcoming reminders</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {reminders.length}
-                  </ThemedText>
-                </View>
+              <ExpandableSection title="Upcoming reminders" count={reminders.length} defaultExpanded={false}>
 
                 {reminders.length === 0 ? (
                   <SurfaceCard style={styles.stateCard}>
@@ -494,15 +483,12 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </ExpandableSection>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Expiring soon</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {expiringTopics.length}
-                  </ThemedText>
-                </View>
+              <ExpandableSection
+                title="Expiring soon"
+                count={expiringTopics.length}
+                defaultExpanded={expiringTopics.length > 0}>
 
                 {expiringTopics.length === 0 ? (
                   <SurfaceCard style={styles.stateCard}>
@@ -554,15 +540,12 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </ExpandableSection>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Open follow-ups</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {followUps.length}
-                  </ThemedText>
-                </View>
+              <ExpandableSection
+                title="Open follow-ups"
+                count={followUps.length}
+                defaultExpanded={followUps.length > 0}>
 
                 {followUps.length === 0 ? (
                   <SurfaceCard style={styles.stateCard}>
@@ -612,15 +595,9 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </ExpandableSection>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Recent conversations</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {filteredConversations.length}
-                  </ThemedText>
-                </View>
+              <ExpandableSection title="Recent conversations" count={filteredConversations.length}>
 
                 <View style={styles.filterPanel}>
                   <TextInput
@@ -718,15 +695,9 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </ExpandableSection>
 
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Life topics</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {filteredLifeItems.length}
-                  </ThemedText>
-                </View>
+              <ExpandableSection title="Life topics" count={filteredLifeItems.length}>
 
                 <View style={styles.filterPanel}>
                   <TextInput
@@ -795,7 +766,7 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </ExpandableSection>
             </>
           ) : null}
         </View>

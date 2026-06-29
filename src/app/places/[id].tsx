@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getAllPeople } from '@/db/queries/people';
@@ -369,7 +370,7 @@ export default function PlaceDetailsScreen() {
                 ) : null}
               </Section>
 
-              <Section title="Open follow-ups" count={followUps.length}>
+              <Section title="Open follow-ups" count={followUps.length} defaultExpanded={false}>
                 {followUps.length > 0 ? (
                   followUps.map((followUp) => (
                     <SurfaceCard key={followUp.id} style={styles.row}>
@@ -389,7 +390,7 @@ export default function PlaceDetailsScreen() {
                 )}
               </Section>
 
-              <Section title="Recent conversations" count={conversations.length}>
+              <Section title="Recent conversations" count={conversations.length} defaultExpanded={false}>
                 {conversations.length > 0 ? (
                   conversations.map((conversation) => (
                     <SurfaceCard key={conversation.id} style={styles.row}>
@@ -419,24 +420,18 @@ export default function PlaceDetailsScreen() {
 function Section({
   children,
   count,
+  defaultExpanded = true,
   title,
 }: {
   children: React.ReactNode;
   count?: number;
+  defaultExpanded?: boolean;
   title: string;
 }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <ThemedText type="smallBold">{title}</ThemedText>
-        {typeof count === 'number' ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {count}
-          </ThemedText>
-        ) : null}
-      </View>
+    <ExpandableSection count={count} defaultExpanded={defaultExpanded} title={title}>
       {children}
-    </View>
+    </ExpandableSection>
   );
 }
 

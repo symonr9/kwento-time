@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsForPerson } from '@/db/queries/conversations';
@@ -296,6 +297,7 @@ export default function PersonDetailsScreen() {
               <Section
                 title="Open follow-ups"
                 count={followUps.length}
+                defaultExpanded={followUps.length > 0}
                 action={
                   <Link
                     href={{ pathname: '/follow-ups/new', params: { personId: String(person.id) } }}
@@ -354,6 +356,7 @@ export default function PersonDetailsScreen() {
               <Section
                 title="Talking points"
                 count={topics.length}
+                defaultExpanded={topics.length > 0}
                 action={
                   <Link
                     href={{ pathname: '/topics/new', params: { personId: String(person.id) } }}
@@ -434,7 +437,7 @@ export default function PersonDetailsScreen() {
                 )}
               </Section>
 
-              <Section title="Places" count={places.length}>
+              <Section title="Places" count={places.length} defaultExpanded={false}>
                 {places.length > 0 ? (
                   places.map((place) => (
                     <SurfaceCard key={place.id} style={styles.row}>
@@ -508,7 +511,7 @@ export default function PersonDetailsScreen() {
                 ) : null}
               </Section>
 
-              <Section title="Recent conversations" count={conversations.length}>
+              <Section title="Recent conversations" count={conversations.length} defaultExpanded={false}>
                 {conversations.length > 0 ? (
                   conversations.map((conversation) => (
                     <Link
@@ -554,28 +557,19 @@ function Section({
   action,
   children,
   count,
+  defaultExpanded = true,
   title,
 }: {
   action?: React.ReactNode;
   children: React.ReactNode;
   count?: number;
+  defaultExpanded?: boolean;
   title: string;
 }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <ThemedText type="smallBold">{title}</ThemedText>
-        <View style={styles.sectionHeaderActions}>
-          {typeof count === 'number' ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {count}
-            </ThemedText>
-          ) : null}
-          {action}
-        </View>
-      </View>
+    <ExpandableSection action={action} count={count} defaultExpanded={defaultExpanded} title={title}>
       {children}
-    </View>
+    </ExpandableSection>
   );
 }
 
