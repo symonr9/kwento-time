@@ -3,6 +3,9 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/lora": "^0.4.2",
+    "@expo-google-fonts/source-sans-3": "^0.4.1",
+    "@expo-google-fonts/urbanist": "^0.4.2",
     "@expo/ui": "~56.0.17",
     "drizzle-orm": "^0.45.2",
     "expo": "~56.0.11",

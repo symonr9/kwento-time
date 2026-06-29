@@ -37,30 +37,32 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+export const FontPairings = {
+  kwento: {
+    title: 'Urbanist_700Bold',
+    default: 'SourceSans3_400Regular',
+    emphasis: 'Lora_500Medium',
+    bold: 'SourceSans3_700Bold',
+    mono: Platform.select({ ios: 'ui-monospace', default: 'monospace' }) ?? 'monospace',
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  crisp: {
+    title: 'Urbanist_600SemiBold',
+    default: 'SourceSans3_400Regular',
+    emphasis: 'Urbanist_500Medium',
+    bold: 'SourceSans3_700Bold',
+    mono: Platform.select({ ios: 'ui-monospace', default: 'monospace' }) ?? 'monospace',
   },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+  editorial: {
+    title: 'Lora_700Bold',
+    default: 'SourceSans3_400Regular',
+    emphasis: 'Urbanist_600SemiBold',
+    bold: 'SourceSans3_700Bold',
+    mono: Platform.select({ ios: 'ui-monospace', default: 'monospace' }) ?? 'monospace',
   },
-});
+} as const;
+
+export const ActiveFontPairingName: keyof typeof FontPairings = 'kwento';
+export const Fonts = FontPairings[ActiveFontPairingName];
 
 export const Spacing = {
   half: 2,
@@ -108,4 +110,3 @@ export const ACTION_SYMBOLS = {
     web: 'event',
   },
 }; 
-

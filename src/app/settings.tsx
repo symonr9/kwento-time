@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { isBiometricLockEnabled, setBiometricLockEnabled } from '@/db/queries/settings';
 import { useTheme } from '@/hooks/use-theme';
 import { getBiometricAvailability } from '@/services/auth';
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 14,
-    fontFamily: Platform.select({ ios: 'ui-monospace', default: 'monospace' }),
+    fontFamily: Fonts.mono,
   },
   actionRow: {
     flexDirection: 'row',
