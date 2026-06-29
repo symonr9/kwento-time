@@ -55,6 +55,8 @@ export async function logStructuredConversation({
       .insert(conversations)
       .values({
         ...conversation,
+        extractionStatus: conversation.extractionStatus ?? 'completed',
+        transcriptStatus: conversation.transcriptStatus ?? 'confirmed',
         placeId: conversation.placeId ?? placeId ?? undefined,
       })
       .returning();
@@ -131,6 +133,8 @@ export async function getConversationDetails(id: number) {
       summary: conversations.summary,
       rawTranscript: conversations.rawTranscript,
       source: conversations.source,
+      transcriptStatus: conversations.transcriptStatus,
+      extractionStatus: conversations.extractionStatus,
       occurredAt: conversations.occurredAt,
       createdAt: conversations.createdAt,
       updatedAt: conversations.updatedAt,
@@ -204,6 +208,8 @@ export async function getRecentConversations(limit = 20) {
       id: conversations.id,
       summary: conversations.summary,
       source: conversations.source,
+      transcriptStatus: conversations.transcriptStatus,
+      extractionStatus: conversations.extractionStatus,
       occurredAt: conversations.occurredAt,
       personId: conversations.personId,
       personName: people.name,

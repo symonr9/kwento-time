@@ -194,10 +194,22 @@ export default function ConversationDetailsScreen() {
                 <SurfaceCard style={styles.row}>
                   <View style={styles.rowHeader}>
                     <ThemedText type="smallBold">Source</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {conversation.source}
-                    </ThemedText>
-                  </View>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {conversation.source}
+                  </ThemedText>
+                </View>
+                <View style={styles.rowHeader}>
+                  <ThemedText type="smallBold">Transcript</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {conversation.transcriptStatus}
+                  </ThemedText>
+                </View>
+                <View style={styles.rowHeader}>
+                  <ThemedText type="smallBold">Extraction</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {conversation.extractionStatus}
+                  </ThemedText>
+                </View>
                   {conversation.audioUri ? (
                     <ThemedText type="small" themeColor="textSecondary" selectable>
                       Audio: {conversation.audioUri}

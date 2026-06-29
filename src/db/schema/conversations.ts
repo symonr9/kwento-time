@@ -19,6 +19,16 @@ export const conversations = sqliteTable(
     summary: text('summary'),
     audioUri: text('audio_uri'),
     source: text('source', { enum: ['manual', 'voice', 'import'] }).notNull().default('manual'),
+    transcriptStatus: text('transcript_status', {
+      enum: ['not_required', 'pending_transcription', 'ready_for_review', 'confirmed', 'failed'],
+    })
+      .notNull()
+      .default('confirmed'),
+    extractionStatus: text('extraction_status', {
+      enum: ['not_needed', 'pending', 'in_progress', 'completed', 'failed'],
+    })
+      .notNull()
+      .default('not_needed'),
     occurredAt: integer('occurred_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -28,6 +38,8 @@ export const conversations = sqliteTable(
     index('conversations_person_idx').on(t.personId),
     index('conversations_place_idx').on(t.placeId),
     index('conversations_occurred_idx').on(t.occurredAt),
+    index('conversations_transcript_status_idx').on(t.transcriptStatus),
+    index('conversations_extraction_status_idx').on(t.extractionStatus),
   ],
 );
 

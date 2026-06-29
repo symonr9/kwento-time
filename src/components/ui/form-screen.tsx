@@ -23,9 +23,18 @@ type FormScreenProps = {
   error: string | null;
   isSaving: boolean;
   onSave: () => void;
+  saveLabel?: string;
 };
 
-export function FormScreen({ eyebrow, title, children, error, isSaving, onSave }: FormScreenProps) {
+export function FormScreen({
+  eyebrow,
+  title,
+  children,
+  error,
+  isSaving,
+  onSave,
+  saveLabel = 'Save',
+}: FormScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -94,7 +103,7 @@ export function FormScreen({ eyebrow, title, children, error, isSaving, onSave }
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <ThemedText type="smallBold" style={styles.saveButtonText}>
-                  Save
+                  {saveLabel}
                 </ThemedText>
               )}
             </Pressable>
