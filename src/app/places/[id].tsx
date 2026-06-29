@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { Avatar } from '@/components/ui/avatar';
+import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
@@ -212,7 +212,7 @@ export default function PlaceDetailsScreen() {
             <>
               <SurfaceCard style={styles.heroCard}>
                 {place.avatarUri ? (
-                  <Avatar name={place.name} uri={place.avatarUri} size={72} />
+                  <AvatarPreview name={place.name} uri={place.avatarUri} size={72} />
                 ) : (
                   <View style={[styles.iconBadge, { backgroundColor: theme.highlightMuted }]}>
                     <SymbolView
@@ -321,7 +321,7 @@ export default function PlaceDetailsScreen() {
                     <SurfaceCard key={person.id} style={styles.row}>
                       <View style={styles.rowHeader}>
                         <View style={styles.rowTitleWithAvatar}>
-                          {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={28} /> : null}
+                          {person.avatarUri ? <AvatarPreview name={person.name} uri={person.avatarUri} size={28} /> : null}
                           <ThemedText type="smallBold">{person.name}</ThemedText>
                         </View>
                         {person.isPrimary ? (
@@ -384,7 +384,7 @@ export default function PlaceDetailsScreen() {
                               opacity: pressed ? 0.72 : 1,
                             },
                           ]}>
-                          {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={24} /> : null}
+                          {person.avatarUri ? <AvatarPreview name={person.name} uri={person.avatarUri} size={24} /> : null}
                           <ThemedText type="smallBold">{person.name}</ThemedText>
                         </Pressable>
                       ))}

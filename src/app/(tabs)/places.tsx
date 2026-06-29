@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -170,14 +171,12 @@ export default function PlacesScreen() {
           {!isLoading && !error && filteredPlaces.length > 0 ? (
             <View style={styles.list}>
               {filteredPlaces.map((place) => (
-                <Link
-                  key={place.id}
-                  href={{ pathname: '/places/[id]', params: { id: String(place.id) } }}
-                  asChild>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
-                    <SurfaceCard style={styles.placeRow}>
+                <SurfaceCard key={place.id} style={styles.placeRow}>
+                  <AvatarPreview name={place.name} uri={place.avatarUri} size={48} />
+                  <Link href={{ pathname: '/places/[id]', params: { id: String(place.id) } }} asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [styles.rowLink, { opacity: pressed ? 0.72 : 1 }]}>
                       <ThemedText type="smallBold">{place.name}</ThemedText>
                       {place.address ? (
                         <ThemedText type="small" themeColor="textSecondary">
@@ -189,9 +188,9 @@ export default function PlacesScreen() {
                           {place.notes}
                         </ThemedText>
                       ) : null}
-                    </SurfaceCard>
-                  </Pressable>
-                </Link>
+                    </Pressable>
+                  </Link>
+                </SurfaceCard>
               ))}
             </View>
           ) : null}
@@ -276,6 +275,13 @@ const styles = StyleSheet.create({
   },
   placeRow: {
     minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  rowLink: {
+    flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   stateCard: {

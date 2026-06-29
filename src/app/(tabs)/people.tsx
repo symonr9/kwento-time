@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -172,23 +173,21 @@ export default function PeopleScreen() {
           {!isLoading && !error && filteredPeople.length > 0 ? (
             <View style={styles.list}>
               {filteredPeople.map((person) => (
-                <Link
-                  key={person.id}
-                  href={{ pathname: '/people/[id]', params: { id: String(person.id) } }}
-                  asChild>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
-                    <SurfaceCard style={styles.personRow}>
+                <SurfaceCard key={person.id} style={styles.personRow}>
+                  <AvatarPreview name={person.name} uri={person.avatarUri} size={48} />
+                  <Link href={{ pathname: '/people/[id]', params: { id: String(person.id) } }} asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [styles.rowLink, { opacity: pressed ? 0.72 : 1 }]}>
                       <ThemedText type="smallBold">{person.name}</ThemedText>
                       {person.nickname ? (
                         <ThemedText type="small" themeColor="textSecondary">
                           {person.nickname}
                         </ThemedText>
                       ) : null}
-                    </SurfaceCard>
-                  </Pressable>
-                </Link>
+                    </Pressable>
+                  </Link>
+                </SurfaceCard>
               ))}
             </View>
           ) : null}
@@ -273,6 +272,13 @@ const styles = StyleSheet.create({
   },
   personRow: {
     minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  rowLink: {
+    flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   stateCard: {
