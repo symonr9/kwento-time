@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Avatar } from '@/components/ui/avatar';
+import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -114,42 +114,16 @@ export function SelectableChipField<T extends number | string | null>({
   value,
   onChange,
 }: SelectableChipFieldProps<T>) {
-  const theme = useTheme();
-
   return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      {description ? (
-        <ThemedText type="small" themeColor="textSecondary">
-          {description}
-        </ThemedText>
-      ) : null}
-      <View style={styles.chipList}>
-        {options.map((option) => {
-          const isSelected = option.value === value;
-
-          return (
-            <Pressable
-              key={String(option.value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              onPress={() => onChange(option.value)}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: isSelected ? theme.primaryMuted : theme.background,
-                  borderColor: theme.border,
-                },
-              ]}>
-              {option.avatarUri ? <Avatar name={option.label} uri={option.avatarUri} size={24} /> : null}
-              <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
-                {option.label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
+    <SearchableChipSelector
+      description={description}
+      label={label}
+      options={options}
+      searchPlaceholder={`Search ${label.toLowerCase()}`}
+      selectedValues={[value]}
+      selectionMode="single"
+      onSelectedValuesChange={(values) => onChange(values[0] ?? value)}
+    />
   );
 }
 
@@ -276,22 +250,6 @@ const styles = StyleSheet.create({
   },
   segmentLabel: {
     textAlign: 'center',
-  },
-  chipList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  chip: {
-    minHeight: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
   },
   multiTextFieldList: {
     gap: Spacing.two,

@@ -1,17 +1,13 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Avatar } from '@/components/ui/avatar';
 import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
-import { Radius, Spacing } from '@/constants/theme';
+import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { getConversationById, updateConversation } from '@/db/queries/conversations';
 import { getAllPeople } from '@/db/queries/people';
 import { addPersonToPlace, getAllPlaces } from '@/db/queries/places';
 import type { Conversation, Person, Place } from '@/db/schema';
-import { useTheme } from '@/hooks/use-theme';
 
 const sourceOptions: { label: string; value: Conversation['source'] }[] = [
   { label: 'Manual', value: 'manual' },
@@ -20,7 +16,6 @@ const sourceOptions: { label: string; value: Conversation['source'] }[] = [
 ];
 
 export default function EditConversationScreen() {
-  const theme = useTheme();
   const params = useLocalSearchParams<{ id?: string }>();
   const conversationId = Number(params.id);
   const [people, setPeople] = useState<Person[]>([]);
@@ -139,121 +134,39 @@ export default function EditConversationScreen() {
 
       <SegmentedField label="Source" options={sourceOptions} value={source} onChange={setSource} />
 
-      <View style={styles.field}>
-        <ThemedText type="smallBold">Person</ThemedText>
-        <View style={styles.optionList}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: selectedPersonId === null }}
-            onPress={() => setSelectedPersonId(null)}
-            style={[
-              styles.optionChip,
-              {
-                backgroundColor: selectedPersonId === null ? theme.primaryMuted : theme.background,
-                borderColor: theme.border,
-              },
-            ]}>
-            <ThemedText
-              type="smallBold"
-              themeColor={selectedPersonId === null ? 'text' : 'textSecondary'}>
-              No person
-            </ThemedText>
-          </Pressable>
+      <SearchableChipSelector
+        label="Person"
+        options={[
+          { label: 'No person', value: null },
+          ...people.map((person) => ({
+            avatarUri: person.avatarUri,
+            description: person.nickname,
+            label: person.name,
+            value: person.id,
+          })),
+        ]}
+        searchPlaceholder="Search people"
+        selectedValues={[selectedPersonId]}
+        selectionMode="single"
+        onSelectedValuesChange={(values) => setSelectedPersonId(values[0] ?? null)}
+      />
 
-          {people.map((person) => {
-            const isSelected = selectedPersonId === person.id;
-
-            return (
-              <Pressable
-                key={person.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                onPress={() => setSelectedPersonId(person.id)}
-                style={[
-                  styles.optionChip,
-                  {
-                    backgroundColor: isSelected ? theme.primaryMuted : theme.background,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={24} /> : null}
-                <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
-                  {person.name}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.field}>
-        <ThemedText type="smallBold">Place</ThemedText>
-        <View style={styles.optionList}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: selectedPlaceId === null }}
-            onPress={() => setSelectedPlaceId(null)}
-            style={[
-              styles.optionChip,
-              {
-                backgroundColor: selectedPlaceId === null ? theme.primaryMuted : theme.background,
-                borderColor: theme.border,
-              },
-            ]}>
-            <ThemedText
-              type="smallBold"
-              themeColor={selectedPlaceId === null ? 'text' : 'textSecondary'}>
-              No place
-            </ThemedText>
-          </Pressable>
-
-          {places.map((place) => {
-            const isSelected = selectedPlaceId === place.id;
-
-            return (
-              <Pressable
-                key={place.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                onPress={() => setSelectedPlaceId(place.id)}
-                style={[
-                  styles.optionChip,
-                  {
-                    backgroundColor: isSelected ? theme.primaryMuted : theme.background,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                {place.avatarUri ? <Avatar name={place.name} uri={place.avatarUri} size={24} /> : null}
-                <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
-                  {place.name}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      <SearchableChipSelector
+        label="Place"
+        options={[
+          { label: 'No place', value: null },
+          ...places.map((place) => ({
+            avatarUri: place.avatarUri,
+            description: place.address,
+            label: place.name,
+            value: place.id,
+          })),
+        ]}
+        searchPlaceholder="Search places"
+        selectedValues={[selectedPlaceId]}
+        selectionMode="single"
+        onSelectedValuesChange={(values) => setSelectedPlaceId(values[0] ?? null)}
+      />
     </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  field: {
-    gap: Spacing.one,
-  },
-  optionList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  optionChip: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
-  },
-});

@@ -3,9 +3,9 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Avatar } from '@/components/ui/avatar';
 import { TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
+import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { Radius, Spacing } from '@/constants/theme';
 import {
@@ -198,52 +198,22 @@ export default function FollowUpDetailsScreen() {
             style={formControlStyles.notesInput}
           />
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold">Person</ThemedText>
-            <View style={styles.personList}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedPersonId === null }}
-                onPress={() => setSelectedPersonId(null)}
-                style={[
-                  styles.personChip,
-                  {
-                    backgroundColor: selectedPersonId === null ? theme.primaryMuted : theme.background,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <ThemedText
-                  type="smallBold"
-                  themeColor={selectedPersonId === null ? 'text' : 'textSecondary'}>
-                  No person
-                </ThemedText>
-              </Pressable>
-
-              {people.map((person) => {
-                const isSelected = selectedPersonId === person.id;
-
-                return (
-                  <Pressable
-                    key={person.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    onPress={() => setSelectedPersonId(person.id)}
-                    style={[
-                      styles.personChip,
-                      {
-                        backgroundColor: isSelected ? theme.primaryMuted : theme.background,
-                        borderColor: theme.border,
-                      },
-                    ]}>
-                    {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={24} /> : null}
-                    <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
-                      {person.name}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          <SearchableChipSelector
+            label="Person"
+            options={[
+              { label: 'No person', value: null },
+              ...people.map((person) => ({
+                avatarUri: person.avatarUri,
+                description: person.nickname,
+                label: person.name,
+                value: person.id,
+              })),
+            ]}
+            searchPlaceholder="Search people"
+            selectedValues={[selectedPersonId]}
+            selectionMode="single"
+            onSelectedValuesChange={(values) => setSelectedPersonId(values[0] ?? null)}
+          />
 
           {conversationId ? (
             <SurfaceCard style={styles.metaCard}>
@@ -302,25 +272,6 @@ export default function FollowUpDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  field: {
-    gap: Spacing.one,
-  },
-  personList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  personChip: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
-  },
   metaCard: {
     gap: Spacing.two,
   },

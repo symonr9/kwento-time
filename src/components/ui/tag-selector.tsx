@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { TextField } from '@/components/ui/form-controls';
+import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { Radius, Spacing } from '@/constants/theme';
 import type { Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,15 +25,6 @@ export function TagSelector({
   onSelectedTagIdsChange,
 }: TagSelectorProps) {
   const theme = useTheme();
-
-  function toggleTag(tagId: number) {
-    if (selectedTagIds.includes(tagId)) {
-      onSelectedTagIdsChange(selectedTagIds.filter((id) => id !== tagId));
-      return;
-    }
-
-    onSelectedTagIdsChange([...selectedTagIds, tagId]);
-  }
 
   return (
     <View style={styles.field}>
@@ -64,30 +56,13 @@ export function TagSelector({
         </Pressable>
       </View>
 
-      <View style={styles.chipList}>
-        {availableTags.map((tag) => {
-          const selected = selectedTagIds.includes(tag.id);
-
-          return (
-            <Pressable
-              key={tag.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => toggleTag(tag.id)}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: selected ? theme.primaryMuted : theme.background,
-                  borderColor: theme.border,
-                },
-              ]}>
-              <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
-                {tag.name}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
+      <SearchableChipSelector
+        label=""
+        options={availableTags.map((tag) => ({ label: tag.name, value: tag.id }))}
+        searchPlaceholder="Search tags"
+        selectedValues={selectedTagIds}
+        onSelectedValuesChange={onSelectedTagIdsChange}
+      />
     </View>
   );
 }
@@ -116,18 +91,5 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#FFFFFF',
-  },
-  chipList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  chip: {
-    minHeight: 34,
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
   },
 });
