@@ -29,11 +29,13 @@ const forecastData: ForecastRetrievedData = {
     },
   ],
   place: {
+    avatarUri: 'file:///community-hall.jpg',
     id: 1,
     name: 'Community Hall',
   },
   people: [
     {
+      avatarUri: 'file:///mara.jpg',
       id: 1,
       connectionScore: 82,
       conversations: [
@@ -65,6 +67,7 @@ const forecastData: ForecastRetrievedData = {
       ],
     },
     {
+      avatarUri: null,
       id: 2,
       connectionScore: 90,
       conversations: [

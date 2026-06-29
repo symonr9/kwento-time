@@ -39,6 +39,7 @@ export type ForecastRetrievedTopic = {
 };
 
 export type ForecastRetrievedPerson = {
+  avatarUri: string | null;
   id: number;
   connectionScore: number;
   conversations: ForecastRetrievedConversation[];
@@ -61,6 +62,7 @@ export type ForecastRetrievedData = {
   lifeItems: ForecastRetrievedLifeItem[];
   people: ForecastRetrievedPerson[];
   place: {
+    avatarUri: string | null;
     id: number | null;
     name: string;
   };
@@ -119,7 +121,7 @@ export async function getGeneralForecastRetrieval(generatedAt = new Date()): Pro
     generatedAt,
     lifeItems: await getForecastLifeItems(),
     people: [],
-    place: { id: null, name: 'General' },
+    place: { avatarUri: null, id: null, name: 'General' },
   };
 }
 
@@ -135,6 +137,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
     .select({
       id: people.id,
       connectionScore: people.connectionScore,
+      avatarUri: people.avatarUri,
       isPrimary: personPlaces.isPrimary,
       lastContactedAt: people.lastContactedAt,
       name: people.name,
@@ -151,7 +154,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
       generatedAt,
       lifeItems: await getForecastLifeItems(),
       people: [],
-      place: { id: place.id, name: place.name },
+      place: { avatarUri: place.avatarUri, id: place.id, name: place.name },
     };
   }
 
@@ -199,6 +202,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
   const topicsByPerson = groupByPersonId(takeByPerson(topicRows, MAX_TOPICS_PER_PERSON));
 
   const retrievedPeople: ForecastRetrievedPerson[] = linkedPeople.map((person) => ({
+    avatarUri: person.avatarUri,
     id: person.id,
     connectionScore: person.connectionScore,
     conversations: (conversationsByPerson.get(person.id) ?? []).map<ForecastRetrievedConversation>(
@@ -230,6 +234,6 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
     generatedAt,
     lifeItems: await getForecastLifeItems(),
     people: retrievedPeople,
-    place: { id: place.id, name: place.name },
+    place: { avatarUri: place.avatarUri, id: place.id, name: place.name },
   };
 }
