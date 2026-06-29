@@ -20,6 +20,14 @@ function daysFromNow(days: number) {
 
 const forecastData: ForecastRetrievedData = {
   generatedAt: now,
+  lifeItems: [
+    {
+      id: 1,
+      content: 'You have been preparing for the reunion.',
+      createdAt: daysAgo(1),
+      tone: 'medium',
+    },
+  ],
   place: {
     id: 1,
     name: 'Community Hall',
@@ -123,6 +131,7 @@ describe('deterministic forecast', () => {
         seconds: 30,
         value: 'short',
       },
+      lifeItems: [],
       people: [],
       place: {
         name: 'Community Hall',
@@ -133,5 +142,32 @@ describe('deterministic forecast', () => {
       script,
       'No one is linked to Community Hall yet. Add people to this place to generate a useful briefing.',
     );
+  });
+
+  it('narrates a general life overview without a place', () => {
+    const script = narrateBriefing({
+      generatedAt: now.toISOString(),
+      length: {
+        approxWords: 75,
+        seconds: 30,
+        value: 'short',
+      },
+      lifeItems: [
+        {
+          createdAt: now.toISOString(),
+          salience: 1,
+          text: 'You have been training for a 10K.',
+          tone: 'light',
+          type: 'life',
+        },
+      ],
+      people: [],
+      place: {
+        name: 'General',
+      },
+    });
+
+    assert.match(script, /Here is the general overview/);
+    assert.match(script, /training for a 10K/);
   });
 });

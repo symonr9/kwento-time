@@ -1,13 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { Avatar } from '@/components/ui/avatar';
 import { SegmentedField } from '@/components/ui/form-controls';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { getForecastRetrieval } from '@/db/queries/forecast';
+import { getForecastRetrieval, getGeneralForecastRetrieval, type ForecastRetrievedData } from '@/db/queries/forecast';
 import { getAllPlaces } from '@/db/queries/places';
 import type { Place } from '@/db/schema';
 import {
@@ -33,6 +34,7 @@ export default function ForecastScreen() {
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [length, setLength] = useState<ForecastLength>('medium');
   const [context, setContext] = useState<BriefingContext | null>(null);
+  const [preview, setPreview] = useState<ForecastRetrievedData | null>(null);
   const [script, setScript] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -51,7 +53,7 @@ export default function ForecastScreen() {
           const rows = await getAllPlaces();
           if (isActive) {
             setPlaces(rows);
-            setSelectedPlaceId((current) => current ?? rows[0]?.id ?? null);
+            setSelectedPlaceId((current) => current ?? null);
           }
         } catch (err) {
           if (isActive) {
@@ -77,6 +79,40 @@ export default function ForecastScreen() {
       void stopForecastSpeech();
     };
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadPreview() {
+      if (isLoading) {
+        return;
+      }
+
+      setError(null);
+
+      try {
+        const generatedAt = new Date();
+        const nextPreview =
+          selectedPlaceId === null
+            ? await getGeneralForecastRetrieval(generatedAt)
+            : await getForecastRetrieval(selectedPlaceId, generatedAt);
+
+        if (isActive) {
+          setPreview(nextPreview);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err instanceof Error ? err.message : 'Unable to load forecast preview.');
+        }
+      }
+    }
+
+    void loadPreview();
+
+    return () => {
+      isActive = false;
+    };
+  }, [isLoading, selectedPlaceId]);
 
   async function playScript(nextScript: string) {
     setError(null);
@@ -113,17 +149,15 @@ export default function ForecastScreen() {
   }
 
   async function handleGenerate() {
-    if (!selectedPlaceId) {
-      setError('Add or select a place before generating a forecast.');
-      return;
-    }
-
     const generatedAt = new Date();
     setIsGenerating(true);
     setError(null);
 
     try {
-      const retrieved = await getForecastRetrieval(selectedPlaceId, generatedAt);
+      const retrieved =
+        selectedPlaceId === null
+          ? await getGeneralForecastRetrieval(generatedAt)
+          : await getForecastRetrieval(selectedPlaceId, generatedAt);
       const scored = scoreForecastData(retrieved, generatedAt);
       const nextContext = buildBriefingContext(retrieved, scored, length);
       const nextScript = narrateBriefing(nextContext);
@@ -188,50 +222,41 @@ export default function ForecastScreen() {
           {!isLoading ? (
             <SurfaceCard style={styles.form}>
               <View style={styles.field}>
-                <ThemedText type="smallBold">Place</ThemedText>
-                {places.length === 0 ? (
-                  <ThemedText themeColor="textSecondary">Add a place first.</ThemedText>
-                ) : (
-                  <View style={styles.optionList}>
-                    {places.map((place) => {
-                      const isSelected = selectedPlaceId === place.id;
+                <ThemedText type="smallBold">Forecast scope</ThemedText>
+                <View style={styles.placeList}>
+                  <ForecastScopeCard
+                    isGeneral
+                    isSelected={selectedPlaceId === null}
+                    title="General"
+                    onPress={() => setSelectedPlaceId(null)}>
+                    {selectedPlaceId === null ? <ForecastPreview preview={preview} /> : null}
+                  </ForecastScopeCard>
 
-                      return (
-                        <Pressable
-                          key={place.id}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: isSelected }}
-                          onPress={() => setSelectedPlaceId(place.id)}
-                          style={[
-                            styles.optionChip,
-                            {
-                              backgroundColor: isSelected ? theme.primaryMuted : theme.background,
-                              borderColor: theme.border,
-                            },
-                          ]}>
-                          <ThemedText
-                            type="smallBold"
-                            themeColor={isSelected ? 'text' : 'textSecondary'}>
-                            {place.name}
-                          </ThemedText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
+                  {places.map((place) => (
+                    <ForecastScopeCard
+                      key={place.id}
+                      avatarUri={place.avatarUri}
+                      isSelected={selectedPlaceId === place.id}
+                      title={place.name}
+                      subtitle={place.address}
+                      onPress={() => setSelectedPlaceId(place.id)}>
+                      {selectedPlaceId === place.id ? <ForecastPreview preview={preview} /> : null}
+                    </ForecastScopeCard>
+                  ))}
+                </View>
               </View>
 
               <SegmentedField label="Length" options={lengthOptions} value={length} onChange={setLength} />
 
               <Pressable
                 accessibilityRole="button"
-                disabled={isGenerating || !selectedPlaceId}
+                disabled={isGenerating}
                 onPress={handleGenerate}
                 style={({ pressed }) => [
                   styles.generateButton,
                   {
                     backgroundColor: theme.primary,
-                    opacity: pressed || isGenerating || !selectedPlaceId ? 0.78 : 1,
+                    opacity: pressed || isGenerating ? 0.78 : 1,
                   },
                 ]}>
                 {isGenerating ? (
@@ -258,6 +283,12 @@ export default function ForecastScreen() {
                   <ThemedText type="smallBold">{context.length.seconds}s</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     Target length
+                  </ThemedText>
+                </SurfaceCard>
+                <SurfaceCard tone="highlightMuted" style={styles.metricCard}>
+                  <ThemedText type="smallBold">{context.lifeItems.length}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Life topics
                   </ThemedText>
                 </SurfaceCard>
               </View>
@@ -314,9 +345,20 @@ export default function ForecastScreen() {
                 <View style={styles.sectionHeader}>
                   <ThemedText type="smallBold">Briefing context</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {context.people.length}
+                    {context.people.length + context.lifeItems.length}
                   </ThemedText>
                 </View>
+
+                {context.lifeItems.length > 0 ? (
+                  <SurfaceCard style={styles.personCard}>
+                    <ThemedText type="smallBold">Life updates</ThemedText>
+                    {context.lifeItems.map((item) => (
+                      <ThemedText key={item.text} type="small" themeColor="textSecondary" selectable>
+                        {item.text}
+                      </ThemedText>
+                    ))}
+                  </SurfaceCard>
+                ) : null}
 
                 {context.people.map((person) => (
                   <SurfaceCard key={person.name} style={styles.personCard}>
@@ -344,6 +386,140 @@ export default function ForecastScreen() {
           ) : null}
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function ForecastScopeCard({
+  avatarUri,
+  children,
+  isGeneral = false,
+  isSelected,
+  onPress,
+  subtitle,
+  title,
+}: {
+  avatarUri?: string | null;
+  children?: ReactNode;
+  isGeneral?: boolean;
+  isSelected: boolean;
+  onPress: () => void;
+  subtitle?: string | null;
+  title: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected, expanded: isSelected }}
+      onPress={onPress}
+      style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+      <SurfaceCard tone={isGeneral ? 'accentMuted' : isSelected ? 'primaryMuted' : 'backgroundElement'}>
+        <View style={styles.scopeHeader}>
+          {avatarUri ? (
+            <Avatar name={title} uri={avatarUri} size={40} />
+          ) : (
+            <View
+              style={[
+                styles.scopeIcon,
+                {
+                  backgroundColor: isGeneral ? theme.background : theme.highlightMuted,
+                },
+              ]}>
+              <ThemedText type="smallBold">{isGeneral ? 'G' : title.slice(0, 1).toUpperCase()}</ThemedText>
+            </View>
+          )}
+          <View style={styles.scopeCopy}>
+            <ThemedText type="smallBold">{title}</ThemedText>
+            {subtitle ? (
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {subtitle}
+              </ThemedText>
+            ) : null}
+          </View>
+        </View>
+        {children}
+      </SurfaceCard>
+    </Pressable>
+  );
+}
+
+function ForecastPreview({ preview }: { preview: ForecastRetrievedData | null }) {
+  const theme = useTheme();
+
+  if (!preview) {
+    return (
+      <View style={styles.previewBlock}>
+        <ThemedText type="small" themeColor="textSecondary">
+          Loading summary...
+        </ThemedText>
+      </View>
+    );
+  }
+
+  if (preview.place.id === null) {
+    return (
+      <View style={styles.previewBlock}>
+        <ThemedText type="smallBold">Life updates</ThemedText>
+        {preview.lifeItems.length > 0 ? (
+          preview.lifeItems.map((item) => (
+            <ThemedText key={item.id} type="small" themeColor="textSecondary" selectable>
+              {item.content}
+            </ThemedText>
+          ))
+        ) : (
+          <ThemedText type="small" themeColor="textSecondary">
+            No current life updates yet.
+          </ThemedText>
+        )}
+      </View>
+    );
+  }
+
+  const conversationCount = preview.people.reduce((count, person) => count + person.conversations.length, 0);
+
+  return (
+    <View style={styles.previewBlock}>
+      <View style={styles.previewGrid}>
+        <View style={[styles.previewMetric, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <ThemedText type="smallBold">{preview.people.length}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Linked people
+          </ThemedText>
+        </View>
+        <View style={[styles.previewMetric, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <ThemedText type="smallBold">{conversationCount}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Recent conversations
+          </ThemedText>
+        </View>
+      </View>
+
+      <ThemedText type="smallBold">People</ThemedText>
+      {preview.people.length > 0 ? (
+        preview.people.map((person) => (
+          <ThemedText key={person.id} type="small" themeColor="textSecondary">
+            {person.name}
+            {person.conversations.length > 0 ? `: ${person.conversations[0]?.summary ?? 'recent context saved'}` : ''}
+          </ThemedText>
+        ))
+      ) : (
+        <ThemedText type="small" themeColor="textSecondary">
+          No people are linked to this place yet.
+        </ThemedText>
+      )}
+
+      {preview.lifeItems.length > 0 ? (
+        <>
+          <ThemedText type="smallBold">Relevant life topics</ThemedText>
+          {preview.lifeItems.slice(0, 3).map((item) => (
+            <ThemedText key={item.id} type="small" themeColor="textSecondary" selectable>
+              {item.content}
+            </ThemedText>
+          ))}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -385,18 +561,42 @@ const styles = StyleSheet.create({
   field: {
     gap: Spacing.one,
   },
-  optionList: {
+  placeList: {
+    gap: Spacing.two,
+  },
+  scopeHeader: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  scopeIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  scopeCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one,
+  },
+  previewBlock: {
+    gap: Spacing.two,
+  },
+  previewGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
-  optionChip: {
-    minHeight: 40,
+  previewMetric: {
+    minWidth: 132,
+    flexGrow: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
+    padding: Spacing.two,
   },
   generateButton: {
     minHeight: 52,

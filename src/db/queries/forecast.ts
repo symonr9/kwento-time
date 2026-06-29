@@ -4,6 +4,7 @@ import { getDb } from '../client';
 import {
   conversations,
   followUps,
+  myLifeItems,
   people,
   personPlaces,
   places,
@@ -13,6 +14,7 @@ import {
 
 const MAX_RECENT_CONVERSATIONS_PER_PERSON = 2;
 const MAX_RECENT_FOLLOW_UPS_PER_PERSON = 2;
+const MAX_GENERAL_LIFE_ITEMS = 5;
 const MAX_TOPICS_PER_PERSON = 3;
 
 export type ForecastRetrievedConversation = {
@@ -47,11 +49,19 @@ export type ForecastRetrievedPerson = {
   topics: ForecastRetrievedTopic[];
 };
 
+export type ForecastRetrievedLifeItem = {
+  id: number;
+  content: string;
+  createdAt: Date;
+  tone: string;
+};
+
 export type ForecastRetrievedData = {
   generatedAt: Date;
+  lifeItems: ForecastRetrievedLifeItem[];
   people: ForecastRetrievedPerson[];
   place: {
-    id: number;
+    id: number | null;
     name: string;
   };
 };
@@ -88,6 +98,31 @@ function takeByPerson<Row extends { personId: number | null }>(rows: Row[], limi
   });
 }
 
+async function getForecastLifeItems() {
+  const db = await getDb();
+
+  return db
+    .select({
+      id: myLifeItems.id,
+      content: myLifeItems.content,
+      createdAt: myLifeItems.createdAt,
+      tone: myLifeItems.tone,
+    })
+    .from(myLifeItems)
+    .where(eq(myLifeItems.resolved, false))
+    .orderBy(desc(myLifeItems.createdAt))
+    .limit(MAX_GENERAL_LIFE_ITEMS);
+}
+
+export async function getGeneralForecastRetrieval(generatedAt = new Date()): Promise<ForecastRetrievedData> {
+  return {
+    generatedAt,
+    lifeItems: await getForecastLifeItems(),
+    people: [],
+    place: { id: null, name: 'General' },
+  };
+}
+
 export async function getForecastRetrieval(placeId: number, generatedAt = new Date()): Promise<ForecastRetrievedData> {
   const db = await getDb();
   const [place] = await db.select().from(places).where(eq(places.id, placeId)).limit(1);
@@ -114,6 +149,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
   if (personIds.length === 0) {
     return {
       generatedAt,
+      lifeItems: await getForecastLifeItems(),
       people: [],
       place: { id: place.id, name: place.name },
     };
@@ -192,6 +228,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
 
   return {
     generatedAt,
+    lifeItems: await getForecastLifeItems(),
     people: retrievedPeople,
     place: { id: place.id, name: place.name },
   };

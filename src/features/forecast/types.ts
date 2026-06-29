@@ -2,6 +2,7 @@ import type {
   ForecastRetrievedConversation,
   ForecastRetrievedData,
   ForecastRetrievedFollowUp,
+  ForecastRetrievedLifeItem,
   ForecastRetrievedPerson,
   ForecastRetrievedTopic,
 } from '@/db/queries/forecast';
@@ -12,11 +13,12 @@ export type {
   ForecastRetrievedConversation,
   ForecastRetrievedData,
   ForecastRetrievedFollowUp,
+  ForecastRetrievedLifeItem,
   ForecastRetrievedPerson,
   ForecastRetrievedTopic,
 };
 
-export type ForecastItemType = 'followup' | 'topic' | 'recent';
+export type ForecastItemType = 'followup' | 'life' | 'topic' | 'recent';
 
 export type ScoredForecastItem = {
   personId: number;
@@ -38,6 +40,13 @@ export type BriefingContext = {
     seconds: number;
     value: ForecastLength;
   };
+  lifeItems: {
+    createdAt: string;
+    salience: number;
+    text: string;
+    tone: string;
+    type: 'life';
+  }[];
   people: {
     items: {
       salience: number;

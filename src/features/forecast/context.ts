@@ -57,6 +57,13 @@ export function buildBriefingContext(
       seconds: budget.seconds,
       value: length,
     },
+    lifeItems: data.lifeItems.slice(0, Math.max(2, Math.floor(budget.itemCount / 2))).map((item, index) => ({
+      createdAt: item.createdAt.toISOString(),
+      salience: Math.max(0.2, 1 - index * 0.12),
+      text: item.content,
+      tone: item.tone,
+      type: 'life',
+    })),
     people: people.map((person) => ({
       items: (selectedItems.get(person.id) ?? []).map((item) => ({
         salience: item.salience,
