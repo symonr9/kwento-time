@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { getRecentConversations } from '@/db/queries/conversations';
+import { getConversationsPendingExtraction, getRecentConversations } from '@/db/queries/conversations';
 import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getActiveMyLifeItems } from '@/db/queries/my-life';
 import {
@@ -21,6 +21,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { ensureNotificationPermissions, scheduleReminderNotification } from '@/services/notifications';
 
 type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[number];
+type PendingExtraction = Awaited<ReturnType<typeof getConversationsPendingExtraction>>[number];
 type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
 type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>[number];
 
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [pendingExtractions, setPendingExtractions] = useState<PendingExtraction[]>([]);
   const [expiringTopics, setExpiringTopics] = useState<ExpiringTopic[]>([]);
   const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
@@ -46,8 +48,16 @@ export default function HomeScreen() {
     setError(null);
 
     try {
-      const [conversationRows, expiringTopicRows, followUpRows, lifeRows, reminderRows] = await Promise.all([
+      const [
+        conversationRows,
+        pendingExtractionRows,
+        expiringTopicRows,
+        followUpRows,
+        lifeRows,
+        reminderRows,
+      ] = await Promise.all([
         getRecentConversations(10),
+        getConversationsPendingExtraction(10),
         getTopicsExpiringSoonWithPeople(new Date(), 10),
         getAllOpenFollowUpsWithPeople(10),
         getActiveMyLifeItems(),
@@ -56,6 +66,7 @@ export default function HomeScreen() {
 
       if (isActive) {
         setConversations(conversationRows);
+        setPendingExtractions(pendingExtractionRows);
         setExpiringTopics(expiringTopicRows);
         setFollowUps(followUpRows);
         setLifeItems(lifeRows);
@@ -262,6 +273,12 @@ export default function HomeScreen() {
                       Recent notes
                     </ThemedText>
                   </SurfaceCard>
+                  <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
+                    <ThemedText type="smallBold">{pendingExtractions.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Need structure
+                    </ThemedText>
+                  </SurfaceCard>
                 </View>
                 <View style={styles.quickActions}>
                   <Link href="/conversations/new" asChild>
@@ -334,6 +351,58 @@ export default function HomeScreen() {
                     </ThemedText>
                   </Pressable>
                 </View>
+              </View>
+
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ThemedText type="smallBold">Needs structure</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {pendingExtractions.length}
+                  </ThemedText>
+                </View>
+
+                {pendingExtractions.length === 0 ? (
+                  <SurfaceCard style={styles.stateCard}>
+                    <ThemedText type="smallBold">No confirmed transcripts waiting</ThemedText>
+                    <ThemedText themeColor="textSecondary">
+                      Confirmed transcripts will appear here before topics and follow-ups are saved.
+                    </ThemedText>
+                  </SurfaceCard>
+                ) : (
+                  <View style={styles.list}>
+                    {pendingExtractions.map((conversation) => (
+                      <Link
+                        key={conversation.id}
+                        href={{
+                          pathname: '/conversations/[id]/structure',
+                          params: { id: String(conversation.id) },
+                        }}
+                        asChild>
+                        <Pressable
+                          accessibilityRole="button"
+                          style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                          <SurfaceCard tone="primaryMuted" style={styles.row}>
+                            <View style={styles.rowHeader}>
+                              <ThemedText type="smallBold">
+                                {conversation.personName ?? 'Transcript'}
+                              </ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary">
+                                {formatShortDate(conversation.occurredAt)}
+                              </ThemedText>
+                            </View>
+                            <ThemedText type="small" themeColor="textSecondary" selectable>
+                              {conversation.summary ?? conversation.rawTranscript ?? 'Ready for structure'}
+                            </ThemedText>
+                            <ThemedText type="small" themeColor="textSecondary">
+                              {conversation.source}
+                              {conversation.placeName ? ` at ${conversation.placeName}` : ''}
+                            </ThemedText>
+                          </SurfaceCard>
+                        </Pressable>
+                      </Link>
+                    ))}
+                  </View>
+                )}
               </View>
 
               <View style={styles.section}>

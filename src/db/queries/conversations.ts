@@ -1,4 +1,4 @@
-import { asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import {
@@ -21,6 +21,11 @@ type StructuredConversationData = {
   conversation: NewConversation;
   followUps?: string[];
   placeId?: number | null;
+  topics?: string[];
+};
+
+type ExistingStructuredConversationData = {
+  followUps?: string[];
   topics?: string[];
 };
 
@@ -115,6 +120,79 @@ export async function logStructuredConversation({
     }
 
     return row;
+  });
+}
+
+export async function applyStructuredConversationDetails(
+  conversationId: number,
+  { followUps: followUpQuestions = [], topics: topicContents = [] }: ExistingStructuredConversationData,
+): Promise<Conversation | undefined> {
+  const db = await getDb();
+  const now = new Date();
+  const expiresAt = new Date(
+    now.getTime() + STRUCTURED_ITEM_LIFESPAN_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  return db.transaction(async (tx) => {
+    const [conversation] = await tx
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+
+    if (!conversation) {
+      return undefined;
+    }
+
+    if (topicContents.length > 0) {
+      const createdTopics = await tx
+        .insert(topics)
+        .values(
+          topicContents.map((content) => ({
+            content,
+            conversationId,
+            personId: conversation.personId ?? undefined,
+          })),
+        )
+        .returning();
+
+      await tx.insert(topicExpiry).values(
+        createdTopics.map((topic) => ({
+          topicId: topic.id,
+          activatedAt: now,
+          expiresAt,
+        })),
+      );
+    }
+
+    if (followUpQuestions.length > 0) {
+      const createdFollowUps = await tx
+        .insert(followUps)
+        .values(
+          followUpQuestions.map((question) => ({
+            question,
+            conversationId,
+            personId: conversation.personId ?? undefined,
+          })),
+        )
+        .returning();
+
+      await tx.insert(followUpExpiry).values(
+        createdFollowUps.map((followUp) => ({
+          followUpId: followUp.id,
+          activatedAt: now,
+          expiresAt,
+        })),
+      );
+    }
+
+    const [updatedConversation] = await tx
+      .update(conversations)
+      .set({ extractionStatus: 'completed' })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+
+    return updatedConversation;
   });
 }
 
@@ -231,6 +309,28 @@ export async function getConversationsPendingSummary() {
     .from(conversations)
     .where(isNull(conversations.summary))
     .orderBy(desc(conversations.occurredAt));
+}
+
+export async function getConversationsPendingExtraction(limit = 20) {
+  const db = await getDb();
+  return db
+    .select({
+      id: conversations.id,
+      summary: conversations.summary,
+      rawTranscript: conversations.rawTranscript,
+      source: conversations.source,
+      occurredAt: conversations.occurredAt,
+      personId: conversations.personId,
+      personName: people.name,
+      placeId: conversations.placeId,
+      placeName: places.name,
+    })
+    .from(conversations)
+    .leftJoin(people, eq(conversations.personId, people.id))
+    .leftJoin(places, eq(conversations.placeId, places.id))
+    .where(and(eq(conversations.transcriptStatus, 'confirmed'), eq(conversations.extractionStatus, 'pending')))
+    .orderBy(desc(conversations.occurredAt))
+    .limit(limit);
 }
 
 /** Write back the structured summary once extraction finishes (or re-runs). */

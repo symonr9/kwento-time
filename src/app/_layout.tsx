@@ -15,6 +15,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/[id]/edit" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/[id]/review" options={{ headerShown: false }} />
+            <Stack.Screen name="conversations/[id]/structure" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/new" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/voice" options={{ headerShown: false }} />

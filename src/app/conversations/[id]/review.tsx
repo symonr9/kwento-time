@@ -114,7 +114,7 @@ export default function ReviewConversationTranscriptScreen() {
         await addPersonToPlace(selectedPersonId, selectedPlaceId);
       }
 
-      router.replace({ pathname: '/conversations/[id]', params: { id: String(conversationId) } });
+      router.replace({ pathname: '/conversations/[id]/structure', params: { id: String(conversationId) } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to confirm transcript.');
     } finally {
