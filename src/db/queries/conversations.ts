@@ -27,8 +27,8 @@ type StructuredConversationData = {
 };
 
 type ExistingStructuredConversationData = {
-  followUps?: string[];
-  topics?: string[];
+  followUps?: StructuredFollowUpInput[];
+  topics?: StructuredTopicInput[];
 };
 
 type StructuredTopicInput = Pick<NewTopic, 'content'> &
@@ -139,7 +139,7 @@ export async function logStructuredConversation({
 
 export async function applyStructuredConversationDetails(
   conversationId: number,
-  { followUps: followUpQuestions = [], topics: topicContents = [] }: ExistingStructuredConversationData,
+  { followUps: followUpInputs = [], topics: topicInputs = [] }: ExistingStructuredConversationData,
 ): Promise<Conversation | undefined> {
   const db = await getDb();
   const now = new Date();
@@ -158,14 +158,17 @@ export async function applyStructuredConversationDetails(
       return undefined;
     }
 
-    if (topicContents.length > 0) {
+    if (topicInputs.length > 0) {
       const createdTopics = await tx
         .insert(topics)
         .values(
-          topicContents.map((content) => ({
-            content,
+          topicInputs.map((topic) => ({
+            category: topic.category,
+            content: topic.content,
             conversationId,
+            importance: topic.importance ?? 1,
             personId: conversation.personId ?? undefined,
+            tone: topic.tone ?? 'light',
           })),
         )
         .returning();
@@ -179,14 +182,17 @@ export async function applyStructuredConversationDetails(
       );
     }
 
-    if (followUpQuestions.length > 0) {
+    if (followUpInputs.length > 0) {
       const createdFollowUps = await tx
         .insert(followUps)
         .values(
-          followUpQuestions.map((question) => ({
-            question,
+          followUpInputs.map((followUp) => ({
+            category: followUp.category,
             conversationId,
+            importance: followUp.importance ?? 1,
             personId: conversation.personId ?? undefined,
+            question: followUp.question,
+            tone: followUp.tone ?? 'light',
           })),
         )
         .returning();

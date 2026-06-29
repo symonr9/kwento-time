@@ -5,11 +5,13 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { SelectableChipField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
+import { TagSelector } from '@/components/ui/tag-selector';
 import { Radius, Spacing } from '@/constants/theme';
 import { getConversationById, updateConversation } from '@/db/queries/conversations';
-import { getAllPeople } from '@/db/queries/people';
-import { addPersonToPlace, getAllPlaces } from '@/db/queries/places';
-import type { Person, Place } from '@/db/schema';
+import { createPerson, getAllPeople } from '@/db/queries/people';
+import { addPersonToPlace, createPlace, getAllPlaces } from '@/db/queries/places';
+import { createTag, getAllTags, getTagsForItem, setTagsForItem } from '@/db/queries/tags';
+import type { Person, Place, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 import {
   TranscriptionUnavailableError,
@@ -28,11 +30,18 @@ export default function ReviewConversationTranscriptScreen() {
   const conversationId = Number(params.id);
   const [people, setPeople] = useState<Person[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [audioUri, setAudioUri] = useState('');
   const [rawTranscript, setRawTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [newPersonName, setNewPersonName] = useState('');
+  const [newPlaceName, setNewPlaceName] = useState('');
+  const [newTagName, setNewTagName] = useState('');
+  const [isCreatingPerson, setIsCreatingPerson] = useState(false);
+  const [isCreatingPlace, setIsCreatingPlace] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +60,12 @@ export default function ReviewConversationTranscriptScreen() {
         setError(null);
 
         try {
-          const [conversation, peopleRows, placeRows] = await Promise.all([
+          const [conversation, peopleRows, placeRows, tagRows, selectedTags] = await Promise.all([
             getConversationById(conversationId),
             getAllPeople(),
             getAllPlaces(),
+            getAllTags(),
+            getTagsForItem('conversation', conversationId),
           ]);
 
           if (!isActive) {
@@ -68,6 +79,8 @@ export default function ReviewConversationTranscriptScreen() {
 
           setPeople(peopleRows);
           setPlaces(placeRows);
+          setTags(tagRows);
+          setSelectedTagIds(selectedTags.map((tag) => tag.id));
           setAudioUri(conversation.audioUri ?? '');
           setRawTranscript(conversation.rawTranscript ?? '');
           setSummary(conversation.summary ?? '');
@@ -114,11 +127,71 @@ export default function ReviewConversationTranscriptScreen() {
         await addPersonToPlace(selectedPersonId, selectedPlaceId);
       }
 
+      await setTagsForItem('conversation', conversationId, selectedTagIds);
+
       router.replace({ pathname: '/conversations/[id]/structure', params: { id: String(conversationId) } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to confirm transcript.');
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleCreatePerson() {
+    const name = newPersonName.trim();
+    if (!name) {
+      setError('Person name is required.');
+      return;
+    }
+
+    setIsCreatingPerson(true);
+    setError(null);
+
+    try {
+      const person = await createPerson({ name });
+      setPeople((current) => [...current, person].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedPersonId(person.id);
+      setNewPersonName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add person.');
+    } finally {
+      setIsCreatingPerson(false);
+    }
+  }
+
+  async function handleCreatePlace() {
+    const name = newPlaceName.trim();
+    if (!name) {
+      setError('Place name is required.');
+      return;
+    }
+
+    setIsCreatingPlace(true);
+    setError(null);
+
+    try {
+      const place = await createPlace({ name });
+      setPlaces((current) => [...current, place].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedPlaceId(place.id);
+      setNewPlaceName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add place.');
+    } finally {
+      setIsCreatingPlace(false);
+    }
+  }
+
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) return;
+
+    try {
+      const tag = await createTag({ name });
+      setTags((current) => [...current, tag].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedTagIds((current) => [...current, tag.id]);
+      setNewTagName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add tag.');
     }
   }
 
@@ -241,6 +314,14 @@ export default function ReviewConversationTranscriptScreen() {
         value={selectedPersonId}
         onChange={setSelectedPersonId}
       />
+      <InlineCreateField
+        buttonLabel="Add"
+        disabled={isCreatingPerson}
+        placeholder="Add a person by name"
+        value={newPersonName}
+        onChangeText={setNewPersonName}
+        onSubmit={() => void handleCreatePerson()}
+      />
 
       <SelectableChipField
         label="Place"
@@ -249,7 +330,73 @@ export default function ReviewConversationTranscriptScreen() {
         value={selectedPlaceId}
         onChange={setSelectedPlaceId}
       />
+      <InlineCreateField
+        buttonLabel="Add"
+        disabled={isCreatingPlace}
+        placeholder="Add a place by name"
+        value={newPlaceName}
+        onChangeText={setNewPlaceName}
+        onSubmit={() => void handleCreatePlace()}
+      />
+
+      <TagSelector
+        availableTags={tags}
+        newTagName={newTagName}
+        selectedTagIds={selectedTagIds}
+        onAddTag={() => void handleCreateTag()}
+        onNewTagNameChange={setNewTagName}
+        onSelectedTagIdsChange={setSelectedTagIds}
+      />
     </FormScreen>
+  );
+}
+
+function InlineCreateField({
+  buttonLabel,
+  disabled,
+  onChangeText,
+  onSubmit,
+  placeholder,
+  value,
+}: {
+  buttonLabel: string;
+  disabled: boolean;
+  onChangeText: (value: string) => void;
+  onSubmit: () => void;
+  placeholder: string;
+  value: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.inlineCreateRow}>
+      <View style={styles.inlineCreateInput}>
+        <TextField
+          label=""
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          autoCapitalize="words"
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
+        />
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        disabled={disabled}
+        onPress={onSubmit}
+        style={({ pressed }) => [
+          styles.inlineCreateButton,
+          {
+            backgroundColor: theme.primary,
+            opacity: pressed || disabled ? 0.78 : 1,
+          },
+        ]}>
+        <ThemedText type="smallBold" style={styles.inlineCreateButtonText}>
+          {buttonLabel}
+        </ThemedText>
+      </Pressable>
+    </View>
   );
 }
 
@@ -281,5 +428,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+  },
+  inlineCreateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+  },
+  inlineCreateInput: {
+    flex: 1,
+    minWidth: 0,
+  },
+  inlineCreateButton: {
+    minHeight: 52,
+    minWidth: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
+  inlineCreateButtonText: {
+    color: '#FFFFFF',
   },
 });
