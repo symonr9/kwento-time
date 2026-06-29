@@ -46,6 +46,12 @@
         {
           "faceIDPermission": "Allow Kwento Time to use Face ID to keep your relationship notes private."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Kwento Time to record conversations you choose to save."
+        }
       ]
     ],
     "experiments": {

@@ -13,9 +13,22 @@ type SegmentedOption<T extends string> = {
   value: T;
 };
 
+type SelectableChipOption<T extends number | string | null> = {
+  label: string;
+  value: T;
+};
+
 type SegmentedFieldProps<T extends string> = {
   label: string;
   options: SegmentedOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+};
+
+type SelectableChipFieldProps<T extends number | string | null> = {
+  description?: string;
+  label: string;
+  options: SelectableChipOption<T>[];
   value: T;
   onChange: (value: T) => void;
 };
@@ -84,6 +97,51 @@ export function SegmentedField<T extends string>({
   );
 }
 
+export function SelectableChipField<T extends number | string | null>({
+  description,
+  label,
+  options,
+  value,
+  onChange,
+}: SelectableChipFieldProps<T>) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.field}>
+      <ThemedText type="smallBold">{label}</ThemedText>
+      {description ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {description}
+        </ThemedText>
+      ) : null}
+      <View style={styles.chipList}>
+        {options.map((option) => {
+          const isSelected = option.value === value;
+
+          return (
+            <Pressable
+              key={String(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              onPress={() => onChange(option.value)}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: isSelected ? theme.primaryMuted : theme.background,
+                  borderColor: theme.border,
+                },
+              ]}>
+              <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
+                {option.label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export const formControlStyles = StyleSheet.create({
   notesInput: {
     minHeight: 132,
@@ -124,5 +182,18 @@ const styles = StyleSheet.create({
   },
   segmentLabel: {
     textAlign: 'center',
+  },
+  chipList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  chip: {
+    minHeight: 40,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
 });

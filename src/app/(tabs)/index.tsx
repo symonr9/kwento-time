@@ -279,6 +279,19 @@ export default function HomeScreen() {
                       </ThemedText>
                     </Pressable>
                   </Link>
+                  <Link href="/conversations/voice" asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.quickActionButton,
+                        {
+                          backgroundColor: theme.backgroundSelected,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold">Voice note</ThemedText>
+                    </Pressable>
+                  </Link>
                   <Link href="/forecast/index" asChild>
                     <Pressable
                       accessibilityRole="button"

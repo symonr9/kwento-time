@@ -16,6 +16,7 @@ export default function RootLayout() {
             <Stack.Screen name="conversations/[id]/edit" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="conversations/new" options={{ headerShown: false }} />
+            <Stack.Screen name="conversations/voice" options={{ headerShown: false }} />
             <Stack.Screen name="forecast/index" options={{ headerShown: false }} />
             <Stack.Screen name="follow-ups/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="follow-ups/new" options={{ headerShown: false }} />
