@@ -221,7 +221,7 @@ export default function PlaceDetailsScreen() {
                   <ThemedText type="smallBold" themeColor="primary">
                     Place Mode
                   </ThemedText>
-                  <ThemedText type="title" style={styles.title}>
+                  <ThemedText type="title">
                     {place.name}
                   </ThemedText>
                   {place.address ? (
@@ -496,11 +496,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: Spacing.one,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   metricGrid: {
     flexDirection: 'row',

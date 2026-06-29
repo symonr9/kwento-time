@@ -90,7 +90,7 @@ export default function PlacesScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Places
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               Context for where connection happens.
             </ThemedText>
             <ThemedText themeColor="textSecondary">
@@ -198,11 +198,6 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   list: {
     gap: Spacing.two,

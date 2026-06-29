@@ -116,7 +116,7 @@ export default function NewPersonScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               New person
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               Add someone to remember.
             </ThemedText>
           </View>
@@ -278,11 +278,6 @@ const styles = StyleSheet.create({
   },
   hero: {
     gap: Spacing.two,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   form: {
     gap: Spacing.three,

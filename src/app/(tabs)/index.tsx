@@ -221,7 +221,7 @@ export default function HomeScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Today
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               Keep the next conversation close.
             </ThemedText>
             <ThemedText themeColor="textSecondary">
@@ -697,11 +697,6 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   section: {
     gap: Spacing.two,

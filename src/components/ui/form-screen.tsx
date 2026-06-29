@@ -74,7 +74,7 @@ export function FormScreen({
             <ThemedText type="smallBold" themeColor="primary">
               {eyebrow}
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               {title}
             </ThemedText>
           </View>
@@ -143,11 +143,6 @@ const styles = StyleSheet.create({
   },
   hero: {
     gap: Spacing.two,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   form: {
     gap: Spacing.three,

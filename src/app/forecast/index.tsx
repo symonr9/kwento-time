@@ -9,6 +9,7 @@ import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getForecastRetrieval } from '@/db/queries/forecast';
 import { getAllPlaces } from '@/db/queries/places';
+import type { Place } from '@/db/schema';
 import {
   buildBriefingContext,
   narrateBriefing,
@@ -16,7 +17,6 @@ import {
   type BriefingContext,
   type ForecastLength,
 } from '@/features/forecast';
-import type { Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 import { speakForecastScript, stopForecastSpeech } from '@/services/speech';
 
@@ -170,7 +170,7 @@ export default function ForecastScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Forecast
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               Deterministic place briefing.
             </ThemedText>
             <ThemedText themeColor="textSecondary">
@@ -384,11 +384,6 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   form: {
     gap: Spacing.three,

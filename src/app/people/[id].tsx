@@ -251,7 +251,7 @@ export default function PersonDetailsScreen() {
                   <ThemedText type="smallBold" themeColor="primary">
                     Person
                   </ThemedText>
-                  <ThemedText type="title" style={styles.title}>
+                  <ThemedText type="title">
                     {person.name}
                   </ThemedText>
                   {person.nickname ? (
@@ -644,11 +644,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: Spacing.one,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   metricGrid: {
     flexDirection: 'row',

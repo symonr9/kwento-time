@@ -90,7 +90,7 @@ export default function PeopleScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               People
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               Your relationship memory.
             </ThemedText>
             <ThemedText themeColor="textSecondary">
@@ -193,11 +193,6 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   list: {
     gap: Spacing.two,

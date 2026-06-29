@@ -160,7 +160,7 @@ export default function SettingsScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Settings
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>
+            <ThemedText type="title">
               Keep local data private.
             </ThemedText>
             <ThemedText themeColor="textSecondary">
@@ -327,11 +327,6 @@ const styles = StyleSheet.create({
   },
   hero: {
     gap: Spacing.two,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   metricGrid: {
     flexDirection: 'row',

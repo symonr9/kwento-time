@@ -76,10 +76,10 @@ export function TabTemplateScreen({
           <ThemedText type="smallBold" themeColor="primary">
             {eyebrow}
           </ThemedText>
-          <ThemedText type="title" style={styles.title}>
+          <ThemedText type="title">
             {title}
           </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.description}>
+          <ThemedText themeColor="textSecondary">
             {description}
           </ThemedText>
         </View>
@@ -161,11 +161,6 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
-  },
-  title: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: 0,
   },
   description: {
     maxWidth: 640,
