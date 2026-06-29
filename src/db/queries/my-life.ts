@@ -12,12 +12,30 @@ import {
 const DEFAULT_LIFESPAN_DAYS = 30;
 const EXPIRING_WINDOW_DAYS = 7;
 
-/** Add something going on in the user's life, and start its 30-day expiry clock. */
-export async function createMyLifeItem(data: NewMyLifeItem, lifespanDays = DEFAULT_LIFESPAN_DAYS) {
+type CreateMyLifeItemOptions = {
+  activatedAt?: Date;
+  expiresAt?: Date;
+  lifespanDays?: number;
+};
+
+function normalizeCreateOptions(options: CreateMyLifeItemOptions | number = {}) {
+  if (typeof options === 'number') {
+    return { lifespanDays: options };
+  }
+
+  return options;
+}
+
+/** Add something going on in the user's life, and start its expiry clock. */
+export async function createMyLifeItem(data: NewMyLifeItem, options: CreateMyLifeItemOptions | number = {}) {
   const db = await getDb();
   const [item] = await db.insert(myLifeItems).values(data).returning();
-  const activatedAt = new Date();
-  const expiresAt = new Date(activatedAt.getTime() + lifespanDays * 24 * 60 * 60 * 1000);
+  const createOptions = normalizeCreateOptions(options);
+  const activatedAt = createOptions.activatedAt ?? new Date();
+  const lifespanDays = createOptions.lifespanDays ?? DEFAULT_LIFESPAN_DAYS;
+  const expiresAt =
+    createOptions.expiresAt ??
+    new Date(activatedAt.getTime() + lifespanDays * 24 * 60 * 60 * 1000);
   await db.insert(myLifeItemExpiry).values({ myLifeItemId: item.id, activatedAt, expiresAt });
   return item;
 }

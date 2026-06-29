@@ -14,9 +14,44 @@ const toneOptions: { label: string; value: MyLifeTone }[] = [
   { label: 'Personal', value: 'personal' },
 ];
 
+function getDefaultExpirationDateValue() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return formatDateInputValue(date);
+}
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseExpirationDate(value: string) {
+  const trimmedValue = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+
+  return date;
+}
+
 export default function NewMyLifeItemScreen() {
   const [content, setContent] = useState('');
   const [tone, setTone] = useState<MyLifeTone>('light');
+  const [expiresAt, setExpiresAt] = useState(getDefaultExpirationDateValue);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -68,6 +103,13 @@ export default function NewMyLifeItemScreen() {
       return;
     }
 
+    const parsedExpiresAt = parseExpirationDate(expiresAt);
+
+    if (!parsedExpiresAt) {
+      setError('Expiration date must use YYYY-MM-DD.');
+      return;
+    }
+
     const item: NewMyLifeItem = {
       content: trimmedContent,
       tone,
@@ -77,7 +119,7 @@ export default function NewMyLifeItemScreen() {
     setError(null);
 
     try {
-      const savedItem = await createMyLifeItem(item);
+      const savedItem = await createMyLifeItem(item, { expiresAt: parsedExpiresAt });
       await setTagsForItem('my_life_item', savedItem.id, selectedTagIds);
       router.replace('/');
     } catch (err) {
@@ -104,6 +146,13 @@ export default function NewMyLifeItemScreen() {
         style={formControlStyles.notesInput}
       />
       <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
+      <TextField
+        label="Expiration date"
+        value={expiresAt}
+        onChangeText={setExpiresAt}
+        placeholder="YYYY-MM-DD"
+        inputMode="numeric"
+      />
       <TagSelector
         availableTags={tags}
         newTagName={newTagName}
