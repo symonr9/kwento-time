@@ -1,6 +1,7 @@
 import { getDb } from '../client';
 import {
   conversations,
+  appSettings,
   followUpExpiry,
   followUps,
   myLifeItemExpiry,
@@ -30,6 +31,7 @@ const dateFieldNames = new Set([
 ]);
 
 type PeopleRow = typeof people.$inferSelect;
+type AppSettingRow = typeof appSettings.$inferSelect;
 type TagRow = typeof tags.$inferSelect;
 type PersonTagRow = typeof personTags.$inferSelect;
 type PlaceRow = typeof places.$inferSelect;
@@ -46,6 +48,7 @@ type MyLifeItemExpiryRow = typeof myLifeItemExpiry.$inferSelect;
 export type KwentoBackup = {
   exportedAt: string;
   tables: {
+    appSettings: AppSettingRow[];
     conversations: ConversationRow[];
     followUpExpiry: FollowUpExpiryRow[];
     followUps: FollowUpRow[];
@@ -87,6 +90,7 @@ function countRows(backup: KwentoBackup) {
 export async function exportBackup(): Promise<KwentoBackup> {
   const db = await getDb();
   const [
+    appSettingRows,
     peopleRows,
     tagRows,
     personTagRows,
@@ -101,6 +105,7 @@ export async function exportBackup(): Promise<KwentoBackup> {
     myLifeRows,
     myLifeExpiryRows,
   ] = await Promise.all([
+    db.select().from(appSettings),
     db.select().from(people),
     db.select().from(tags),
     db.select().from(personTags),
@@ -119,6 +124,7 @@ export async function exportBackup(): Promise<KwentoBackup> {
   return {
     exportedAt: new Date().toISOString(),
     tables: {
+      appSettings: appSettingRows,
       conversations: conversationRows,
       followUpExpiry: followUpExpiryRows,
       followUps: followUpRows,
@@ -150,6 +156,12 @@ export async function importBackup(backup: KwentoBackup): Promise<BackupImportRe
       await tx
         .insert(people)
         .values(reviveDateFields(backup.tables.people) as (typeof people.$inferInsert)[])
+        .onConflictDoNothing();
+    }
+    if (backup.tables.appSettings.length > 0) {
+      await tx
+        .insert(appSettings)
+        .values(reviveDateFields(backup.tables.appSettings) as (typeof appSettings.$inferInsert)[])
         .onConflictDoNothing();
     }
     if (backup.tables.tags.length > 0) {

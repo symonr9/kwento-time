@@ -40,7 +40,13 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Kwento Time to use Face ID to keep your relationship notes private."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

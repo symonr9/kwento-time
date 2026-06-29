@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { isBiometricLockEnabled, setBiometricLockEnabled } from '@/db/queries/settings';
 import { useTheme } from '@/hooks/use-theme';
+import { getBiometricAvailability } from '@/services/auth';
 import { generateBackupJson, importBackupJson } from '@/services/backup';
 
 export default function SettingsScreen() {
@@ -24,8 +26,41 @@ export default function SettingsScreen() {
   const [backupJson, setBackupJson] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+  const [isSavingBiometric, setIsSavingBiometric] = useState(false);
+  const [biometricAvailability, setBiometricAvailability] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadPrivacySettings() {
+        try {
+          const [enabled, availability] = await Promise.all([
+            isBiometricLockEnabled(),
+            getBiometricAvailability(),
+          ]);
+
+          if (isActive) {
+            setIsBiometricEnabled(enabled);
+            setBiometricAvailability(availability.available ? null : availability.reason ?? null);
+          }
+        } catch (err) {
+          if (isActive) {
+            setBiometricAvailability(err instanceof Error ? err.message : 'Unable to check biometrics.');
+          }
+        }
+      }
+
+      void loadPrivacySettings();
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
 
   async function handleExport() {
     setIsExporting(true);
@@ -60,6 +95,32 @@ export default function SettingsScreen() {
       setError(err instanceof Error ? err.message : 'Unable to import backup.');
     } finally {
       setIsImporting(false);
+    }
+  }
+
+  async function handleToggleBiometric() {
+    setIsSavingBiometric(true);
+    setNotice(null);
+    setError(null);
+
+    try {
+      if (!isBiometricEnabled) {
+        const availability = await getBiometricAvailability();
+
+        if (!availability.available) {
+          setBiometricAvailability(availability.reason ?? 'Biometrics are unavailable.');
+          return;
+        }
+      }
+
+      const nextValue = !isBiometricEnabled;
+      await setBiometricLockEnabled(nextValue);
+      setIsBiometricEnabled(nextValue);
+      setNotice(nextValue ? 'Biometric lock enabled.' : 'Biometric lock disabled.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update biometric lock.');
+    } finally {
+      setIsSavingBiometric(false);
     }
   }
 
@@ -139,6 +200,40 @@ export default function SettingsScreen() {
               <ThemedText selectable>{error}</ThemedText>
             </SurfaceCard>
           ) : null}
+
+          <SurfaceCard style={styles.section}>
+            <View style={styles.rowHeader}>
+              <View style={styles.settingCopy}>
+                <ThemedText type="smallBold">Biometric lock</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Require Face ID, Touch ID, or fingerprint unlock when the app opens.
+                </ThemedText>
+                {biometricAvailability ? (
+                  <ThemedText type="small" themeColor="accent" selectable>
+                    {biometricAvailability}
+                  </ThemedText>
+                ) : null}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ checked: isBiometricEnabled }}
+                disabled={isSavingBiometric}
+                onPress={handleToggleBiometric}
+                style={({ pressed }) => [
+                  styles.toggleButton,
+                  {
+                    backgroundColor: isBiometricEnabled ? theme.primary : theme.backgroundSelected,
+                    opacity: pressed || isSavingBiometric ? 0.72 : 1,
+                  },
+                ]}>
+                <ThemedText
+                  type="smallBold"
+                  style={isBiometricEnabled ? styles.primaryButtonText : undefined}>
+                  {isBiometricEnabled ? 'On' : 'Off'}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </SurfaceCard>
 
           <SurfaceCard style={styles.section}>
             <ThemedText type="smallBold">Backup JSON</ThemedText>
@@ -250,6 +345,26 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.three,
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  settingCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one,
+  },
+  toggleButton: {
+    minWidth: 72,
+    minHeight: 40,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
   backupInput: {
     minHeight: 240,
