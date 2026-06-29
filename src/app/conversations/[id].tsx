@@ -139,6 +139,22 @@ export default function ConversationDetailsScreen() {
 
           {!isLoading && !error && conversation ? (
             <>
+              <Link
+                href={{ pathname: '/conversations/[id]/edit', params: { id: String(conversation.id) } }}
+                asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                      opacity: pressed ? 0.72 : 1,
+                    },
+                  ]}>
+                  <ThemedText type="smallBold">Edit conversation</ThemedText>
+                </Pressable>
+              </Link>
+
               <SurfaceCard style={styles.heroCard}>
                 <View style={[styles.iconBadge, { backgroundColor: theme.primaryMuted }]}>
                   <SymbolView
