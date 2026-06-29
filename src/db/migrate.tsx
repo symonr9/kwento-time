@@ -1,9 +1,10 @@
 import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppSplash } from '@/components/ui/app-splash';
 import { Spacing } from '@/constants/theme';
 
 import { getDb } from './client';
@@ -55,11 +56,7 @@ export function MigrationGate({ children }: { children: ReactNode }) {
   }
 
   if (!success) {
-    return (
-      <ThemedView style={styles.center}>
-        <ActivityIndicator />
-      </ThemedView>
-    );
+    return <AppSplash message="Preparing your notes..." />;
   }
 
   return <>{children}</>;

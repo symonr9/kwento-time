@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppSplash } from '@/components/ui/app-splash';
 import { Radius, Spacing } from '@/constants/theme';
 import { isBiometricLockEnabled } from '@/db/queries/settings';
 import { authenticateWithBiometrics } from '@/services/auth';
@@ -83,11 +84,7 @@ export function BiometricGate({ children }: { children: ReactNode }) {
   }
 
   if (state === 'checking') {
-    return (
-      <ThemedView style={styles.center}>
-        <ActivityIndicator color={theme.primary} />
-      </ThemedView>
-    );
+    return <AppSplash message="Checking privacy lock..." />;
   }
 
   return (
