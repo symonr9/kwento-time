@@ -3,8 +3,8 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { FormScreen } from '@/components/ui/form-screen';
 import { SelectableChipField, TextField, formControlStyles } from '@/components/ui/form-controls';
+import { FormScreen } from '@/components/ui/form-screen';
 import { Radius, Spacing } from '@/constants/theme';
 import { getConversationById, updateConversation } from '@/db/queries/conversations';
 import { getAllPeople } from '@/db/queries/people';
@@ -171,7 +171,7 @@ export default function ReviewConversationTranscriptScreen() {
 
   return (
     <FormScreen
-      eyebrow="Transcript review"
+      subtitle="Transcript review"
       title="Confirm what was said."
       error={error}
       isSaving={isSaving}

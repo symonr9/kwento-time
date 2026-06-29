@@ -94,7 +94,7 @@ export default function NewFollowUpScreen() {
 
   return (
     <FormScreen
-      eyebrow="New follow-up"
+      subtitle="New follow-up"
       title="Remember what to ask."
       error={error}
       isSaving={isSaving}

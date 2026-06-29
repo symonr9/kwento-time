@@ -25,13 +25,15 @@ export default function EditConversationScreen() {
   const [people, setPeople] = useState<Person[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
   const [summary, setSummary] = useState('');
-  const [rawTranscript, setRawTranscript] = useState('');
-  const [audioUri, setAudioUri] = useState('');
   const [source, setSource] = useState<Conversation['source']>('manual');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TODO: To Implement
+  const [rawTranscript, setRawTranscript] = useState('');
+  const [audioUri, setAudioUri] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -119,7 +121,7 @@ export default function EditConversationScreen() {
 
   return (
     <FormScreen
-      eyebrow="Edit conversation"
+      subtitle="Edit conversation"
       title="Update the note."
       error={error}
       isSaving={isSaving}
@@ -129,16 +131,6 @@ export default function EditConversationScreen() {
         value={summary}
         onChangeText={setSummary}
         placeholder="What did you talk about?"
-        multiline
-        textAlignVertical="top"
-        style={formControlStyles.notesInput}
-      />
-
-      <TextField
-        label="Raw transcript"
-        value={rawTranscript}
-        onChangeText={setRawTranscript}
-        placeholder="Full note or transcript"
         multiline
         textAlignVertical="top"
         style={formControlStyles.notesInput}
@@ -237,13 +229,6 @@ export default function EditConversationScreen() {
           })}
         </View>
       </View>
-
-      <TextField
-        label="Audio URI"
-        value={audioUri}
-        onChangeText={setAudioUri}
-        placeholder="Optional recording path"
-      />
     </FormScreen>
   );
 }

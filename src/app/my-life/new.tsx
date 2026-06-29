@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 
-import { FormScreen } from '@/components/ui/form-screen';
 import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
+import { FormScreen } from '@/components/ui/form-screen';
 import { createMyLifeItem } from '@/db/queries/my-life';
 import type { MyLifeTone, NewMyLifeItem } from '@/db/schema';
 
@@ -46,7 +46,7 @@ export default function NewMyLifeItemScreen() {
 
   return (
     <FormScreen
-      eyebrow="How are you?"
+      subtitle="How are you?"
       title="Record what is current."
       error={error}
       isSaving={isSaving}

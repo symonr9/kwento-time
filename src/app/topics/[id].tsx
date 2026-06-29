@@ -108,7 +108,7 @@ export default function EditTopicScreen() {
 
   return (
     <FormScreen
-      eyebrow="Edit topic"
+      subtitle="Edit topic"
       title="Update this talking point."
       error={error}
       isSaving={isSaving}

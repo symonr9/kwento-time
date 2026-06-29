@@ -114,7 +114,7 @@ export default function VoiceConversationScreen() {
 
   return (
     <FormScreen
-      eyebrow="Voice conversation"
+      subtitle="Voice conversation"
       title="Record the audio."
       error={error}
       isSaving={isSaving}

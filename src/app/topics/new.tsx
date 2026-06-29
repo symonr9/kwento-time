@@ -114,7 +114,7 @@ export default function NewTopicScreen() {
 
   return (
     <FormScreen
-      eyebrow="New topic"
+      subtitle="New topic"
       title="Save a talking point."
       error={error}
       isSaving={isSaving}

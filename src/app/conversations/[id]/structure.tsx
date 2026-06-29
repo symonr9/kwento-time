@@ -3,8 +3,8 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { FormScreen } from '@/components/ui/form-screen';
 import { TextField, formControlStyles } from '@/components/ui/form-controls';
+import { FormScreen } from '@/components/ui/form-screen';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   applyStructuredConversationDetails,
@@ -104,7 +104,7 @@ export default function ConversationStructureScreen() {
 
   return (
     <FormScreen
-      eyebrow="Structured details"
+      subtitle="Structured details"
       title="Confirm what to remember."
       error={error}
       isSaving={isSaving}

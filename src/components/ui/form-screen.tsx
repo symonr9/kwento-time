@@ -17,7 +17,7 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type FormScreenProps = {
-  eyebrow: string;
+  subtitle: string;
   title: string;
   children: ReactNode;
   error: string | null;
@@ -27,7 +27,7 @@ type FormScreenProps = {
 };
 
 export function FormScreen({
-  eyebrow,
+  subtitle,
   title,
   children,
   error,
@@ -71,11 +71,11 @@ export function FormScreen({
           </View>
 
           <View style={styles.hero}>
-            <ThemedText type="smallBold" themeColor="primary">
-              {eyebrow}
-            </ThemedText>
             <ThemedText type="title">
               {title}
+            </ThemedText>
+            <ThemedText type="smallBold" themeColor="primary">
+              {subtitle}
             </ThemedText>
           </View>
 

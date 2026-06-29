@@ -8,10 +8,10 @@ import { FormScreen } from '@/components/ui/form-screen';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { Radius, Spacing } from '@/constants/theme';
 import {
-  extendFollowUpExpiry,
-  getFollowUpDetails,
-  resolveFollowUp,
-  updateFollowUp,
+    extendFollowUpExpiry,
+    getFollowUpDetails,
+    resolveFollowUp,
+    updateFollowUp,
 } from '@/db/queries/follow-ups';
 import { getAllPeople } from '@/db/queries/people';
 import type { Person } from '@/db/schema';
@@ -156,7 +156,7 @@ export default function FollowUpDetailsScreen() {
 
   return (
     <FormScreen
-      eyebrow="Follow-up"
+      subtitle="Follow-up"
       title="Edit what to remember."
       error={error}
       isSaving={isSaving}

@@ -3,8 +3,8 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { MultiTextFields, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
-import { TextField, formControlStyles } from '@/components/ui/form-controls';
 import { Radius, Spacing } from '@/constants/theme';
 import { logStructuredConversation } from '@/db/queries/conversations';
 import { getAllPeople } from '@/db/queries/people';
@@ -22,8 +22,6 @@ function splitLines(value: string) {
 export default function NewConversationScreen() {
   const theme = useTheme();
   const [summary, setSummary] = useState('');
-  const [rawTranscript, setRawTranscript] = useState('');
-  const [audioUri, setAudioUri] = useState('');
   const [topics, setTopics] = useState('');
   const [followUps, setFollowUps] = useState('');
   const [people, setPeople] = useState<Person[]>([]);
@@ -32,6 +30,10 @@ export default function NewConversationScreen() {
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TODO: To implement  
+  const [rawTranscript, setRawTranscript] = useState('');
+  const [audioUri, setAudioUri] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -96,29 +98,23 @@ export default function NewConversationScreen() {
 
   return (
     <FormScreen
-      eyebrow="New conversation"
-      title="Record what was said."
+      subtitle="What do you want to remember about the conversation?"
+      title="New Conversation"
       error={error}
       isSaving={isSaving}
       onSave={handleSave}>
-      <TextField
-        label="Conversation note"
-        value={summary}
-        onChangeText={setSummary}
-        placeholder="What did you talk about?"
-        multiline
-        textAlignVertical="top"
-        style={formControlStyles.notesInput}
+      <MultiTextFields
+        label="Talking points"
+        value={topics}
+        onChange={setTopics}
+        placeholder="Something talked about"
       />
 
-      <TextField
-        label="Raw transcript"
-        value={rawTranscript}
-        onChangeText={setRawTranscript}
-        placeholder="Optional. Paste the full note or transcript here."
-        multiline
-        textAlignVertical="top"
-        style={formControlStyles.notesInput}
+      <MultiTextFields
+        label="Follow-up Points"
+        value={followUps}
+        onChange={setFollowUps}
+        placeholder="Something to follow up on"
       />
 
       <View style={styles.field}>
@@ -217,27 +213,10 @@ export default function NewConversationScreen() {
       </View>
 
       <TextField
-        label="Audio URI"
-        value={audioUri}
-        onChangeText={setAudioUri}
-        placeholder="Optional placeholder for a future recording"
-      />
-
-      <TextField
-        label="Talking points"
-        value={topics}
-        onChangeText={setTopics}
-        placeholder="One talking point per line"
-        multiline
-        textAlignVertical="top"
-        style={formControlStyles.notesInput}
-      />
-
-      <TextField
-        label="Follow-up questions"
-        value={followUps}
-        onChangeText={setFollowUps}
-        placeholder="One question to ask next time per line"
+        label="Notes"
+        value={summary}
+        onChangeText={setSummary}
+        placeholder="Anything else to remember?"
         multiline
         textAlignVertical="top"
         style={formControlStyles.notesInput}
