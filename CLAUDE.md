@@ -125,6 +125,7 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 - **Path alias: `@/*` → `src/*`** and `@/assets/*` → `assets/*`. Import with `@/...`, not deep relative paths.
 - **TypeScript strict.** No `any`. Prefer Drizzle-inferred types over hand-written DB shapes.
 - **Functional components + hooks** only. Co-locate feature-specific UI/logic in `src/features/<feature>/`; promote to `src/components` or `src/hooks` only once genuinely shared.
+- **Buttons include icons by default.** For new reusable or primary action buttons, use `src/components/ui/icon-action-button.tsx` or an equivalent icon-bearing component so actions are scannable and consistent.
 - **DB access through Drizzle query syntax**; drop to raw SQL only for complex aggregations (e.g. health-score multi-table joins). Never embed SQL strings in components — keep them in `src/db/queries/`.
 - React Compiler is enabled — avoid manual `useMemo`/`useCallback` unless profiling shows a need.
 

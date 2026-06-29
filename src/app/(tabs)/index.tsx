@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconActionButton } from '@/components/ui/icon-action-button';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsPendingExtraction, getRecentConversations } from '@/db/queries/conversations';
@@ -296,84 +297,45 @@ export default function HomeScreen() {
             <>
               <View style={styles.section}>
                 <View style={styles.quickActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.quickActionButton,
-                      {
-                        opacity: pressed ? 0.78 : 1,
-                      },
-                    ]}>
-                    <Link href="/conversations/new" asChild>
-                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
-                        <ThemedText type="smallBold">
-                          Conversation
-                        </ThemedText>
-                      </SurfaceCard>
-                    </Link>
-                  </Pressable>
+                  <Link href="/conversations/new" asChild>
+                    <IconActionButton
+                      icon={{ ios: 'bubble.left.and.text.bubble.right', android: 'chat', web: 'chat' }}
+                      label="Conversation"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
 
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.quickActionButton,
-                      {
-                        opacity: pressed ? 0.72 : 1,
-                      },
-                    ]}>
-                    <Link href="/conversations/voice" asChild>
-                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
-                        <ThemedText type="smallBold">Voice note</ThemedText>
-                      </SurfaceCard>
-                    </Link>
-                  </Pressable>
+                  <Link href="/conversations/voice" asChild>
+                    <IconActionButton
+                      icon={{ ios: 'waveform', android: 'mic', web: 'mic' }}
+                      label="Voice note"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
 
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.quickActionButton,
-                      {
-                        opacity: pressed ? 0.72 : 1,
-                      },
-                    ]}>
-                    <Link href="/forecast/index" asChild>
-                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
-                        <ThemedText type="smallBold">Briefing</ThemedText>
-                      </SurfaceCard>
-                    </Link>
-                  </Pressable>
+                  <Link href="/forecast/index" asChild>
+                    <IconActionButton
+                      icon={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
+                      label="Briefing"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
 
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.quickActionButton,
-                      {
-                        opacity: pressed ? 0.72 : 1,
-                      },
-                    ]}>
-                    <Link href="/my-life/new" asChild>
-                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
-                        <ThemedText type="smallBold">Life update</ThemedText>
-                      </SurfaceCard>
-                    </Link>
-                  </Pressable>
+                  <Link href="/my-life/new" asChild>
+                    <IconActionButton
+                      icon={{ ios: 'heart.text.square', android: 'favorite', web: 'favorite' }}
+                      label="Life update"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
 
-                  <Pressable
-                    accessibilityRole="button"
+                  <IconActionButton
                     disabled={isScheduling}
+                    icon={{ ios: 'bell.badge', android: 'notifications', web: 'notifications' }}
+                    label={isScheduling ? 'Scheduling...' : 'Schedule reminders'}
                     onPress={handleScheduleReminders}
-                    style={({ pressed }) => [
-                      styles.quickActionButton,
-                      {
-                        opacity: pressed || isScheduling ? 0.72 : 1,
-                      },
-                    ]}>
-                    <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
-                      <ThemedText type="smallBold">
-                        {isScheduling ? 'Scheduling...' : 'Schedule reminders'}
-                      </ThemedText>
-                    </SurfaceCard>
-                  </Pressable>
+                    style={styles.quickActionButton}
+                  />
                 </View>
               </View>
 
@@ -857,12 +819,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   quickActionButton: {
-  },
-  quickActionButtonContent: {
-    flexDirection: 'row',
-    gap: Spacing.half,
-    padding: Spacing.two,
-    borderRadius: Radius.small
+    flexGrow: 1,
   },
   row: {
     minHeight: 84,
