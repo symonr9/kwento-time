@@ -12,6 +12,8 @@ import {
   topics,
   type Conversation,
   type NewConversation,
+  type NewFollowUp,
+  type NewTopic,
 } from '../schema';
 import { bumpLastContacted } from './people';
 
@@ -19,15 +21,21 @@ const STRUCTURED_ITEM_LIFESPAN_DAYS = 30;
 
 type StructuredConversationData = {
   conversation: NewConversation;
-  followUps?: string[];
+  followUps?: StructuredFollowUpInput[];
   placeId?: number | null;
-  topics?: string[];
+  topics?: StructuredTopicInput[];
 };
 
 type ExistingStructuredConversationData = {
   followUps?: string[];
   topics?: string[];
 };
+
+type StructuredTopicInput = Pick<NewTopic, 'content'> &
+  Partial<Pick<NewTopic, 'category' | 'importance' | 'tone'>>;
+
+type StructuredFollowUpInput = Pick<NewFollowUp, 'question'> &
+  Partial<Pick<NewFollowUp, 'category' | 'importance' | 'tone'>>;
 
 /**
  * Log a conversation and bump the person's `lastContactedAt` in the same
@@ -47,7 +55,7 @@ export async function logStructuredConversation({
   conversation,
   followUps: followUpQuestions = [],
   placeId,
-  topics: topicContents = [],
+  topics: topicInputs = [],
 }: StructuredConversationData): Promise<Conversation> {
   const db = await getDb();
   const now = new Date();
@@ -70,14 +78,17 @@ export async function logStructuredConversation({
       await tx.update(people).set({ lastContactedAt: row.occurredAt }).where(eq(people.id, row.personId));
     }
 
-    if (topicContents.length > 0) {
+    if (topicInputs.length > 0) {
       const createdTopics = await tx
         .insert(topics)
         .values(
-          topicContents.map((content) => ({
-            content,
+          topicInputs.map((topic) => ({
+            category: topic.category,
+            content: topic.content,
             conversationId: row.id,
+            importance: topic.importance ?? 1,
             personId: row.personId ?? undefined,
+            tone: topic.tone ?? 'light',
           })),
         )
         .returning();
@@ -95,10 +106,13 @@ export async function logStructuredConversation({
       const createdFollowUps = await tx
         .insert(followUps)
         .values(
-          followUpQuestions.map((question) => ({
-            question,
+          followUpQuestions.map((followUp) => ({
+            category: followUp.category,
             conversationId: row.id,
+            importance: followUp.importance ?? 1,
             personId: row.personId ?? undefined,
+            question: followUp.question,
+            tone: followUp.tone ?? 'light',
           })),
         )
         .returning();
