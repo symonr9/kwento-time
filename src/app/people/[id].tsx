@@ -316,12 +316,22 @@ export default function PersonDetailsScreen() {
                 {followUps.length > 0 ? (
                   followUps.map((followUp) => (
                     <SurfaceCard key={followUp.id} style={styles.row}>
-                      <ThemedText type="small" selectable>
-                        {followUp.question}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        Added {formatShortDate(followUp.createdAt)}
-                      </ThemedText>
+                      <Link
+                        href={{ pathname: '/follow-ups/[id]', params: { id: String(followUp.id) } }}
+                        asChild>
+                        <Pressable
+                          accessibilityRole="button"
+                          style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                          <View style={styles.linkedRowContent}>
+                            <ThemedText type="small" selectable>
+                              {followUp.question}
+                            </ThemedText>
+                            <ThemedText type="small" themeColor="textSecondary">
+                              Added {formatShortDate(followUp.createdAt)}
+                            </ThemedText>
+                          </View>
+                        </Pressable>
+                      </Link>
                       <Pressable
                         accessibilityRole="button"
                         onPress={() => void handleResolveFollowUp(followUp.id)}
@@ -668,6 +678,9 @@ const styles = StyleSheet.create({
   row: {
     minHeight: 64,
     justifyContent: 'center',
+  },
+  linkedRowContent: {
+    gap: Spacing.two,
   },
   rowHeader: {
     flexDirection: 'row',

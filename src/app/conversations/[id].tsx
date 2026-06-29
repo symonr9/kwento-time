@@ -261,17 +261,27 @@ export default function ConversationDetailsScreen() {
                 {followUps.length > 0 ? (
                   followUps.map((followUp) => (
                     <SurfaceCard key={followUp.id} style={styles.row}>
-                      <View style={styles.rowHeader}>
-                        <ThemedText type="smallBold">
-                          {followUp.resolved ? 'Resolved' : 'Open'}
-                        </ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {formatShortDate(followUp.createdAt)}
-                        </ThemedText>
-                      </View>
-                      <ThemedText type="small" themeColor="textSecondary" selectable>
-                        {followUp.question}
-                      </ThemedText>
+                      <Link
+                        href={{ pathname: '/follow-ups/[id]', params: { id: String(followUp.id) } }}
+                        asChild>
+                        <Pressable
+                          accessibilityRole="button"
+                          style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                          <View style={styles.linkedRowContent}>
+                            <View style={styles.rowHeader}>
+                              <ThemedText type="smallBold">
+                                {followUp.resolved ? 'Resolved' : 'Open'}
+                              </ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary">
+                                {formatShortDate(followUp.createdAt)}
+                              </ThemedText>
+                            </View>
+                            <ThemedText type="small" themeColor="textSecondary" selectable>
+                              {followUp.question}
+                            </ThemedText>
+                          </View>
+                        </Pressable>
+                      </Link>
                       {followUp.resolved ? (
                         <ThemedText type="small" themeColor="textSecondary">
                           Resolved {formatShortDate(followUp.resolvedAt)}
@@ -475,6 +485,9 @@ const styles = StyleSheet.create({
   row: {
     minHeight: 64,
     justifyContent: 'center',
+  },
+  linkedRowContent: {
+    gap: Spacing.two,
   },
   rowHeader: {
     flexDirection: 'row',

@@ -1,7 +1,14 @@
 import { and, desc, eq, lte } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { followUpExpiry, followUps, people, type FollowUpExpiryState, type NewFollowUp } from '../schema';
+import {
+  conversations,
+  followUpExpiry,
+  followUps,
+  people,
+  type FollowUpExpiryState,
+  type NewFollowUp,
+} from '../schema';
 
 const DEFAULT_LIFESPAN_DAYS = 30;
 const EXPIRING_WINDOW_DAYS = 7;
@@ -19,6 +26,32 @@ export async function createFollowUp(data: NewFollowUp, lifespanDays = DEFAULT_L
 export async function getFollowUpById(id: number) {
   const db = await getDb();
   const [row] = await db.select().from(followUps).where(eq(followUps.id, id)).limit(1);
+  return row;
+}
+
+export async function getFollowUpDetails(id: number) {
+  const db = await getDb();
+  const [row] = await db
+    .select({
+      id: followUps.id,
+      question: followUps.question,
+      personId: followUps.personId,
+      personName: people.name,
+      conversationId: followUps.conversationId,
+      conversationSummary: conversations.summary,
+      resolved: followUps.resolved,
+      resolvedAt: followUps.resolvedAt,
+      createdAt: followUps.createdAt,
+      updatedAt: followUps.updatedAt,
+      expiryState: followUpExpiry.state,
+      expiresAt: followUpExpiry.expiresAt,
+    })
+    .from(followUps)
+    .leftJoin(people, eq(followUps.personId, people.id))
+    .leftJoin(conversations, eq(followUps.conversationId, conversations.id))
+    .leftJoin(followUpExpiry, eq(followUpExpiry.followUpId, followUps.id))
+    .where(eq(followUps.id, id))
+    .limit(1);
   return row;
 }
 
