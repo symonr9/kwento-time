@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,9 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
+import { TagSelector } from '@/components/ui/tag-selector';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { createPerson } from '@/db/queries/people';
-import type { NewPerson } from '@/db/schema';
+import { createTag, getAllTags, setTagsForItem } from '@/db/queries/tags';
+import type { NewPerson, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PersonForm = {
@@ -44,11 +46,51 @@ export default function NewPersonScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState<PersonForm>(initialForm);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [newTagName, setNewTagName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function updateField(field: keyof PersonForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadTags() {
+      try {
+        const rows = await getAllTags();
+        if (isActive) {
+          setTags(rows);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err instanceof Error ? err.message : 'Unable to load tags.');
+        }
+      }
+    }
+
+    void loadTags();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) return;
+
+    try {
+      const tag = await createTag({ name });
+      setTags((current) => [...current, tag].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedTagIds((current) => [...current, tag.id]);
+      setNewTagName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add tag.');
+    }
   }
 
   async function handleSave() {
@@ -71,7 +113,8 @@ export default function NewPersonScreen() {
     setError(null);
 
     try {
-      await createPerson(person);
+      const savedPerson = await createPerson(person);
+      await setTagsForItem('person', savedPerson.id, selectedTagIds);
       router.replace('/people');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save person.');
@@ -213,6 +256,15 @@ export default function NewPersonScreen() {
                 ]}
               />
             </View>
+
+            <TagSelector
+              availableTags={tags}
+              newTagName={newTagName}
+              selectedTagIds={selectedTagIds}
+              onAddTag={() => void handleCreateTag()}
+              onNewTagNameChange={setNewTagName}
+              onSelectedTagIdsChange={setSelectedTagIds}
+            />
 
             {error ? (
               <ThemedText selectable themeColor="accent">

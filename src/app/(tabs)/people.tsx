@@ -8,14 +8,18 @@ import { ThemedText } from '@/components/themed-text';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getAllPeople } from '@/db/queries/people';
-import type { Person } from '@/db/schema';
+import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
+import type { Person, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function PeopleScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [people, setPeople] = useState<Person[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [tagLinks, setTagLinks] = useState<{ itemId: number; tagId: number }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +32,15 @@ export default function PeopleScreen() {
         setError(null);
 
         try {
-          const rows = await getAllPeople();
+          const [rows, tagRows, linkRows] = await Promise.all([
+            getAllPeople(),
+            getAllTags(),
+            getItemTagLinks('person'),
+          ]);
           if (isActive) {
             setPeople(rows);
+            setTags(tagRows);
+            setTagLinks(linkRows);
           }
         } catch (err) {
           if (isActive) {
@@ -53,11 +63,15 @@ export default function PeopleScreen() {
 
   const filteredPeople = people.filter((person) => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return true;
-    }
+    const personTagIds = tagLinks.filter((link) => link.itemId === person.id).map((link) => link.tagId);
+    const personTagNames = tags
+      .filter((tag) => personTagIds.includes(tag.id))
+      .map((tag) => tag.name);
+    const matchesTag = selectedTagId === null || personTagIds.includes(selectedTagId);
+    if (!matchesTag) return false;
+    if (!query) return true;
 
-    return [person.name, person.nickname, person.howWeMet, person.birthday, person.notes]
+    return [person.name, person.nickname, person.howWeMet, person.birthday, person.notes, ...personTagNames]
       .filter(Boolean)
       .some((value) => value?.toLowerCase().includes(query));
   });
@@ -120,6 +134,17 @@ export default function PeopleScreen() {
                 },
               ]}
             />
+            <View style={styles.filterChips}>
+              <FilterChip label="Any tag" selected={selectedTagId === null} onPress={() => setSelectedTagId(null)} />
+              {tags.map((tag) => (
+                <FilterChip
+                  key={tag.id}
+                  label={tag.name}
+                  selected={selectedTagId === tag.id}
+                  onPress={() => setSelectedTagId(tag.id)}
+                />
+              ))}
+            </View>
           </View>
 
           {isLoading ? (
@@ -237,6 +262,19 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
+  filterChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  filterChip: {
+    minHeight: 34,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
   list: {
     gap: Spacing.two,
   },
@@ -248,3 +286,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+function FilterChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[
+        styles.filterChip,
+        {
+          backgroundColor: selected ? theme.primaryMuted : theme.background,
+          borderColor: theme.border,
+        },
+      ]}>
+      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}

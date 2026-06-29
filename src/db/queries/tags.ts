@@ -1,7 +1,17 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { people, personTags, tags, type NewTag } from '../schema';
+import { itemTags, people, personTags, tags, type ItemTagType, type NewTag } from '../schema';
+
+export type TagWithUsageCounts = {
+  id: number;
+  name: string;
+  color: string | null;
+  peopleCount: number;
+  placesCount: number;
+  conversationsCount: number;
+  lifeUpdatesCount: number;
+};
 
 /** Create a new label (e.g. "Family", "Work", "College"). */
 export async function createTag(data: NewTag) {
@@ -14,6 +24,46 @@ export async function createTag(data: NewTag) {
 export async function getAllTags() {
   const db = await getDb();
   return db.select().from(tags).orderBy(asc(tags.name));
+}
+
+export async function getTagsWithUsageCounts(): Promise<TagWithUsageCounts[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      color: tags.color,
+      itemType: itemTags.itemType,
+      count: sql<number>`count(${itemTags.itemId})`,
+    })
+    .from(tags)
+    .leftJoin(itemTags, eq(itemTags.tagId, tags.id))
+    .groupBy(tags.id, itemTags.itemType)
+    .orderBy(asc(tags.name));
+
+  const byTag = new Map<number, TagWithUsageCounts>();
+
+  for (const row of rows) {
+    const current =
+      byTag.get(row.id) ??
+      {
+        id: row.id,
+        name: row.name,
+        color: row.color,
+        peopleCount: 0,
+        placesCount: 0,
+        conversationsCount: 0,
+        lifeUpdatesCount: 0,
+      };
+
+    if (row.itemType === 'person') current.peopleCount = row.count;
+    if (row.itemType === 'place') current.placesCount = row.count;
+    if (row.itemType === 'conversation') current.conversationsCount = row.count;
+    if (row.itemType === 'my_life_item') current.lifeUpdatesCount = row.count;
+    byTag.set(row.id, current);
+  }
+
+  return [...byTag.values()];
 }
 
 export async function getTagById(id: number) {
@@ -32,6 +82,38 @@ export async function updateTag(id: number, data: Partial<NewTag>) {
 export async function deleteTag(id: number) {
   const db = await getDb();
   await db.delete(tags).where(eq(tags.id, id));
+}
+
+export async function getTagsForItem(itemType: ItemTagType, itemId: number) {
+  const db = await getDb();
+  return db
+    .select({ id: tags.id, name: tags.name, color: tags.color })
+    .from(itemTags)
+    .innerJoin(tags, eq(itemTags.tagId, tags.id))
+    .where(and(eq(itemTags.itemType, itemType), eq(itemTags.itemId, itemId)))
+    .orderBy(asc(tags.name));
+}
+
+export async function getItemTagLinks(itemType: ItemTagType) {
+  const db = await getDb();
+  return db
+    .select({ itemId: itemTags.itemId, tagId: itemTags.tagId })
+    .from(itemTags)
+    .where(eq(itemTags.itemType, itemType));
+}
+
+export async function setTagsForItem(itemType: ItemTagType, itemId: number, tagIds: number[]) {
+  const db = await getDb();
+  await db
+    .delete(itemTags)
+    .where(and(eq(itemTags.itemType, itemType), eq(itemTags.itemId, itemId)));
+
+  if (tagIds.length === 0) return;
+
+  await db
+    .insert(itemTags)
+    .values(tagIds.map((tagId) => ({ itemType, itemId, tagId })))
+    .onConflictDoNothing();
 }
 
 /** All tags currently applied to a person. */

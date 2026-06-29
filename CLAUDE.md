@@ -126,6 +126,7 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 - **TypeScript strict.** No `any`. Prefer Drizzle-inferred types over hand-written DB shapes.
 - **Functional components + hooks** only. Co-locate feature-specific UI/logic in `src/features/<feature>/`; promote to `src/components` or `src/hooks` only once genuinely shared.
 - **Buttons include icons by default.** For new reusable or primary action buttons, use `src/components/ui/icon-action-button.tsx` or an equivalent icon-bearing component so actions are scannable and consistent.
+- **Tags are shared labels.** Use `tags` plus the polymorphic `item_tags` table for people, places, conversations, and life updates; do not add one-off tag columns or item-specific tag tables for new taggable entities.
 - **DB access through Drizzle query syntax**; drop to raw SQL only for complex aggregations (e.g. health-score multi-table joins). Never embed SQL strings in components — keep them in `src/db/queries/`.
 - React Compiler is enabled — avoid manual `useMemo`/`useCallback` unless profiling shows a need.
 

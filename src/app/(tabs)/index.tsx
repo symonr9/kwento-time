@@ -16,8 +16,9 @@ import {
   setReminderNotificationId,
   upsertReminderForRelated,
 } from '@/db/queries/reminder';
+import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
 import { extendTopicExpiry, getTopicsExpiringSoonWithPeople, resolveTopic } from '@/db/queries/topics';
-import type { MyLifeItem, Reminder } from '@/db/schema';
+import type { MyLifeItem, Reminder, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 import { ensureNotificationPermissions, scheduleReminderNotification } from '@/services/notifications';
 
@@ -39,11 +40,16 @@ export default function HomeScreen() {
   const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [conversationTagLinks, setConversationTagLinks] = useState<{ itemId: number; tagId: number }[]>([]);
+  const [lifeTagLinks, setLifeTagLinks] = useState<{ itemId: number; tagId: number }[]>([]);
   const [conversationSearch, setConversationSearch] = useState('');
   const [conversationPersonId, setConversationPersonId] = useState<number | null>(null);
   const [conversationPlaceId, setConversationPlaceId] = useState<number | null>(null);
+  const [conversationTagId, setConversationTagId] = useState<number | null>(null);
   const [lifeSearch, setLifeSearch] = useState('');
   const [lifeTone, setLifeTone] = useState<MyLifeItem['tone'] | null>(null);
+  const [lifeTagId, setLifeTagId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isScheduling, setIsScheduling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +67,9 @@ export default function HomeScreen() {
         followUpRows,
         lifeRows,
         reminderRows,
+        tagRows,
+        conversationTagRows,
+        lifeTagRows,
       ] = await Promise.all([
         getRecentConversations(10),
         getConversationsPendingExtraction(10),
@@ -68,6 +77,9 @@ export default function HomeScreen() {
         getAllOpenFollowUpsWithPeople(10),
         getActiveMyLifeItems(),
         getUpcomingReminders(),
+        getAllTags(),
+        getItemTagLinks('conversation'),
+        getItemTagLinks('my_life_item'),
       ]);
 
       if (isActive) {
@@ -77,6 +89,9 @@ export default function HomeScreen() {
         setFollowUps(followUpRows);
         setLifeItems(lifeRows);
         setReminders(reminderRows.slice(0, 10));
+        setTags(tagRows);
+        setConversationTagLinks(conversationTagRows);
+        setLifeTagLinks(lifeTagRows);
       }
     } catch (err) {
       if (isActive) {
@@ -155,6 +170,12 @@ export default function HomeScreen() {
     );
   const filteredConversations = conversations.filter((conversation) => {
     const query = conversationSearch.trim().toLowerCase();
+    const conversationTagIds = conversationTagLinks
+      .filter((link) => link.itemId === conversation.id)
+      .map((link) => link.tagId);
+    const conversationTagNames = tags
+      .filter((tag) => conversationTagIds.includes(tag.id))
+      .map((tag) => tag.name);
     const matchesQuery =
       !query ||
       [
@@ -165,25 +186,30 @@ export default function HomeScreen() {
         conversation.personName,
         conversation.placeName,
         conversation.occurredAt.toISOString(),
+        ...conversationTagNames,
       ]
         .filter(Boolean)
         .some((value) => value?.toLowerCase().includes(query));
     const matchesPerson =
       conversationPersonId === null || conversation.personId === conversationPersonId;
     const matchesPlace = conversationPlaceId === null || conversation.placeId === conversationPlaceId;
+    const matchesTag = conversationTagId === null || conversationTagIds.includes(conversationTagId);
 
-    return matchesQuery && matchesPerson && matchesPlace;
+    return matchesQuery && matchesPerson && matchesPlace && matchesTag;
   });
   const filteredLifeItems = lifeItems.filter((item) => {
     const query = lifeSearch.trim().toLowerCase();
+    const itemTagIds = lifeTagLinks.filter((link) => link.itemId === item.id).map((link) => link.tagId);
+    const itemTagNames = tags.filter((tag) => itemTagIds.includes(tag.id)).map((tag) => tag.name);
     const matchesQuery =
       !query ||
-      [item.content, item.tone, item.createdAt.toISOString()]
+      [item.content, item.tone, item.createdAt.toISOString(), ...itemTagNames]
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(query));
     const matchesTone = lifeTone === null || item.tone === lifeTone;
+    const matchesTag = lifeTagId === null || itemTagIds.includes(lifeTagId);
 
-    return matchesQuery && matchesTone;
+    return matchesQuery && matchesTone && matchesTag;
   });
 
   async function handleScheduleReminders() {
@@ -325,6 +351,14 @@ export default function HomeScreen() {
                     <IconActionButton
                       icon={{ ios: 'heart.text.square', android: 'favorite', web: 'favorite' }}
                       label="Life update"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
+
+                  <Link href="/tags/index" asChild>
+                    <IconActionButton
+                      icon={{ ios: 'tag', android: 'sell', web: 'tag' }}
+                      label="Tags"
                       style={styles.quickActionButton}
                     />
                   </Link>
@@ -623,6 +657,17 @@ export default function HomeScreen() {
                       />
                     ))}
                   </View>
+                  <View style={styles.filterChips}>
+                    <FilterChip label="Any tag" selected={conversationTagId === null} onPress={() => setConversationTagId(null)} />
+                    {tags.map((tag) => (
+                      <FilterChip
+                        key={tag.id}
+                        label={tag.name}
+                        selected={conversationTagId === tag.id}
+                        onPress={() => setConversationTagId(tag.id)}
+                      />
+                    ))}
+                  </View>
                 </View>
 
                 {conversations.length === 0 ? (
@@ -701,6 +746,17 @@ export default function HomeScreen() {
                     <FilterChip label="Light" selected={lifeTone === 'light'} onPress={() => setLifeTone('light')} />
                     <FilterChip label="Medium" selected={lifeTone === 'medium'} onPress={() => setLifeTone('medium')} />
                     <FilterChip label="Personal" selected={lifeTone === 'personal'} onPress={() => setLifeTone('personal')} />
+                  </View>
+                  <View style={styles.filterChips}>
+                    <FilterChip label="Any tag" selected={lifeTagId === null} onPress={() => setLifeTagId(null)} />
+                    {tags.map((tag) => (
+                      <FilterChip
+                        key={tag.id}
+                        label={tag.name}
+                        selected={lifeTagId === tag.id}
+                        onPress={() => setLifeTagId(tag.id)}
+                      />
+                    ))}
                   </View>
                 </View>
 

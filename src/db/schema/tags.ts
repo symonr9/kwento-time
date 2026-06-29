@@ -32,6 +32,25 @@ export const personTags = sqliteTable(
   ],
 );
 
+/** Generic tag links for every taggable item type. */
+export const itemTags = sqliteTable(
+  'item_tags',
+  {
+    itemType: text('item_type', { enum: ['person', 'place', 'conversation', 'my_life_item'] }).notNull(),
+    itemId: integer('item_id').notNull(),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.itemType, t.itemId, t.tagId] }),
+    index('item_tags_tag_idx').on(t.tagId),
+    index('item_tags_item_idx').on(t.itemType, t.itemId),
+  ],
+);
+
 export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
 export type PersonTag = typeof personTags.$inferSelect;
+export type ItemTag = typeof itemTags.$inferSelect;
+export type ItemTagType = ItemTag['itemType'];

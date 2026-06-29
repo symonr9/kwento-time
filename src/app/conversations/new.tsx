@@ -5,11 +5,13 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
+import { TagSelector } from '@/components/ui/tag-selector';
 import { Radius, Spacing } from '@/constants/theme';
 import { logStructuredConversation } from '@/db/queries/conversations';
 import { createPerson, getAllPeople } from '@/db/queries/people';
 import { createPlace, getAllPlaces } from '@/db/queries/places';
-import type { NewConversation, Person, Place, Topic } from '@/db/schema';
+import { createTag, getAllTags, setTagsForItem } from '@/db/queries/tags';
+import type { NewConversation, Person, Place, Tag, Topic } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type ImportanceValue = '1' | '2' | '3';
@@ -67,6 +69,9 @@ export default function NewConversationScreen() {
   const [followUps, setFollowUps] = useState<StructuredFollowUpDraft[]>([createFollowUpDraft()]);
   const [people, setPeople] = useState<Person[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [newTagName, setNewTagName] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [newPersonName, setNewPersonName] = useState('');
@@ -86,10 +91,15 @@ export default function NewConversationScreen() {
 
       async function loadFormOptions() {
         try {
-          const [peopleRows, placeRows] = await Promise.all([getAllPeople(), getAllPlaces()]);
+          const [peopleRows, placeRows, tagRows] = await Promise.all([
+            getAllPeople(),
+            getAllPlaces(),
+            getAllTags(),
+          ]);
           if (isActive) {
             setPeople(peopleRows);
             setPlaces(placeRows);
+            setTags(tagRows);
           }
         } catch (err) {
           if (isActive) {
@@ -127,7 +137,7 @@ export default function NewConversationScreen() {
     setError(null);
 
     try {
-      await logStructuredConversation({
+      const savedConversation = await logStructuredConversation({
         conversation,
         followUps: followUps
           .map((followUp) => ({
@@ -147,6 +157,7 @@ export default function NewConversationScreen() {
           }))
           .filter((topic) => topic.content.length > 0),
       });
+      await setTagsForItem('conversation', savedConversation.id, selectedTagIds);
       router.replace('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save conversation.');
@@ -198,6 +209,22 @@ export default function NewConversationScreen() {
       setError(err instanceof Error ? err.message : 'Unable to add place.');
     } finally {
       setIsCreatingPlace(false);
+    }
+  }
+
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) {
+      return;
+    }
+
+    try {
+      const tag = await createTag({ name });
+      setTags((current) => [...current, tag].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedTagIds((current) => [...current, tag.id]);
+      setNewTagName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add tag.');
     }
   }
 
@@ -362,6 +389,15 @@ export default function NewConversationScreen() {
           })}
         </View>
       </View>
+
+      <TagSelector
+        availableTags={tags}
+        newTagName={newTagName}
+        selectedTagIds={selectedTagIds}
+        onAddTag={() => void handleCreateTag()}
+        onNewTagNameChange={setNewTagName}
+        onSelectedTagIdsChange={setSelectedTagIds}
+      />
 
       <TextField
         label="Notes"
