@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Avatar } from '@/components/ui/avatar';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -14,6 +15,7 @@ type SegmentedOption<T extends string> = {
 };
 
 type SelectableChipOption<T extends number | string | null> = {
+  avatarUri?: string | null;
   label: string;
   value: T;
 };
@@ -139,6 +141,7 @@ export function SelectableChipField<T extends number | string | null>({
                   borderColor: theme.border,
                 },
               ]}>
+              {option.avatarUri ? <Avatar name={option.label} uri={option.avatarUri} size={24} /> : null}
               <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
                 {option.label}
               </ThemedText>
@@ -281,6 +284,9 @@ const styles = StyleSheet.create({
   },
   chip: {
     minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.small,
     borderCurve: 'continuous',

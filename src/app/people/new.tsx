@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { AvatarPicker } from '@/components/ui/avatar-picker';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { TagSelector } from '@/components/ui/tag-selector';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -22,6 +23,7 @@ import type { NewPerson, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PersonForm = {
+  avatarUri: string | null;
   name: string;
   nickname: string;
   howWeMet: string;
@@ -30,6 +32,7 @@ type PersonForm = {
 };
 
 const initialForm: PersonForm = {
+  avatarUri: null,
   name: '',
   nickname: '',
   howWeMet: '',
@@ -52,7 +55,7 @@ export default function NewPersonScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function updateField(field: keyof PersonForm, value: string) {
+  function updateField<Field extends keyof PersonForm>(field: Field, value: PersonForm[Field]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -107,6 +110,7 @@ export default function NewPersonScreen() {
       howWeMet: optionalText(form.howWeMet),
       birthday: optionalText(form.birthday),
       notes: optionalText(form.notes),
+      avatarUri: form.avatarUri ?? undefined,
     };
 
     setIsSaving(true);
@@ -162,6 +166,13 @@ export default function NewPersonScreen() {
           </View>
 
           <SurfaceCard style={styles.form}>
+            <AvatarPicker
+              label="Profile photo"
+              name={form.name}
+              uri={form.avatarUri}
+              onChange={(uri) => updateField('avatarUri', uri)}
+            />
+
             <View style={styles.field}>
               <ThemedText type="smallBold">Name</ThemedText>
               <TextInput

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Avatar } from '@/components/ui/avatar';
 import { TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
 import { SurfaceCard } from '@/components/ui/surface-card';
@@ -234,6 +235,7 @@ export default function FollowUpDetailsScreen() {
                         borderColor: theme.border,
                       },
                     ]}>
+                    {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={24} /> : null}
                     <ThemedText type="smallBold" themeColor={isSelected ? 'text' : 'textSecondary'}>
                       {person.name}
                     </ThemedText>
@@ -310,6 +312,9 @@ const styles = StyleSheet.create({
   },
   personChip: {
     minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.small,
     borderCurve: 'continuous',

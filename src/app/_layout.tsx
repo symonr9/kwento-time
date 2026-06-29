@@ -23,8 +23,10 @@ export default function RootLayout() {
             <Stack.Screen name="follow-ups/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="follow-ups/new" options={{ headerShown: false }} />
             <Stack.Screen name="my-life/new" options={{ headerShown: false }} />
+            <Stack.Screen name="people/[id]/edit" options={{ headerShown: false }} />
             <Stack.Screen name="people/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="people/new" options={{ headerShown: false }} />
+            <Stack.Screen name="places/[id]/edit" options={{ headerShown: false }} />
             <Stack.Screen name="places/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="places/new" options={{ headerShown: false }} />
             <Stack.Screen name="settings" options={{ headerShown: false }} />

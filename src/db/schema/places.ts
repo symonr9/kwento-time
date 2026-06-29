@@ -10,6 +10,7 @@ export const places = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
     address: text('address'),
+    avatarUri: text('avatar_uri'),
     notes: text('notes'),
     ...timestamps,
   },

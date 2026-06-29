@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { Avatar } from '@/components/ui/avatar';
 import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -209,14 +210,18 @@ export default function PlaceDetailsScreen() {
           {!isLoading && !error && place ? (
             <>
               <SurfaceCard style={styles.heroCard}>
-                <View style={[styles.iconBadge, { backgroundColor: theme.highlightMuted }]}>
-                  <SymbolView
-                    name={{ ios: 'map', android: 'map', web: 'map' }}
-                    size={32}
-                    tintColor={theme.text}
-                    fallback={<View style={[styles.iconFallback, { backgroundColor: theme.text }]} />}
-                  />
-                </View>
+                {place.avatarUri ? (
+                  <Avatar name={place.name} uri={place.avatarUri} size={72} />
+                ) : (
+                  <View style={[styles.iconBadge, { backgroundColor: theme.highlightMuted }]}>
+                    <SymbolView
+                      name={{ ios: 'map', android: 'map', web: 'map' }}
+                      size={32}
+                      tintColor={theme.text}
+                      fallback={<View style={[styles.iconFallback, { backgroundColor: theme.text }]} />}
+                    />
+                  </View>
+                )}
 
                 <View style={styles.heroCopy}>
                   <ThemedText type="smallBold" themeColor="primary">
@@ -237,6 +242,19 @@ export default function PlaceDetailsScreen() {
                   ) : null}
                 </View>
               </SurfaceCard>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push({ pathname: '/places/[id]/edit', params: { id: String(place.id) } })}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}>
+                <ThemedText type="smallBold">Edit place</ThemedText>
+              </Pressable>
 
               <View style={styles.metricGrid}>
                 <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
@@ -301,7 +319,10 @@ export default function PlaceDetailsScreen() {
                   people.map((person) => (
                     <SurfaceCard key={person.id} style={styles.row}>
                       <View style={styles.rowHeader}>
-                        <ThemedText type="smallBold">{person.name}</ThemedText>
+                        <View style={styles.rowTitleWithAvatar}>
+                          {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={28} /> : null}
+                          <ThemedText type="smallBold">{person.name}</ThemedText>
+                        </View>
                         {person.isPrimary ? (
                           <ThemedText type="smallBold" themeColor="primary">
                             Primary
@@ -362,6 +383,7 @@ export default function PlaceDetailsScreen() {
                               opacity: pressed ? 0.72 : 1,
                             },
                           ]}>
+                          {person.avatarUri ? <Avatar name={person.name} uri={person.avatarUri} size={24} /> : null}
                           <ThemedText type="smallBold">{person.name}</ThemedText>
                         </Pressable>
                       ))}
@@ -522,6 +544,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
+  rowTitleWithAvatar: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
   actionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -546,6 +575,9 @@ const styles = StyleSheet.create({
   },
   chip: {
     minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     justifyContent: 'center',

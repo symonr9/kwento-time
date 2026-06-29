@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { Avatar } from '@/components/ui/avatar';
 import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -18,7 +19,7 @@ import {
   removePersonFromPlace,
   setPrimaryPlaceForPerson,
 } from '@/db/queries/places';
-import { getTagsForPerson } from '@/db/queries/tags';
+import { getTagsForItem } from '@/db/queries/tags';
 import {
   extendTopicExpiry,
   getActiveTopicsWithExpiryForPerson,
@@ -28,7 +29,7 @@ import type { Conversation, FollowUp, Person, Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PersonPlace = Awaited<ReturnType<typeof getPlacesForPerson>>[number];
-type PersonTag = Awaited<ReturnType<typeof getTagsForPerson>>[number];
+type PersonTag = Awaited<ReturnType<typeof getTagsForItem>>[number];
 type PersonTopic = Awaited<ReturnType<typeof getActiveTopicsWithExpiryForPerson>>[number];
 
 type PersonDetails = {
@@ -86,7 +87,7 @@ export default function PersonDetailsScreen() {
           getOpenFollowUpsForPerson(personId),
           getPlacesForPerson(personId),
           getAllPlaces(),
-          getTagsForPerson(personId),
+          getTagsForItem('person', personId),
           getActiveTopicsWithExpiryForPerson(personId),
         ]);
 
@@ -242,11 +243,7 @@ export default function PersonDetailsScreen() {
           {!isLoading && !error && person ? (
             <>
               <SurfaceCard style={styles.profileCard}>
-                <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
-                  <ThemedText type="subtitle" style={styles.avatarText}>
-                    {person.name.slice(0, 1).toUpperCase()}
-                  </ThemedText>
-                </View>
+                <Avatar name={person.name} uri={person.avatarUri} size={72} />
 
                 <View style={styles.profileCopy}>
                   <ThemedText type="smallBold" themeColor="primary">
@@ -260,6 +257,20 @@ export default function PersonDetailsScreen() {
                   ) : null}
                 </View>
               </SurfaceCard>
+
+              <Link href={{ pathname: '/people/[id]/edit', params: { id: String(person.id) } }} asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                      opacity: pressed ? 0.72 : 1,
+                    },
+                  ]}>
+                  <ThemedText type="smallBold">Edit person</ThemedText>
+                </Pressable>
+              </Link>
 
               <View style={styles.metricGrid}>
                 <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
@@ -442,7 +453,10 @@ export default function PersonDetailsScreen() {
                   places.map((place) => (
                     <SurfaceCard key={place.id} style={styles.row}>
                       <View style={styles.rowHeader}>
-                        <ThemedText type="smallBold">{place.name}</ThemedText>
+                        <View style={styles.rowTitleWithAvatar}>
+                          {place.avatarUri ? <Avatar name={place.name} uri={place.avatarUri} size={28} /> : null}
+                          <ThemedText type="smallBold">{place.name}</ThemedText>
+                        </View>
                         {place.isPrimary ? (
                           <ThemedText type="smallBold" themeColor="primary">
                             Primary
@@ -503,6 +517,7 @@ export default function PersonDetailsScreen() {
                               opacity: pressed ? 0.72 : 1,
                             },
                           ]}>
+                          {place.avatarUri ? <Avatar name={place.name} uri={place.avatarUri} size={24} /> : null}
                           <ThemedText type="smallBold">{place.name}</ThemedText>
                         </Pressable>
                       ))}
@@ -624,16 +639,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    lineHeight: 44,
-  },
   profileCopy: {
     flex: 1,
     minWidth: 0,
@@ -677,6 +682,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
+  rowTitleWithAvatar: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -684,6 +696,9 @@ const styles = StyleSheet.create({
   },
   chip: {
     minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     justifyContent: 'center',

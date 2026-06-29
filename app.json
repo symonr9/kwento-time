@@ -52,6 +52,14 @@
         {
           "microphonePermission": "Allow Kwento Time to record conversations you choose to save."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Kwento Time to choose photos for people and places you save.",
+          "cameraPermission": "Allow Kwento Time to take profile photos for people and places you save.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

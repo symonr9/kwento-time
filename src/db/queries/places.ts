@@ -39,6 +39,7 @@ export async function getPlacesForPerson(personId: number) {
       id: places.id,
       name: places.name,
       address: places.address,
+      avatarUri: places.avatarUri,
       notes: places.notes,
       isPrimary: personPlaces.isPrimary,
     })
@@ -52,7 +53,7 @@ export async function getPlacesForPerson(personId: number) {
 export async function getPrimaryPlaceForPerson(personId: number) {
   const db = await getDb();
   const [row] = await db
-    .select({ id: places.id, name: places.name, address: places.address })
+    .select({ id: places.id, name: places.name, address: places.address, avatarUri: places.avatarUri })
     .from(personPlaces)
     .innerJoin(places, eq(personPlaces.placeId, places.id))
     .where(and(eq(personPlaces.personId, personId), eq(personPlaces.isPrimary, true)))

@@ -162,11 +162,11 @@ export default function ReviewConversationTranscriptScreen() {
 
   const personOptions = [
     { label: 'No person', value: null },
-    ...people.map((person) => ({ label: person.name, value: person.id })),
+    ...people.map((person) => ({ avatarUri: person.avatarUri, label: person.name, value: person.id })),
   ];
   const placeOptions = [
     { label: 'No place', value: null },
-    ...places.map((place) => ({ label: place.name, value: place.id })),
+    ...places.map((place) => ({ avatarUri: place.avatarUri, label: place.name, value: place.id })),
   ];
 
   return (

@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { AvatarPicker } from '@/components/ui/avatar-picker';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { TagSelector } from '@/components/ui/tag-selector';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -22,12 +23,14 @@ import type { NewPlace, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PlaceForm = {
+  avatarUri: string | null;
   name: string;
   address: string;
   notes: string;
 };
 
 const initialForm: PlaceForm = {
+  avatarUri: null,
   name: '',
   address: '',
   notes: '',
@@ -48,7 +51,7 @@ export default function NewPlaceScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function updateField(field: keyof PlaceForm, value: string) {
+  function updateField<Field extends keyof PlaceForm>(field: Field, value: PlaceForm[Field]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -100,6 +103,7 @@ export default function NewPlaceScreen() {
     const place: NewPlace = {
       name,
       address: optionalText(form.address),
+      avatarUri: form.avatarUri ?? undefined,
       notes: optionalText(form.notes),
     };
 
@@ -156,6 +160,13 @@ export default function NewPlaceScreen() {
           </View>
 
           <SurfaceCard style={styles.form}>
+            <AvatarPicker
+              label="Place photo"
+              name={form.name}
+              uri={form.avatarUri}
+              onChange={(uri) => updateField('avatarUri', uri)}
+            />
+
             <View style={styles.field}>
               <ThemedText type="smallBold">Name</ThemedText>
               <TextInput

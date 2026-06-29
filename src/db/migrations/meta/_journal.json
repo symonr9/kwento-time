@@ -50,6 +50,13 @@
       "when": 1782711850970,
       "tag": "0006_round_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782745215930,
+      "tag": "0007_deep_argent",
+      "breakpoints": true
     }
   ]
 }
