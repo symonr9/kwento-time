@@ -7,8 +7,8 @@ import { SegmentedField, TextField, formControlStyles } from '@/components/ui/fo
 import { FormScreen } from '@/components/ui/form-screen';
 import { Radius, Spacing } from '@/constants/theme';
 import { logStructuredConversation } from '@/db/queries/conversations';
-import { getAllPeople } from '@/db/queries/people';
-import { getAllPlaces } from '@/db/queries/places';
+import { createPerson, getAllPeople } from '@/db/queries/people';
+import { createPlace, getAllPlaces } from '@/db/queries/places';
 import type { NewConversation, Person, Place, Topic } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -69,7 +69,11 @@ export default function NewConversationScreen() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
+  const [newPersonName, setNewPersonName] = useState('');
+  const [newPlaceName, setNewPlaceName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingPerson, setIsCreatingPerson] = useState(false);
+  const [isCreatingPlace, setIsCreatingPlace] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // TODO: To implement  
@@ -151,6 +155,52 @@ export default function NewConversationScreen() {
     }
   }
 
+  async function handleCreatePerson() {
+    const name = newPersonName.trim();
+
+    if (!name) {
+      setError('Person name is required.');
+      return;
+    }
+
+    setIsCreatingPerson(true);
+    setError(null);
+
+    try {
+      const person = await createPerson({ name });
+      setPeople((current) => [...current, person].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedPersonId(person.id);
+      setNewPersonName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add person.');
+    } finally {
+      setIsCreatingPerson(false);
+    }
+  }
+
+  async function handleCreatePlace() {
+    const name = newPlaceName.trim();
+
+    if (!name) {
+      setError('Place name is required.');
+      return;
+    }
+
+    setIsCreatingPlace(true);
+    setError(null);
+
+    try {
+      const place = await createPlace({ name });
+      setPlaces((current) => [...current, place].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedPlaceId(place.id);
+      setNewPlaceName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add place.');
+    } finally {
+      setIsCreatingPlace(false);
+    }
+  }
+
   return (
     <FormScreen
       subtitle="What do you want to remember about the conversation?"
@@ -164,6 +214,34 @@ export default function NewConversationScreen() {
 
       <View style={styles.field}>
         <ThemedText type="smallBold">Person</ThemedText>
+        <View style={styles.inlineCreateRow}>
+          <View style={styles.inlineCreateInput}>
+            <TextField
+              label=""
+              value={newPersonName}
+              onChangeText={setNewPersonName}
+              placeholder="Add a person by name"
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={() => void handleCreatePerson()}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isCreatingPerson}
+            onPress={() => void handleCreatePerson()}
+            style={({ pressed }) => [
+              styles.inlineCreateButton,
+              {
+                backgroundColor: theme.primary,
+                opacity: pressed || isCreatingPerson ? 0.78 : 1,
+              },
+            ]}>
+            <ThemedText type="smallBold" style={styles.inlineCreateButtonText}>
+              Add
+            </ThemedText>
+          </Pressable>
+        </View>
         <View style={styles.personList}>
           <Pressable
             accessibilityRole="button"
@@ -213,6 +291,34 @@ export default function NewConversationScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           Optional. Saved directly on the conversation and linked to the person when one is selected.
         </ThemedText>
+        <View style={styles.inlineCreateRow}>
+          <View style={styles.inlineCreateInput}>
+            <TextField
+              label=""
+              value={newPlaceName}
+              onChangeText={setNewPlaceName}
+              placeholder="Add a place by name"
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={() => void handleCreatePlace()}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isCreatingPlace}
+            onPress={() => void handleCreatePlace()}
+            style={({ pressed }) => [
+              styles.inlineCreateButton,
+              {
+                backgroundColor: theme.primary,
+                opacity: pressed || isCreatingPlace ? 0.78 : 1,
+              },
+            ]}>
+            <ThemedText type="smallBold" style={styles.inlineCreateButtonText}>
+              Add
+            </ThemedText>
+          </Pressable>
+        </View>
         <View style={styles.personList}>
           <Pressable
             accessibilityRole="button"
@@ -301,6 +407,27 @@ const styles = StyleSheet.create({
   removeButton: {
     minHeight: 36,
     justifyContent: 'center',
+  },
+  inlineCreateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+  },
+  inlineCreateInput: {
+    flex: 1,
+    minWidth: 0,
+  },
+  inlineCreateButton: {
+    minHeight: 52,
+    minWidth: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
+  inlineCreateButtonText: {
+    color: '#FFFFFF',
   },
 });
 
