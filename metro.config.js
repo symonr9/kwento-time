@@ -4,6 +4,7 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 config.resolver.sourceExts.push('sql');
+config.resolver.assetExts.push('bin', 'mil');
 
 // Add WebAssembly support to resolver and configure headers
 config.resolver.assetExts.push('wasm');

@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { FormScreen } from '@/components/ui/form-screen';
@@ -11,6 +11,11 @@ import { getAllPeople } from '@/db/queries/people';
 import { addPersonToPlace, getAllPlaces } from '@/db/queries/places';
 import type { Person, Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  TranscriptionUnavailableError,
+  isLocalTranscriptionConfigured,
+  transcribeAudio,
+} from '@/services/audio';
 
 function summarizeTranscript(rawTranscript: string) {
   const normalized = rawTranscript.replace(/\s+/g, ' ').trim();
@@ -28,8 +33,10 @@ export default function ReviewConversationTranscriptScreen() {
   const [summary, setSummary] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,6 +122,44 @@ export default function ReviewConversationTranscriptScreen() {
     }
   }
 
+  async function handleTranscribeAudio() {
+    if (!audioUri) {
+      setError('No saved audio is available to transcribe.');
+      return;
+    }
+
+    setIsTranscribing(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await updateConversation(conversationId, { transcriptStatus: 'pending_transcription' });
+      const result = await transcribeAudio({ audioUri });
+
+      if (!result.text) {
+        throw new Error('Transcription completed without text.');
+      }
+
+      setRawTranscript(result.text);
+      await updateConversation(conversationId, {
+        rawTranscript: result.text,
+        transcriptStatus: 'ready_for_review',
+      });
+      setNotice('Transcript generated locally. Review it before confirming.');
+    } catch (err) {
+      await updateConversation(conversationId, { transcriptStatus: 'failed' });
+      setError(
+        err instanceof TranscriptionUnavailableError
+          ? `${err.message} You can enter the transcript manually for now.`
+          : err instanceof Error
+            ? err.message
+            : 'Unable to transcribe audio.',
+      );
+    } finally {
+      setIsTranscribing(false);
+    }
+  }
+
   const personOptions = [
     { label: 'No person', value: null },
     ...people.map((person) => ({ label: person.name, value: person.id })),
@@ -133,11 +178,42 @@ export default function ReviewConversationTranscriptScreen() {
       saveLabel="Confirm transcript"
       onSave={handleConfirmTranscript}>
       <View style={[styles.audioPanel, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}>
-        <ThemedText type="smallBold">Saved audio</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" selectable>
-          {audioUri || 'No audio URI saved.'}
-        </ThemedText>
+        <View style={styles.audioHeader}>
+          <View style={styles.audioCopy}>
+            <ThemedText type="smallBold">Saved audio</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" selectable>
+              {audioUri || 'No audio URI saved.'}
+            </ThemedText>
+          </View>
+          {isTranscribing ? <ActivityIndicator color={theme.primary} /> : null}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isTranscribing || !audioUri}
+          onPress={handleTranscribeAudio}
+          style={({ pressed }) => [
+            styles.transcribeButton,
+            {
+              backgroundColor: theme.backgroundElement,
+              borderColor: theme.border,
+              opacity: pressed || isTranscribing || !audioUri ? 0.72 : 1,
+            },
+          ]}>
+          <ThemedText type="smallBold">
+            {isTranscribing
+              ? 'Transcribing...'
+              : isLocalTranscriptionConfigured()
+                ? 'Transcribe audio'
+                : 'Try local transcription'}
+          </ThemedText>
+        </Pressable>
       </View>
+
+      {notice ? (
+        <ThemedText type="small" themeColor="primary" selectable>
+          {notice}
+        </ThemedText>
+      ) : null}
 
       <TextField
         label="Transcript"
@@ -184,5 +260,26 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     padding: Spacing.three,
+  },
+  audioHeader: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  audioCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one,
+  },
+  transcribeButton: {
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
 });
