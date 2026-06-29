@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -428,11 +429,7 @@ function Section({
 }
 
 function EmptyText({ text }: { text: string }) {
-  return (
-    <SurfaceCard style={styles.stateCard}>
-      <ThemedText themeColor="textSecondary">{text}</ThemedText>
-    </SurfaceCard>
-  );
+  return <EmptyState title={text} />;
 }
 
 const styles = StyleSheet.create({

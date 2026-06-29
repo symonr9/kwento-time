@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ExpandableSection } from '@/components/ui/expandable-section';
 import { IconActionButton } from '@/components/ui/icon-action-button';
 import { SurfaceCard } from '@/components/ui/surface-card';
@@ -412,12 +413,10 @@ export default function HomeScreen() {
                 defaultExpanded={pendingExtractions.length > 0}>
 
                 {pendingExtractions.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No confirmed transcripts waiting</ThemedText>
-                    <ThemedText themeColor="textSecondary">
-                      Confirmed transcripts will appear here before topics and follow-ups are saved.
-                    </ThemedText>
-                  </SurfaceCard>
+                  <EmptyState
+                    title="No confirmed transcripts waiting"
+                    body="Confirmed transcripts will appear here before topics and follow-ups are saved."
+                  />
                 ) : (
                   <View style={styles.list}>
                     {pendingExtractions.map((conversation) => (
@@ -458,12 +457,10 @@ export default function HomeScreen() {
               <ExpandableSection title="Upcoming reminders" count={reminders.length} defaultExpanded={false}>
 
                 {reminders.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No reminders scheduled</ThemedText>
-                    <ThemedText themeColor="textSecondary">
-                      Schedule reminders to turn follow-ups and expiring topics into local notifications.
-                    </ThemedText>
-                  </SurfaceCard>
+                  <EmptyState
+                    title="No reminders scheduled"
+                    body="Schedule reminders to turn follow-ups and expiring topics into local notifications."
+                  />
                 ) : (
                   <View style={styles.list}>
                     {reminders.map((reminder) => (
@@ -491,12 +488,10 @@ export default function HomeScreen() {
                 defaultExpanded={expiringTopics.length > 0}>
 
                 {expiringTopics.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No expiring topics</ThemedText>
-                    <ThemedText themeColor="textSecondary">
-                      Talking points that need review will show up here.
-                    </ThemedText>
-                  </SurfaceCard>
+                  <EmptyState
+                    title="No expiring topics"
+                    body="Talking points that need review will show up here."
+                  />
                 ) : (
                   <View style={styles.list}>
                     {expiringTopics.map((item) => (
@@ -548,12 +543,10 @@ export default function HomeScreen() {
                 defaultExpanded={followUps.length > 0}>
 
                 {followUps.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No open follow-ups</ThemedText>
-                    <ThemedText themeColor="textSecondary">
-                      Add questions from a person or conversation to close the loop later.
-                    </ThemedText>
-                  </SurfaceCard>
+                  <EmptyState
+                    title="No open follow-ups"
+                    body="Add questions from a person or conversation to close the loop later."
+                  />
                 ) : (
                   <View style={styles.list}>
                     {followUps.map((followUp) => (
@@ -651,17 +644,12 @@ export default function HomeScreen() {
                 </View>
 
                 {conversations.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No conversations yet</ThemedText>
-                    <ThemedText themeColor="textSecondary">
-                      Tap add and choose conversation to record the first note.
-                    </ThemedText>
-                  </SurfaceCard>
+                  <EmptyState
+                    title="No conversations yet"
+                    body="Tap add and choose conversation to record the first note."
+                  />
                 ) : filteredConversations.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No conversations match</ThemedText>
-                    <ThemedText themeColor="textSecondary">Try another keyword or filter.</ThemedText>
-                  </SurfaceCard>
+                  <EmptyState title="No conversations match" body="Try another keyword or filter." />
                 ) : (
                   <View style={styles.list}>
                     {filteredConversations.map((conversation) => (
@@ -735,17 +723,12 @@ export default function HomeScreen() {
                 </View>
 
                 {lifeItems.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No life topics yet</ThemedText>
-                    <ThemedText themeColor="textSecondary">
-                      Tap add and choose life update to save what is happening recently.
-                    </ThemedText>
-                  </SurfaceCard>
+                  <EmptyState
+                    title="No life topics yet"
+                    body="Tap add and choose life update to save what is happening recently."
+                  />
                 ) : filteredLifeItems.length === 0 ? (
-                  <SurfaceCard style={styles.stateCard}>
-                    <ThemedText type="smallBold">No life topics match</ThemedText>
-                    <ThemedText themeColor="textSecondary">Try another keyword or tone.</ThemedText>
-                  </SurfaceCard>
+                  <EmptyState title="No life topics match" body="Try another keyword or tone." />
                 ) : (
                   <View style={styles.list}>
                     {filteredLifeItems.map((item) => (

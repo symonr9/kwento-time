@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getAllPlaces } from '@/db/queries/places';
@@ -159,19 +160,11 @@ export default function PlacesScreen() {
           ) : null}
 
           {!isLoading && !error && places.length === 0 ? (
-            <SurfaceCard style={styles.stateCard}>
-              <ThemedText type="smallBold">No places yet</ThemedText>
-              <ThemedText themeColor="textSecondary">
-                Tap the add button to create the first place.
-              </ThemedText>
-            </SurfaceCard>
+            <EmptyState title="No places yet" body="Tap the add button to create the first place." />
           ) : null}
 
           {!isLoading && !error && places.length > 0 && filteredPlaces.length === 0 ? (
-            <SurfaceCard style={styles.stateCard}>
-              <ThemedText type="smallBold">No places match</ThemedText>
-              <ThemedText themeColor="textSecondary">Try a different keyword.</ThemedText>
-            </SurfaceCard>
+            <EmptyState title="No places match" body="Try a different keyword." />
           ) : null}
 
           {!isLoading && !error && filteredPlaces.length > 0 ? (

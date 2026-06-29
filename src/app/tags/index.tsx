@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { EmptyState } from '@/components/ui/empty-state';
 import { TextField } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
 import { SurfaceCard } from '@/components/ui/surface-card';
@@ -113,10 +114,7 @@ export default function TagsScreen() {
       ) : null}
 
       {!isLoading && tags.length === 0 ? (
-        <SurfaceCard style={styles.stateCard}>
-          <ThemedText type="smallBold">No tags yet</ThemedText>
-          <ThemedText themeColor="textSecondary">Add a tag to use it across your notes.</ThemedText>
-        </SurfaceCard>
+        <EmptyState title="No tags yet" body="Add a tag to use it across your notes." />
       ) : null}
 
       {!isLoading && tags.length > 0 ? (
