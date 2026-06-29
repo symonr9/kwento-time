@@ -1,7 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -15,6 +15,7 @@ export default function PlacesScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [places, setPlaces] = useState<Place[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +50,17 @@ export default function PlacesScreen() {
       };
     }, []),
   );
+
+  const filteredPlaces = places.filter((place) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return true;
+    }
+
+    return [place.name, place.address, place.notes]
+      .filter(Boolean)
+      .some((value) => value?.toLowerCase().includes(query));
+  });
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -92,6 +104,24 @@ export default function PlacesScreen() {
             </ThemedText>
           </View>
 
+          <View style={styles.filterPanel}>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search places"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+              ]}
+            />
+          </View>
+
           {isLoading ? (
             <SurfaceCard style={styles.stateCard}>
               <ActivityIndicator color={theme.primary} />
@@ -114,9 +144,16 @@ export default function PlacesScreen() {
             </SurfaceCard>
           ) : null}
 
-          {!isLoading && !error && places.length > 0 ? (
+          {!isLoading && !error && places.length > 0 && filteredPlaces.length === 0 ? (
+            <SurfaceCard style={styles.stateCard}>
+              <ThemedText type="smallBold">No places match</ThemedText>
+              <ThemedText themeColor="textSecondary">Try a different keyword.</ThemedText>
+            </SurfaceCard>
+          ) : null}
+
+          {!isLoading && !error && filteredPlaces.length > 0 ? (
             <View style={styles.list}>
-              {places.map((place) => (
+              {filteredPlaces.map((place) => (
                 <Link
                   key={place.id}
                   href={{ pathname: '/places/[id]', params: { id: String(place.id) } }}
@@ -192,6 +229,18 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
+  },
+  filterPanel: {
+    gap: Spacing.two,
+  },
+  searchInput: {
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
   },
   list: {
     gap: Spacing.two,

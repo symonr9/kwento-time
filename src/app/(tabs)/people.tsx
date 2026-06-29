@@ -1,7 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -15,6 +15,7 @@ export default function PeopleScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [people, setPeople] = useState<Person[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +50,17 @@ export default function PeopleScreen() {
       };
     }, []),
   );
+
+  const filteredPeople = people.filter((person) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return true;
+    }
+
+    return [person.name, person.nickname, person.howWeMet, person.birthday, person.notes]
+      .filter(Boolean)
+      .some((value) => value?.toLowerCase().includes(query));
+  });
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -92,6 +104,24 @@ export default function PeopleScreen() {
             </ThemedText>
           </View>
 
+          <View style={styles.filterPanel}>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search people"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+              ]}
+            />
+          </View>
+
           {isLoading ? (
             <SurfaceCard style={styles.stateCard}>
               <ActivityIndicator color={theme.primary} />
@@ -114,9 +144,16 @@ export default function PeopleScreen() {
             </SurfaceCard>
           ) : null}
 
-          {!isLoading && !error && people.length > 0 ? (
+          {!isLoading && !error && people.length > 0 && filteredPeople.length === 0 ? (
+            <SurfaceCard style={styles.stateCard}>
+              <ThemedText type="smallBold">No people match</ThemedText>
+              <ThemedText themeColor="textSecondary">Try a different keyword.</ThemedText>
+            </SurfaceCard>
+          ) : null}
+
+          {!isLoading && !error && filteredPeople.length > 0 ? (
             <View style={styles.list}>
-              {people.map((person) => (
+              {filteredPeople.map((person) => (
                 <Link
                   key={person.id}
                   href={{ pathname: '/people/[id]', params: { id: String(person.id) } }}
@@ -187,6 +224,18 @@ const styles = StyleSheet.create({
   hero: {
     gap: Spacing.two,
     paddingBottom: Spacing.three,
+  },
+  filterPanel: {
+    gap: Spacing.two,
+  },
+  searchInput: {
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
   },
   list: {
     gap: Spacing.two,

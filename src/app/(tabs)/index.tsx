@@ -1,7 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -38,6 +38,11 @@ export default function HomeScreen() {
   const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [conversationSearch, setConversationSearch] = useState('');
+  const [conversationPersonId, setConversationPersonId] = useState<number | null>(null);
+  const [conversationPlaceId, setConversationPlaceId] = useState<number | null>(null);
+  const [lifeSearch, setLifeSearch] = useState('');
+  const [lifeTone, setLifeTone] = useState<MyLifeItem['tone'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isScheduling, setIsScheduling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +139,51 @@ export default function HomeScreen() {
     scheduledAt.setHours(9, index * 10, 0, 0);
     return scheduledAt;
   }
+
+  const conversationPeople = conversations
+    .filter((conversation) => conversation.personId && conversation.personName)
+    .filter(
+      (conversation, index, rows) =>
+        rows.findIndex((row) => row.personId === conversation.personId) === index,
+    );
+  const conversationPlaces = conversations
+    .filter((conversation) => conversation.placeId && conversation.placeName)
+    .filter(
+      (conversation, index, rows) =>
+        rows.findIndex((row) => row.placeId === conversation.placeId) === index,
+    );
+  const filteredConversations = conversations.filter((conversation) => {
+    const query = conversationSearch.trim().toLowerCase();
+    const matchesQuery =
+      !query ||
+      [
+        conversation.summary,
+        conversation.source,
+        conversation.transcriptStatus,
+        conversation.extractionStatus,
+        conversation.personName,
+        conversation.placeName,
+        conversation.occurredAt.toISOString(),
+      ]
+        .filter(Boolean)
+        .some((value) => value?.toLowerCase().includes(query));
+    const matchesPerson =
+      conversationPersonId === null || conversation.personId === conversationPersonId;
+    const matchesPlace = conversationPlaceId === null || conversation.placeId === conversationPlaceId;
+
+    return matchesQuery && matchesPerson && matchesPlace;
+  });
+  const filteredLifeItems = lifeItems.filter((item) => {
+    const query = lifeSearch.trim().toLowerCase();
+    const matchesQuery =
+      !query ||
+      [item.content, item.tone, item.createdAt.toISOString()]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query));
+    const matchesTone = lifeTone === null || item.tone === lifeTone;
+
+    return matchesQuery && matchesTone;
+  });
 
   async function handleScheduleReminders() {
     setIsScheduling(true);
@@ -569,8 +619,48 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <ThemedText type="smallBold">Recent conversations</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {conversations.length}
+                    {filteredConversations.length}
                   </ThemedText>
+                </View>
+
+                <View style={styles.filterPanel}>
+                  <TextInput
+                    value={conversationSearch}
+                    onChangeText={setConversationSearch}
+                    placeholder="Search conversations"
+                    placeholderTextColor={theme.textSecondary}
+                    autoCapitalize="none"
+                    style={[
+                      styles.searchInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.border,
+                        color: theme.text,
+                      },
+                    ]}
+                  />
+                  <View style={styles.filterChips}>
+                    <FilterChip label="Any person" selected={conversationPersonId === null} onPress={() => setConversationPersonId(null)} />
+                    {conversationPeople.map((conversation) => (
+                      <FilterChip
+                        key={conversation.personId}
+                        label={conversation.personName ?? 'Person'}
+                        selected={conversationPersonId === conversation.personId}
+                        onPress={() => setConversationPersonId(conversation.personId)}
+                      />
+                    ))}
+                  </View>
+                  <View style={styles.filterChips}>
+                    <FilterChip label="Any place" selected={conversationPlaceId === null} onPress={() => setConversationPlaceId(null)} />
+                    {conversationPlaces.map((conversation) => (
+                      <FilterChip
+                        key={conversation.placeId}
+                        label={conversation.placeName ?? 'Place'}
+                        selected={conversationPlaceId === conversation.placeId}
+                        onPress={() => setConversationPlaceId(conversation.placeId)}
+                      />
+                    ))}
+                  </View>
                 </View>
 
                 {conversations.length === 0 ? (
@@ -580,9 +670,14 @@ export default function HomeScreen() {
                       Tap add and choose conversation to record the first note.
                     </ThemedText>
                   </SurfaceCard>
+                ) : filteredConversations.length === 0 ? (
+                  <SurfaceCard style={styles.stateCard}>
+                    <ThemedText type="smallBold">No conversations match</ThemedText>
+                    <ThemedText themeColor="textSecondary">Try another keyword or filter.</ThemedText>
+                  </SurfaceCard>
                 ) : (
                   <View style={styles.list}>
-                    {conversations.map((conversation) => (
+                    {filteredConversations.map((conversation) => (
                       <Link
                         key={conversation.id}
                         href={{
@@ -619,8 +714,32 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <ThemedText type="smallBold">Life topics</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {lifeItems.length}
+                    {filteredLifeItems.length}
                   </ThemedText>
+                </View>
+
+                <View style={styles.filterPanel}>
+                  <TextInput
+                    value={lifeSearch}
+                    onChangeText={setLifeSearch}
+                    placeholder="Search life topics"
+                    placeholderTextColor={theme.textSecondary}
+                    autoCapitalize="none"
+                    style={[
+                      styles.searchInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.border,
+                        color: theme.text,
+                      },
+                    ]}
+                  />
+                  <View style={styles.filterChips}>
+                    <FilterChip label="Any tone" selected={lifeTone === null} onPress={() => setLifeTone(null)} />
+                    <FilterChip label="Light" selected={lifeTone === 'light'} onPress={() => setLifeTone('light')} />
+                    <FilterChip label="Medium" selected={lifeTone === 'medium'} onPress={() => setLifeTone('medium')} />
+                    <FilterChip label="Personal" selected={lifeTone === 'personal'} onPress={() => setLifeTone('personal')} />
+                  </View>
                 </View>
 
                 {lifeItems.length === 0 ? (
@@ -630,9 +749,14 @@ export default function HomeScreen() {
                       Tap add and choose life update to save what is happening recently.
                     </ThemedText>
                   </SurfaceCard>
+                ) : filteredLifeItems.length === 0 ? (
+                  <SurfaceCard style={styles.stateCard}>
+                    <ThemedText type="smallBold">No life topics match</ThemedText>
+                    <ThemedText themeColor="textSecondary">Try another keyword or tone.</ThemedText>
+                  </SurfaceCard>
                 ) : (
                   <View style={styles.list}>
-                    {lifeItems.map((item) => (
+                    {filteredLifeItems.map((item) => (
                       <SurfaceCard key={item.id} style={styles.row}>
                         <View style={styles.rowHeader}>
                           <ThemedText type="smallBold">
@@ -769,4 +893,59 @@ const styles = StyleSheet.create({
   stateCard: {
     alignItems: 'center',
   },
+  filterPanel: {
+    gap: Spacing.two,
+  },
+  searchInput: {
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
+  },
+  filterChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  filterChip: {
+    minHeight: 34,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
 });
+
+function FilterChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[
+        styles.filterChip,
+        {
+          backgroundColor: selected ? theme.primaryMuted : theme.background,
+          borderColor: theme.border,
+        },
+      ]}>
+      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
