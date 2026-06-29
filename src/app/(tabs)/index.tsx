@@ -10,9 +10,15 @@ import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/th
 import { getRecentConversations } from '@/db/queries/conversations';
 import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getActiveMyLifeItems } from '@/db/queries/my-life';
+import {
+  getUpcomingReminders,
+  setReminderNotificationId,
+  upsertReminderForRelated,
+} from '@/db/queries/reminder';
 import { extendTopicExpiry, getTopicsExpiringSoonWithPeople, resolveTopic } from '@/db/queries/topics';
-import type { MyLifeItem } from '@/db/schema';
+import type { MyLifeItem, Reminder } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+import { ensureNotificationPermissions, scheduleReminderNotification } from '@/services/notifications';
 
 type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[number];
 type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
@@ -29,19 +35,23 @@ export default function HomeScreen() {
   const [expiringTopics, setExpiringTopics] = useState<ExpiringTopic[]>([]);
   const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isScheduling, setIsScheduling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const loadHome = useCallback(async (isActive = true) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const [conversationRows, expiringTopicRows, followUpRows, lifeRows] = await Promise.all([
+      const [conversationRows, expiringTopicRows, followUpRows, lifeRows, reminderRows] = await Promise.all([
         getRecentConversations(10),
         getTopicsExpiringSoonWithPeople(new Date(), 10),
         getAllOpenFollowUpsWithPeople(10),
         getActiveMyLifeItems(),
+        getUpcomingReminders(),
       ]);
 
       if (isActive) {
@@ -49,6 +59,7 @@ export default function HomeScreen() {
         setExpiringTopics(expiringTopicRows);
         setFollowUps(followUpRows);
         setLifeItems(lifeRows);
+        setReminders(reminderRows.slice(0, 10));
       }
     } catch (err) {
       if (isActive) {
@@ -103,6 +114,59 @@ export default function HomeScreen() {
       await loadHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to resolve topic.');
+    }
+  }
+
+  function nextReminderDate(index: number) {
+    const scheduledAt = new Date();
+    scheduledAt.setDate(scheduledAt.getDate() + 1);
+    scheduledAt.setHours(9, index * 10, 0, 0);
+    return scheduledAt;
+  }
+
+  async function handleScheduleReminders() {
+    setIsScheduling(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const hasPermission = await ensureNotificationPermissions();
+
+      if (!hasPermission) {
+        setError('Notification permission is required to schedule reminders.');
+        return;
+      }
+
+      const reminderInputs = [
+        ...followUps.map((followUp, index) => ({
+          personId: followUp.personId ?? undefined,
+          relatedId: followUp.id,
+          scheduledAt: nextReminderDate(index),
+          type: 'follow_up' as const,
+        })),
+        ...expiringTopics.map((topic, index) => ({
+          personId: topic.personId ?? undefined,
+          relatedId: topic.topicId,
+          scheduledAt: nextReminderDate(followUps.length + index),
+          type: 'topic_expiry' as const,
+        })),
+      ];
+
+      let scheduledCount = 0;
+
+      for (const input of reminderInputs) {
+        const reminder = await upsertReminderForRelated(input);
+        const notificationId = await scheduleReminderNotification(reminder);
+        await setReminderNotificationId(reminder.id, notificationId);
+        scheduledCount += 1;
+      }
+
+      setNotice(`Scheduled ${scheduledCount} reminder${scheduledCount === 1 ? '' : 's'}.`);
+      await loadHome();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to schedule reminders.');
+    } finally {
+      setIsScheduling(false);
     }
   }
 
@@ -164,6 +228,12 @@ export default function HomeScreen() {
           {error ? (
             <SurfaceCard tone="accentMuted" style={styles.stateCard}>
               <ThemedText selectable>{error}</ThemedText>
+            </SurfaceCard>
+          ) : null}
+
+          {notice ? (
+            <SurfaceCard tone="primaryMuted" style={styles.stateCard}>
+              <ThemedText selectable>{notice}</ThemedText>
             </SurfaceCard>
           ) : null}
 
@@ -235,7 +305,58 @@ export default function HomeScreen() {
                       <ThemedText type="smallBold">Life update</ThemedText>
                     </Pressable>
                   </Link>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isScheduling}
+                    onPress={handleScheduleReminders}
+                    style={({ pressed }) => [
+                      styles.quickActionButton,
+                      {
+                        backgroundColor: theme.backgroundSelected,
+                        opacity: pressed || isScheduling ? 0.72 : 1,
+                      },
+                    ]}>
+                    <ThemedText type="smallBold">
+                      {isScheduling ? 'Scheduling...' : 'Schedule reminders'}
+                    </ThemedText>
+                  </Pressable>
                 </View>
+              </View>
+
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ThemedText type="smallBold">Upcoming reminders</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {reminders.length}
+                  </ThemedText>
+                </View>
+
+                {reminders.length === 0 ? (
+                  <SurfaceCard style={styles.stateCard}>
+                    <ThemedText type="smallBold">No reminders scheduled</ThemedText>
+                    <ThemedText themeColor="textSecondary">
+                      Schedule reminders to turn follow-ups and expiring topics into local notifications.
+                    </ThemedText>
+                  </SurfaceCard>
+                ) : (
+                  <View style={styles.list}>
+                    {reminders.map((reminder) => (
+                      <SurfaceCard key={reminder.id} style={styles.row}>
+                        <View style={styles.rowHeader}>
+                          <ThemedText type="smallBold">
+                            {reminder.type === 'follow_up' ? 'Follow-up' : 'Topic review'}
+                          </ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary">
+                            {formatShortDate(reminder.scheduledAt)}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {reminder.notificationId ? 'Scheduled on device' : 'Saved locally'}
+                        </ThemedText>
+                      </SurfaceCard>
+                    ))}
+                  </View>
+                )}
               </View>
 
               <View style={styles.section}>

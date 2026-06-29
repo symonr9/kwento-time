@@ -9,6 +9,31 @@ export async function createReminder(data: NewReminder): Promise<Reminder> {
   return row;
 }
 
+export async function upsertReminderForRelated(data: NewReminder): Promise<Reminder> {
+  if (!data.relatedId) {
+    return createReminder(data);
+  }
+
+  const existing = await getReminderByRelated(data.type, data.relatedId);
+
+  if (!existing) {
+    return createReminder(data);
+  }
+
+  const db = await getDb();
+  const [row] = await db
+    .update(reminders)
+    .set({
+      personId: data.personId,
+      scheduledAt: data.scheduledAt,
+      sent: false,
+      notificationId: existing.notificationId,
+    })
+    .where(eq(reminders.id, existing.id))
+    .returning();
+  return row;
+}
+
 export async function getReminderById(id: number) {
   const db = await getDb();
   const [row] = await db.select().from(reminders).where(eq(reminders.id, id)).limit(1);
