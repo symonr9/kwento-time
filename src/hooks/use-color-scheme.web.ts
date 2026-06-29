@@ -1,7 +1,5 @@
-import { useColorScheme as useRNColorScheme } from 'react-native';
+import { useAppearancePreference } from '@/hooks/use-appearance-preference';
 
 export function useColorScheme() {
-  const colorScheme = useRNColorScheme();
-
-  return colorScheme ?? 'light';
+  return useAppearancePreference().effectiveScheme;
 }

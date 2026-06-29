@@ -3,14 +3,16 @@ import { SourceSans3_400Regular, SourceSans3_700Bold } from '@expo-google-fonts/
 import { Urbanist_500Medium, Urbanist_600SemiBold, Urbanist_700Bold } from '@expo-google-fonts/urbanist';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
 
 import { AppSplash } from '@/components/ui/app-splash';
 import { MigrationGate } from '@/db/migrate';
 import { BiometricGate } from '@/features/auth/biometric-gate';
+import {
+  AppearancePreferenceProvider,
+  useAppearancePreference,
+} from '@/hooks/use-appearance-preference';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     Lora_500Medium,
     Lora_700Bold,
@@ -22,7 +24,17 @@ export default function RootLayout() {
   });
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <AppearancePreferenceProvider>
+      <RootContent fontsLoaded={fontsLoaded} />
+    </AppearancePreferenceProvider>
+  );
+}
+
+function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
+  const { effectiveScheme } = useAppearancePreference();
+
+  return (
+    <ThemeProvider value={effectiveScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {!fontsLoaded ? (
         <AppSplash message="Loading type..." />
       ) : (

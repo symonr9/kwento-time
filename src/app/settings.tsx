@@ -13,15 +13,20 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { SegmentedField } from '@/components/ui/form-controls';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { isBiometricLockEnabled, setBiometricLockEnabled } from '@/db/queries/settings';
+import { useAppearancePreference } from '@/hooks/use-appearance-preference';
 import { useTheme } from '@/hooks/use-theme';
+import type { AppearanceMode } from '@/services/preferences';
 import { getBiometricAvailability } from '@/services/auth';
 import { generateBackupJson, importBackupJson } from '@/services/backup';
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { effectiveScheme, mode: appearanceMode, setMode: setAppearanceMode, systemScheme } =
+    useAppearancePreference();
   const insets = useSafeAreaInsets();
   const [backupJson, setBackupJson] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -124,6 +129,18 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleAppearanceModeChange(mode: AppearanceMode) {
+    setNotice(null);
+    setError(null);
+
+    try {
+      await setAppearanceMode(mode);
+      setNotice(`Appearance set to ${mode === 'system' ? 'system default' : mode} mode.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update appearance.');
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.select({ ios: 'padding', default: undefined })}
@@ -194,6 +211,25 @@ export default function SettingsScreen() {
               <ThemedText selectable>{error}</ThemedText>
             </SurfaceCard>
           ) : null}
+
+          <SurfaceCard style={styles.section}>
+            <View style={styles.settingCopy}>
+              <ThemedText type="smallBold">Appearance</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Current theme is {effectiveScheme}. System is {systemScheme}.
+              </ThemedText>
+            </View>
+            <SegmentedField<AppearanceMode>
+              label="Mode"
+              options={[
+                { label: 'System', value: 'system' },
+                { label: 'Light', value: 'light' },
+                { label: 'Dark', value: 'dark' },
+              ]}
+              value={appearanceMode}
+              onChange={(nextMode) => void handleAppearanceModeChange(nextMode)}
+            />
+          </SurfaceCard>
 
           <SurfaceCard style={styles.section}>
             <View style={styles.rowHeader}>
