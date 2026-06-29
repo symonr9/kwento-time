@@ -116,9 +116,6 @@ export default function NewPersonScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               New person
             </ThemedText>
-            <ThemedText type="title">
-              Add someone to remember.
-            </ThemedText>
           </View>
 
           <SurfaceCard style={styles.form}>

@@ -160,12 +160,6 @@ export default function SettingsScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Settings
             </ThemedText>
-            <ThemedText type="title">
-              Keep local data private.
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Export a JSON backup or paste one here to import records back into SQLite.
-            </ThemedText>
           </View>
 
           <View style={styles.metricGrid}>

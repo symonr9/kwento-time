@@ -110,9 +110,6 @@ export default function NewPlaceScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               New place
             </ThemedText>
-            <ThemedText type="title">
-              Add somewhere to remember.
-            </ThemedText>
           </View>
 
           <SurfaceCard style={styles.form}>

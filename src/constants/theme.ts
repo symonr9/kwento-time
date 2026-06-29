@@ -80,3 +80,32 @@ export const Radius = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80, default: 92 }) ?? 92;
 export const MaxContentWidth = 800;
+
+export const ACTION_SYMBOLS = {
+  conversation: {
+    ios: 'bubble.left.and.bubble.right',
+    android: 'chat',
+    web: 'chat',
+  },
+  voiceNote: {
+    ios: 'mic',
+    android: 'mic',
+    web: 'mic',
+  },
+  briefing: {
+    ios: 'doc.text',
+    android: 'article',
+    web: 'article',
+  },
+  lifeUpdate: {
+    ios: 'sparkles',
+    android: 'auto_awesome',
+    web: 'auto_awesome',
+  },
+  scheduleReminder: {
+    ios: 'calendar.badge.clock',
+    android: 'event',
+    web: 'event',
+  },
+}; 
+

@@ -221,12 +221,6 @@ export default function HomeScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Today
             </ThemedText>
-            <ThemedText type="title">
-              Keep the next conversation close.
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Capture recent conversations and what is current in your own life.
-            </ThemedText>
           </View>
 
           {isLoading ? (
@@ -251,90 +245,69 @@ export default function HomeScreen() {
           {!isLoading && !error ? (
             <>
               <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText type="smallBold">Today at a glance</ThemedText>
-                </View>
-                <View style={styles.metricGrid}>
-                  <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
-                    <ThemedText type="smallBold">{followUps.length}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Follow-ups
-                    </ThemedText>
-                  </SurfaceCard>
-                  <SurfaceCard tone="highlightMuted" style={styles.metricCard}>
-                    <ThemedText type="smallBold">{expiringTopics.length}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Topics to review
-                    </ThemedText>
-                  </SurfaceCard>
-                  <SurfaceCard tone="accentMuted" style={styles.metricCard}>
-                    <ThemedText type="smallBold">{conversations.length}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Recent notes
-                    </ThemedText>
-                  </SurfaceCard>
-                  <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
-                    <ThemedText type="smallBold">{pendingExtractions.length}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Need structure
-                    </ThemedText>
-                  </SurfaceCard>
-                </View>
                 <View style={styles.quickActions}>
-                  <Link href="/conversations/new" asChild>
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.quickActionButton,
-                        {
-                          backgroundColor: theme.primary,
-                          opacity: pressed ? 0.78 : 1,
-                        },
-                      ]}>
-                      <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                        Conversation
-                      </ThemedText>
-                    </Pressable>
-                  </Link>
-                  <Link href="/conversations/voice" asChild>
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.quickActionButton,
-                        {
-                          backgroundColor: theme.backgroundSelected,
-                          opacity: pressed ? 0.72 : 1,
-                        },
-                      ]}>
-                      <ThemedText type="smallBold">Voice note</ThemedText>
-                    </Pressable>
-                  </Link>
-                  <Link href="/forecast/index" asChild>
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.quickActionButton,
-                        {
-                          backgroundColor: theme.backgroundSelected,
-                          opacity: pressed ? 0.72 : 1,
-                        },
-                      ]}>
-                      <ThemedText type="smallBold">Briefing</ThemedText>
-                    </Pressable>
-                  </Link>
-                  <Link href="/my-life/new" asChild>
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.quickActionButton,
-                        {
-                          backgroundColor: theme.backgroundSelected,
-                          opacity: pressed ? 0.72 : 1,
-                        },
-                      ]}>
-                      <ThemedText type="smallBold">Life update</ThemedText>
-                    </Pressable>
-                  </Link>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.quickActionButton,
+                      {
+                        opacity: pressed ? 0.78 : 1,
+                      },
+                    ]}>
+                    <Link href="/conversations/new" asChild>
+                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
+                        <ThemedText type="smallBold">
+                          Conversation
+                        </ThemedText>
+                      </SurfaceCard>
+                    </Link>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.quickActionButton,
+                      {
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}>
+                    <Link href="/conversations/voice" asChild>
+                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
+                        <ThemedText type="smallBold">Voice note</ThemedText>
+                      </SurfaceCard>
+                    </Link>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.quickActionButton,
+                      {
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}>
+                    <Link href="/forecast/index" asChild>
+                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
+                        <ThemedText type="smallBold">Briefing</ThemedText>
+                      </SurfaceCard>
+                    </Link>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.quickActionButton,
+                      {
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}>
+                    <Link href="/my-life/new" asChild>
+                      <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
+                        <ThemedText type="smallBold">Life update</ThemedText>
+                      </SurfaceCard>
+                    </Link>
+                  </Pressable>
+
                   <Pressable
                     accessibilityRole="button"
                     disabled={isScheduling}
@@ -342,14 +315,47 @@ export default function HomeScreen() {
                     style={({ pressed }) => [
                       styles.quickActionButton,
                       {
-                        backgroundColor: theme.backgroundSelected,
                         opacity: pressed || isScheduling ? 0.72 : 1,
                       },
                     ]}>
-                    <ThemedText type="smallBold">
-                      {isScheduling ? 'Scheduling...' : 'Schedule reminders'}
-                    </ThemedText>
+                    <SurfaceCard tone="backgroundElement" style={styles.quickActionButtonContent}>
+                      <ThemedText type="smallBold">
+                        {isScheduling ? 'Scheduling...' : 'Schedule reminders'}
+                      </ThemedText>
+                    </SurfaceCard>
                   </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ThemedText type="smallBold">Today at a glance</ThemedText>
+                </View>
+                <View style={styles.metricGrid}>
+                  <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
+                    <ThemedText type="title">{followUps.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Follow-ups
+                    </ThemedText>
+                  </SurfaceCard>
+                  <SurfaceCard tone="highlightMuted" style={styles.metricCard}>
+                    <ThemedText type="title">{expiringTopics.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Topics to review
+                    </ThemedText>
+                  </SurfaceCard>
+                  <SurfaceCard tone="accentMuted" style={styles.metricCard}>
+                    <ThemedText type="title">{conversations.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Recent notes
+                    </ThemedText>
+                  </SurfaceCard>
+                  <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
+                    <ThemedText type="title">{pendingExtractions.length}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Need structure
+                    </ThemedText>
+                  </SurfaceCard>
                 </View>
               </View>
 
@@ -717,7 +723,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   metricCard: {
-    minWidth: 144,
+    width: 144,
     flexGrow: 1,
     borderRadius: Radius.small,
   },
@@ -727,13 +733,12 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   quickActionButton: {
-    flexGrow: 1,
-    minHeight: 48,
-    borderRadius: Radius.medium,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
+  },
+  quickActionButtonContent: {
+    flexDirection: 'row',
+    gap: Spacing.half,
+    padding: Spacing.two,
+    borderRadius: Radius.small
   },
   row: {
     minHeight: 84,
@@ -760,9 +765,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
   },
   stateCard: {
     alignItems: 'center',

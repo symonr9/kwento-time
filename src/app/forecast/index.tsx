@@ -170,12 +170,6 @@ export default function ForecastScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Forecast
             </ThemedText>
-            <ThemedText type="title">
-              Deterministic place briefing.
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Generate an offline script from linked people, follow-ups, topics, and recent conversations.
-            </ThemedText>
           </View>
 
           {isLoading ? (

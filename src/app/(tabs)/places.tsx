@@ -90,12 +90,6 @@ export default function PlacesScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               Places
             </ThemedText>
-            <ThemedText type="title">
-              Context for where connection happens.
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Add places here and they will be saved locally in SQLite.
-            </ThemedText>
           </View>
 
           {isLoading ? (

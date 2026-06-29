@@ -90,12 +90,6 @@ export default function PeopleScreen() {
             <ThemedText type="smallBold" themeColor="primary">
               People
             </ThemedText>
-            <ThemedText type="title">
-              Your relationship memory.
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Add people here and they will be saved locally in SQLite.
-            </ThemedText>
           </View>
 
           {isLoading ? (
