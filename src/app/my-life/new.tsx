@@ -1,12 +1,17 @@
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
+import { ThemedText } from '@/components/themed-text';
 import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
 import { TagSelector } from '@/components/ui/tag-selector';
+import { Radius, Spacing } from '@/constants/theme';
 import { createMyLifeItem } from '@/db/queries/my-life';
 import { createTag, getAllTags, setTagsForItem } from '@/db/queries/tags';
 import type { MyLifeTone, NewMyLifeItem, Tag } from '@/db/schema';
+import { useTheme } from '@/hooks/use-theme';
 
 const toneOptions: { label: string; value: MyLifeTone }[] = [
   { label: 'Light', value: 'light' },
@@ -146,12 +151,10 @@ export default function NewMyLifeItemScreen() {
         style={formControlStyles.notesInput}
       />
       <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
-      <TextField
+      <DatePickerField
         label="Expiration date"
         value={expiresAt}
-        onChangeText={setExpiresAt}
-        placeholder="YYYY-MM-DD"
-        inputMode="numeric"
+        onChange={setExpiresAt}
       />
       <TagSelector
         availableTags={tags}
@@ -164,3 +167,69 @@ export default function NewMyLifeItemScreen() {
     </FormScreen>
   );
 }
+
+function DatePickerField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const theme = useTheme();
+  const [isPickerVisible, setIsPickerVisible] = useState(Platform.OS === 'web');
+  const date = parseExpirationDate(value) ?? new Date();
+
+  function handleChange(event: DateTimePickerEvent, selectedDate?: Date) {
+    if (Platform.OS !== 'web') {
+      setIsPickerVisible(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) {
+      return;
+    }
+
+    onChange(formatDateInputValue(selectedDate));
+  }
+
+  return (
+    <View style={styles.dateField}>
+      <ThemedText type="smallBold">{label}</ThemedText>
+      {Platform.OS === 'web' ? (
+        <DateTimePicker mode="date" value={date} onChange={handleChange} />
+      ) : (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setIsPickerVisible(true)}
+            style={({ pressed }) => [
+              styles.dateButton,
+              {
+                backgroundColor: theme.background,
+                borderColor: theme.border,
+                opacity: pressed ? 0.72 : 1,
+              },
+            ]}>
+            <ThemedText type="smallBold">{value}</ThemedText>
+          </Pressable>
+          {isPickerVisible ? <DateTimePicker mode="date" value={date} onChange={handleChange} /> : null}
+        </>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  dateField: {
+    gap: Spacing.one,
+  },
+  dateButton: {
+    minHeight: 48,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
+});
