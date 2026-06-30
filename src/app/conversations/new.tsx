@@ -1,8 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, type ListRenderItemInfo } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ExpandableSection } from '@/components/ui/expandable-section';
 import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
 import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
@@ -395,6 +396,13 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
   },
+  structuredList: {
+    maxHeight: 420,
+  },
+  structuredListContent: {
+    gap: Spacing.two,
+    paddingBottom: Spacing.one,
+  },
   inlineCreateRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -436,53 +444,70 @@ function StructuredTopicsField({
     onChange(nextTopics.length ? nextTopics : [createTopicDraft()]);
   }
 
+  function renderTopic({ item: topic, index }: ListRenderItemInfo<StructuredTopicDraft>) {
+    return (
+      <View style={styles.structuredItem}>
+        <TextField
+          label={`Talking point ${index + 1}`}
+          value={topic.content}
+          onChangeText={(content) => updateTopic(topic.id, { content })}
+          placeholder="Something talked about"
+        />
+        <TextField
+          label="Category"
+          value={topic.category}
+          onChangeText={(category) => updateTopic(topic.id, { category })}
+          placeholder="Family, work, health..."
+        />
+        <SegmentedField
+          label="Tone"
+          options={toneOptions}
+          value={topic.tone}
+          onChange={(tone) => updateTopic(topic.id, { tone })}
+        />
+        <SegmentedField
+          label="Importance"
+          options={importanceOptions}
+          value={topic.importance}
+          onChange={(importance) => updateTopic(topic.id, { importance })}
+        />
+        {topics.length > 1 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => removeTopic(topic.id)}
+            style={({ pressed }) => [
+              styles.removeButton,
+              {
+                borderColor: theme.border,
+                opacity: pressed ? 0.72 : 1,
+              },
+            ]}>
+            <ThemedText type="smallBold" style={styles.removeButtonText}>
+              Remove talking point
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold">Talking points</ThemedText>
-      {topics.map((topic, index) => (
-        <View key={topic.id} style={styles.structuredItem}>
-          <TextField
-            label={`Talking point ${index + 1}`}
-            value={topic.content}
-            onChangeText={(content) => updateTopic(topic.id, { content })}
-            placeholder="Something talked about"
-          />
-          <TextField
-            label="Category"
-            value={topic.category}
-            onChangeText={(category) => updateTopic(topic.id, { category })}
-            placeholder="Family, work, health..."
-          />
-          <SegmentedField
-            label="Tone"
-            options={toneOptions}
-            value={topic.tone}
-            onChange={(tone) => updateTopic(topic.id, { tone })}
-          />
-          <SegmentedField
-            label="Importance"
-            options={importanceOptions}
-            value={topic.importance}
-            onChange={(importance) => updateTopic(topic.id, { importance })}
-          />
-          {topics.length > 1 ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => removeTopic(topic.id)}
-              style={({ pressed }) => [
-                styles.removeButton,
-                {
-                  borderColor: theme.border,
-                  opacity: pressed ? 0.72 : 1,
-                },
-              ]}>
-              <ThemedText type="smallBold" style={styles.removeButtonText}>
-                Remove talking point
-              </ThemedText>
-            </Pressable>
-          ) : null}
-        </View>
-      ))}
+    <ExpandableSection title="Talking points" count={topics.length}>
+      <FlatList
+        data={topics}
+        keyExtractor={(topic) => topic.id}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        renderItem={renderTopic}
+        scrollEnabled={topics.length > 2}
+        showsVerticalScrollIndicator={topics.length > 2}
+        initialNumToRender={3}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        removeClippedSubviews
+        style={styles.structuredList}
+        contentContainerStyle={styles.structuredListContent}
+      />
       <Pressable
         accessibilityRole="button"
         onPress={() => onChange([...topics, createTopicDraft()])}
@@ -497,7 +522,7 @@ function StructuredTopicsField({
           + Add talking point
         </ThemedText>
       </Pressable>
-    </View>
+    </ExpandableSection>
   );
 }
 
@@ -519,53 +544,70 @@ function StructuredFollowUpsField({
     onChange(nextFollowUps.length ? nextFollowUps : [createFollowUpDraft()]);
   }
 
+  function renderFollowUp({ item: followUp, index }: ListRenderItemInfo<StructuredFollowUpDraft>) {
+    return (
+      <View style={styles.structuredItem}>
+        <TextField
+          label={`Follow-up ${index + 1}`}
+          value={followUp.question}
+          onChangeText={(question) => updateFollowUp(followUp.id, { question })}
+          placeholder="Something to follow up on"
+        />
+        <TextField
+          label="Category"
+          value={followUp.category}
+          onChangeText={(category) => updateFollowUp(followUp.id, { category })}
+          placeholder="Family, work, health..."
+        />
+        <SegmentedField
+          label="Tone"
+          options={toneOptions}
+          value={followUp.tone}
+          onChange={(tone) => updateFollowUp(followUp.id, { tone })}
+        />
+        <SegmentedField
+          label="Importance"
+          options={importanceOptions}
+          value={followUp.importance}
+          onChange={(importance) => updateFollowUp(followUp.id, { importance })}
+        />
+        {followUps.length > 1 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => removeFollowUp(followUp.id)}
+            style={({ pressed }) => [
+              styles.removeButton,
+              {
+                borderColor: theme.border,
+                opacity: pressed ? 0.72 : 1,
+              },
+            ]}>
+            <ThemedText type="smallBold" style={styles.removeButtonText}>
+              Remove follow-up
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold">Follow-up points</ThemedText>
-      {followUps.map((followUp, index) => (
-        <View key={followUp.id} style={styles.structuredItem}>
-          <TextField
-            label={`Follow-up ${index + 1}`}
-            value={followUp.question}
-            onChangeText={(question) => updateFollowUp(followUp.id, { question })}
-            placeholder="Something to follow up on"
-          />
-          <TextField
-            label="Category"
-            value={followUp.category}
-            onChangeText={(category) => updateFollowUp(followUp.id, { category })}
-            placeholder="Family, work, health..."
-          />
-          <SegmentedField
-            label="Tone"
-            options={toneOptions}
-            value={followUp.tone}
-            onChange={(tone) => updateFollowUp(followUp.id, { tone })}
-          />
-          <SegmentedField
-            label="Importance"
-            options={importanceOptions}
-            value={followUp.importance}
-            onChange={(importance) => updateFollowUp(followUp.id, { importance })}
-          />
-          {followUps.length > 1 ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => removeFollowUp(followUp.id)}
-              style={({ pressed }) => [
-                styles.removeButton,
-                {
-                  borderColor: theme.border,
-                  opacity: pressed ? 0.72 : 1,
-                },
-              ]}>
-              <ThemedText type="smallBold" style={styles.removeButtonText}>
-                Remove follow-up
-              </ThemedText>
-            </Pressable>
-          ) : null}
-        </View>
-      ))}
+    <ExpandableSection title="Follow-up points" count={followUps.length}>
+      <FlatList
+        data={followUps}
+        keyExtractor={(followUp) => followUp.id}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        renderItem={renderFollowUp}
+        scrollEnabled={followUps.length > 2}
+        showsVerticalScrollIndicator={followUps.length > 2}
+        initialNumToRender={3}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        removeClippedSubviews
+        style={styles.structuredList}
+        contentContainerStyle={styles.structuredListContent}
+      />
       <Pressable
         accessibilityRole="button"
         onPress={() => onChange([...followUps, createFollowUpDraft()])}
@@ -580,6 +622,6 @@ function StructuredFollowUpsField({
           + Add follow-up
         </ThemedText>
       </Pressable>
-    </View>
+    </ExpandableSection>
   );
 }
