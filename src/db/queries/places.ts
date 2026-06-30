@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, or } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import { conversations, followUps, people, personPlaces, places, type NewPlace } from '../schema';
@@ -12,6 +12,27 @@ export async function createPlace(data: NewPlace) {
 export async function getAllPlaces() {
   const db = await getDb();
   return db.select().from(places).orderBy(asc(places.name));
+}
+
+/** Place list rows with linked-person counts for scan-friendly cards. */
+export async function getPlacesListSummaries() {
+  const db = await getDb();
+
+  return db
+    .select({
+      id: places.id,
+      address: places.address,
+      avatarUri: places.avatarUri,
+      createdAt: places.createdAt,
+      name: places.name,
+      notes: places.notes,
+      updatedAt: places.updatedAt,
+      peopleCount: count(personPlaces.personId),
+    })
+    .from(places)
+    .leftJoin(personPlaces, eq(personPlaces.placeId, places.id))
+    .groupBy(places.id)
+    .orderBy(asc(places.name));
 }
 
 export async function getPlaceById(id: number) {

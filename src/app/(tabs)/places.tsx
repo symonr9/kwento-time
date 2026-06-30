@@ -9,15 +9,17 @@ import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { getAllPlaces } from '@/db/queries/places';
+import { getPlacesListSummaries } from '@/db/queries/places';
 import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
-import type { Place, Tag } from '@/db/schema';
+import type { Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+
+type PlaceListItem = Awaited<ReturnType<typeof getPlacesListSummaries>>[number];
 
 export default function PlacesScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [places, setPlaces] = useState<PlaceListItem[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagLinks, setTagLinks] = useState<{ itemId: number; tagId: number }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,7 +37,7 @@ export default function PlacesScreen() {
 
         try {
           const [rows, tagRows, linkRows] = await Promise.all([
-            getAllPlaces(),
+            getPlacesListSummaries(),
             getAllTags(),
             getItemTagLinks('place'),
           ]);
@@ -177,7 +179,10 @@ export default function PlacesScreen() {
                     <Pressable
                       accessibilityRole="button"
                       style={({ pressed }) => [styles.rowLink, { opacity: pressed ? 0.72 : 1 }]}>
-                      <ThemedText type="smallBold">{place.name}</ThemedText>
+                      <ThemedText type="subtitle">{place.name}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {place.peopleCount} linked {place.peopleCount === 1 ? 'person' : 'people'}
+                      </ThemedText>
                       {place.address ? (
                         <ThemedText type="small" themeColor="textSecondary">
                           {place.address}
