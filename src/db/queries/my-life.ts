@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, lte, or } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import {
@@ -68,6 +68,32 @@ export async function getLatestMyLifeItem() {
   const db = await getDb();
   const [row] = await db.select().from(myLifeItems).orderBy(desc(myLifeItems.createdAt)).limit(1);
   return row;
+}
+
+/** Review feed for life updates already expiring or entering the 7-day window. */
+export async function getMyLifeItemsExpiringSoon(now = new Date(), limit = 50) {
+  const db = await getDb();
+  const horizon = new Date(now.getTime() + EXPIRING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  return db
+    .select({
+      id: myLifeItems.id,
+      content: myLifeItems.content,
+      tone: myLifeItems.tone,
+      state: myLifeItemExpiry.state,
+      expiresAt: myLifeItemExpiry.expiresAt,
+      createdAt: myLifeItems.createdAt,
+    })
+    .from(myLifeItemExpiry)
+    .innerJoin(myLifeItems, eq(myLifeItems.id, myLifeItemExpiry.myLifeItemId))
+    .where(
+      and(
+        eq(myLifeItems.resolved, false),
+        or(eq(myLifeItemExpiry.state, 'expiring'), lte(myLifeItemExpiry.expiresAt, horizon)),
+      ),
+    )
+    .orderBy(asc(myLifeItemExpiry.expiresAt), desc(myLifeItems.createdAt))
+    .limit(limit);
 }
 
 /**

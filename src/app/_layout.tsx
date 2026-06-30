@@ -59,6 +59,7 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
               <Stack.Screen name="places/[id]/edit" options={{ headerShown: false }} />
               <Stack.Screen name="places/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="places/new" options={{ headerShown: false }} />
+              <Stack.Screen name="review/index" options={{ headerShown: false }} />
               <Stack.Screen name="settings" options={{ headerShown: false }} />
               <Stack.Screen name="tags/index" options={{ headerShown: false }} />
               <Stack.Screen name="topics/[id]" options={{ headerShown: false }} />

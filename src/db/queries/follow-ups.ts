@@ -1,4 +1,4 @@
-import { and, desc, eq, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, lte, or } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import {
@@ -99,6 +99,35 @@ export async function getAllOpenFollowUpsWithPeople(limit = 20) {
     .leftJoin(people, eq(followUps.personId, people.id))
     .where(eq(followUps.resolved, false))
     .orderBy(desc(followUps.createdAt))
+    .limit(limit);
+}
+
+/** Dashboard/review feed for follow-ups already expiring or entering the 7-day window. */
+export async function getFollowUpsExpiringSoonWithPeople(now = new Date(), limit = 50) {
+  const db = await getDb();
+  const horizon = new Date(now.getTime() + EXPIRING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  return db
+    .select({
+      id: followUps.id,
+      question: followUps.question,
+      tone: followUps.tone,
+      personId: followUps.personId,
+      personName: people.name,
+      state: followUpExpiry.state,
+      expiresAt: followUpExpiry.expiresAt,
+      createdAt: followUps.createdAt,
+    })
+    .from(followUpExpiry)
+    .innerJoin(followUps, eq(followUps.id, followUpExpiry.followUpId))
+    .leftJoin(people, eq(followUps.personId, people.id))
+    .where(
+      and(
+        eq(followUps.resolved, false),
+        or(eq(followUpExpiry.state, 'expiring'), lte(followUpExpiry.expiresAt, horizon)),
+      ),
+    )
+    .orderBy(asc(followUpExpiry.expiresAt), desc(followUps.createdAt))
     .limit(limit);
 }
 

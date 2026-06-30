@@ -36,6 +36,7 @@ type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>
 
 const briefingHref = '/briefing' as Href;
 const icebreakersHref = '/icebreakers' as Href;
+const reviewHref = '/review' as Href;
 const tagsHref = '/tags' as Href;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -431,6 +432,14 @@ export default function HomeScreen() {
                     <IconActionButton
                       icon={{ ios: 'cube', android: 'ac_unit', web: 'ac_unit' }}
                       label="Icebreakers"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
+
+                  <Link href={reviewHref} asChild>
+                    <IconActionButton
+                      icon={{ ios: 'checkmark.seal', android: 'task_alt', web: 'task_alt' }}
+                      label="Keep Current"
                       style={styles.quickActionButton}
                     />
                   </Link>
