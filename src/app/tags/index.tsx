@@ -138,7 +138,7 @@ export default function TagsScreen() {
               </View>
               <ThemedText type="small" themeColor="textSecondary">
                 {tag.peopleCount} people · {tag.placesCount} places · {tag.conversationsCount} conversations ·{' '}
-                {tag.lifeUpdatesCount} life updates
+                {tag.lifeUpdatesCount} life updates · {tag.icebreakersCount} icebreakers
               </ThemedText>
             </SurfaceCard>
           ))}

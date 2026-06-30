@@ -77,7 +77,7 @@ Keep the UX instant: never block the UI on the network. Write the transcript bef
 
 ## Data model (core entities)
 
-`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (raw transcript, GPT-4o summary, audio path, timestamp) · `Topic` (talking point, tone, `isActive`) · `TopicExpiry` (lifecycle: active → expiring → extended → archived) · `FollowUp` (question, tone, `resolved`) · `Reminder` (`scheduledAt`, type, `sent`) · `MyLifeItem` (content, tone: light/medium/personal, `isActive`).
+`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (raw transcript, GPT-4o summary, audio path, timestamp) · `Topic` (talking point, tone, `isActive`) · `TopicExpiry` (lifecycle: active → expiring → extended → archived) · `FollowUp` (question, tone, `resolved`) · `Reminder` (`scheduledAt`, type, `sent`) · `MyLifeItem` (content, tone: light/medium/personal, `isActive`) · `Icebreaker` (long-form question text, tone: light/medium/personal).
 
 All in a single on-device SQLite DB, accessed via Drizzle. See [src/db/CLAUDE.md](src/db/CLAUDE.md).
 
@@ -127,7 +127,7 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 - **TypeScript strict.** No `any`. Prefer Drizzle-inferred types over hand-written DB shapes.
 - **Functional components + hooks** only. Co-locate feature-specific UI/logic in `src/features/<feature>/`; promote to `src/components` or `src/hooks` only once genuinely shared.
 - **Buttons include icons by default.** For new reusable or primary action buttons, use `src/components/ui/icon-action-button.tsx` or an equivalent icon-bearing component so actions are scannable and consistent.
-- **Tags are shared labels.** Use `tags` plus the polymorphic `item_tags` table for people, places, conversations, and life updates; do not add one-off tag columns or item-specific tag tables for new taggable entities.
+- **Tags are shared labels.** Use `tags` plus the polymorphic `item_tags` table for people, places, conversations, life updates, and icebreakers; do not add one-off tag columns or item-specific tag tables for new taggable entities.
 - **CarPlay stays audio-first and read-only.** Keep CarPlay templates sparse, use narration for briefing detail, show only short summary text/progress, and route all create/edit/delete flows back to the phone app. Shared logic belongs in `@/features/carplay`; native iOS scene/entitlement work must be isolated behind a thin bridge.
 - **DB access through Drizzle query syntax**; drop to raw SQL only for complex aggregations (e.g. health-score multi-table joins). Never embed SQL strings in components — keep them in `src/db/queries/`.
 - React Compiler is enabled — avoid manual `useMemo`/`useCallback` unless profiling shows a need.

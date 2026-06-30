@@ -51,6 +51,7 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
               <Stack.Screen name="briefing/index" options={{ headerShown: false }} />
               <Stack.Screen name="follow-ups/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="follow-ups/new" options={{ headerShown: false }} />
+              <Stack.Screen name="icebreakers/index" options={{ headerShown: false }} />
               <Stack.Screen name="my-life/new" options={{ headerShown: false }} />
               <Stack.Screen name="people/[id]/edit" options={{ headerShown: false }} />
               <Stack.Screen name="people/[id]" options={{ headerShown: false }} />

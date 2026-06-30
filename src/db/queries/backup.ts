@@ -4,6 +4,8 @@ import {
   appSettings,
   followUpExpiry,
   followUps,
+  icebreakers,
+  itemTags,
   myLifeItemExpiry,
   myLifeItems,
   people,
@@ -41,6 +43,8 @@ type TopicRow = typeof topics.$inferSelect;
 type TopicExpiryRow = typeof topicExpiry.$inferSelect;
 type FollowUpRow = typeof followUps.$inferSelect;
 type FollowUpExpiryRow = typeof followUpExpiry.$inferSelect;
+type IcebreakerRow = typeof icebreakers.$inferSelect;
+type ItemTagRow = typeof itemTags.$inferSelect;
 type ReminderRow = typeof reminders.$inferSelect;
 type MyLifeItemRow = typeof myLifeItems.$inferSelect;
 type MyLifeItemExpiryRow = typeof myLifeItemExpiry.$inferSelect;
@@ -52,6 +56,8 @@ export type KwentoBackup = {
     conversations: ConversationRow[];
     followUpExpiry: FollowUpExpiryRow[];
     followUps: FollowUpRow[];
+    icebreakers: IcebreakerRow[];
+    itemTags: ItemTagRow[];
     myLifeItemExpiry: MyLifeItemExpiryRow[];
     myLifeItems: MyLifeItemRow[];
     people: PeopleRow[];
@@ -84,7 +90,7 @@ function reviveDateFields<Row extends Record<string, unknown>>(rows: Row[]) {
 }
 
 function countRows(backup: KwentoBackup) {
-  return Object.values(backup.tables).reduce((count, rows) => count + rows.length, 0);
+  return Object.values(backup.tables).reduce((count, rows) => count + (rows?.length ?? 0), 0);
 }
 
 export async function exportBackup(): Promise<KwentoBackup> {
@@ -101,6 +107,8 @@ export async function exportBackup(): Promise<KwentoBackup> {
     topicExpiryRows,
     followUpRows,
     followUpExpiryRows,
+    icebreakerRows,
+    itemTagRows,
     reminderRows,
     myLifeRows,
     myLifeExpiryRows,
@@ -116,6 +124,8 @@ export async function exportBackup(): Promise<KwentoBackup> {
     db.select().from(topicExpiry),
     db.select().from(followUps),
     db.select().from(followUpExpiry),
+    db.select().from(icebreakers),
+    db.select().from(itemTags),
     db.select().from(reminders),
     db.select().from(myLifeItems),
     db.select().from(myLifeItemExpiry),
@@ -128,6 +138,8 @@ export async function exportBackup(): Promise<KwentoBackup> {
       conversations: conversationRows,
       followUpExpiry: followUpExpiryRows,
       followUps: followUpRows,
+      icebreakers: icebreakerRows,
+      itemTags: itemTagRows,
       myLifeItemExpiry: myLifeExpiryRows,
       myLifeItems: myLifeRows,
       people: peopleRows,
@@ -150,6 +162,8 @@ export async function importBackup(backup: KwentoBackup): Promise<BackupImportRe
 
   const db = await getDb();
   const importedRows = countRows(backup);
+  const icebreakerRows = backup.tables.icebreakers ?? [];
+  const itemTagRows = backup.tables.itemTags ?? [];
 
   await db.transaction(async (tx) => {
     if (backup.tables.people.length > 0) {
@@ -211,6 +225,15 @@ export async function importBackup(backup: KwentoBackup): Promise<BackupImportRe
         .insert(followUpExpiry)
         .values(reviveDateFields(backup.tables.followUpExpiry) as (typeof followUpExpiry.$inferInsert)[])
         .onConflictDoNothing();
+    }
+    if (icebreakerRows.length > 0) {
+      await tx
+        .insert(icebreakers)
+        .values(reviveDateFields(icebreakerRows) as (typeof icebreakers.$inferInsert)[])
+        .onConflictDoNothing();
+    }
+    if (itemTagRows.length > 0) {
+      await tx.insert(itemTags).values(itemTagRows).onConflictDoNothing();
     }
     if (backup.tables.reminders.length > 0) {
       await tx

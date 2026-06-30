@@ -12,6 +12,7 @@ export type TagWithUsageCounts = {
   placesCount: number;
   conversationsCount: number;
   lifeUpdatesCount: number;
+  icebreakersCount: number;
 };
 
 /** Create a new label (e.g. "Family", "Work", "College"). */
@@ -55,12 +56,14 @@ export async function getTagsWithUsageCounts(): Promise<TagWithUsageCounts[]> {
         placesCount: 0,
         conversationsCount: 0,
         lifeUpdatesCount: 0,
+        icebreakersCount: 0,
       };
 
     if (row.itemType === 'person') current.peopleCount = row.count;
     if (row.itemType === 'place') current.placesCount = row.count;
     if (row.itemType === 'conversation') current.conversationsCount = row.count;
     if (row.itemType === 'my_life_item') current.lifeUpdatesCount = row.count;
+    if (row.itemType === 'icebreaker') current.icebreakersCount = row.count;
     byTag.set(row.id, current);
   }
 

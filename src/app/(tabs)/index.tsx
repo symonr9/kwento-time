@@ -35,6 +35,7 @@ type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[nu
 type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>[number];
 
 const briefingHref = '/briefing' as Href;
+const icebreakersHref = '/icebreakers' as Href;
 const tagsHref = '/tags' as Href;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -422,6 +423,14 @@ export default function HomeScreen() {
                     <IconActionButton
                       icon={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
                       label="Briefing"
+                      style={styles.quickActionButton}
+                    />
+                  </Link>
+
+                  <Link href={icebreakersHref} asChild>
+                    <IconActionButton
+                      icon={{ ios: 'cube', android: 'ac_unit', web: 'ac_unit' }}
+                      label="Icebreakers"
                       style={styles.quickActionButton}
                     />
                   </Link>

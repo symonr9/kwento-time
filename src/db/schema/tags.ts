@@ -36,7 +36,9 @@ export const personTags = sqliteTable(
 export const itemTags = sqliteTable(
   'item_tags',
   {
-    itemType: text('item_type', { enum: ['person', 'place', 'conversation', 'my_life_item'] }).notNull(),
+    itemType: text('item_type', {
+      enum: ['person', 'place', 'conversation', 'my_life_item', 'icebreaker'],
+    }).notNull(),
     itemId: integer('item_id').notNull(),
     tagId: integer('tag_id')
       .notNull()

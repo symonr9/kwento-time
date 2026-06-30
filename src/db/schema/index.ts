@@ -11,4 +11,5 @@ export * from './topics';
 export * from './follow-ups';
 export * from './reminders';
 export * from './my-life';
+export * from './icebreakers';
 export * from './settings';
