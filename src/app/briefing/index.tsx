@@ -43,7 +43,20 @@ const lengthOptions: { label: string; value: BriefingLength }[] = [
 
 type PlaybackStatus = 'idle' | 'paused' | 'playing';
 type BriefingSetupMode = 'custom' | 'place' | null;
+type BriefingView = 'playback' | 'setup';
 type PersonListItem = Awaited<ReturnType<typeof getPeopleListSummaries>>[number];
+
+function formatBriefingSelection(data: BriefingRetrievedData) {
+  if (data.place.id !== null) {
+    return `Place: ${data.place.name}`;
+  }
+
+  const peopleNames = data.people.map((person) => person.name);
+  const peopleLabel = peopleNames.length > 0 ? peopleNames.join(', ') : null;
+  const lifeLabel = data.lifeItems.length > 0 ? 'life updates' : null;
+
+  return [peopleLabel, lifeLabel].filter(Boolean).join(' + ') || 'Custom briefing';
+}
 
 export default function BriefingScreen() {
   const theme = useTheme();
@@ -59,8 +72,10 @@ export default function BriefingScreen() {
   const [personSearch, setPersonSearch] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [length, setLength] = useState<BriefingLength>('medium');
+  const [briefingView, setBriefingView] = useState<BriefingView>('setup');
   const [context, setContext] = useState<BriefingContext | null>(null);
   const [preview, setPreview] = useState<BriefingRetrievedData | null>(null);
+  const [selectionSummary, setSelectionSummary] = useState('');
   const [script, setScript] = useState<string | null>(null);
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle');
   const [playbackDurationSeconds, setPlaybackDurationSeconds] = useState(0);
@@ -240,6 +255,11 @@ export default function BriefingScreen() {
     }
   }
 
+  async function handleChangeSelection() {
+    await handleStopSpeech();
+    setBriefingView('setup');
+  }
+
   async function handlePauseResume() {
     try {
       if (isPaused) {
@@ -288,7 +308,9 @@ export default function BriefingScreen() {
       const nextContext = buildBriefingContext(retrieved, scored, length);
       const nextScript = narrateBriefing(nextContext);
       setContext(nextContext);
+      setSelectionSummary(formatBriefingSelection(retrieved));
       setScript(nextScript);
+      setBriefingView('playback');
       await playScript(nextScript, nextContext.length.seconds);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate briefing.');
@@ -345,7 +367,7 @@ export default function BriefingScreen() {
             </SurfaceCard>
           ) : null}
 
-          {!isLoading ? (
+          {!isLoading && briefingView === 'setup' ? (
             <SurfaceCard style={styles.form}>
               <View style={styles.field}>
                 <ThemedText type="smallBold">Build briefing</ThemedText>
@@ -457,8 +479,32 @@ export default function BriefingScreen() {
             </SurfaceCard>
           ) : null}
 
-          {script && context ? (
+          {script && context && briefingView === 'playback' ? (
             <>
+              <SurfaceCard tone="primaryMuted" style={styles.selectionCard}>
+                <View style={styles.rowHeader}>
+                  <View style={styles.playbackTitle}>
+                    <ThemedText type="smallBold">Briefing for</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {selectionSummary}
+                    </ThemedText>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void handleChangeSelection()}
+                    style={({ pressed }) => [
+                      styles.changeSelectionButton,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.border,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}>
+                    <ThemedText type="smallBold">Change</ThemedText>
+                  </Pressable>
+                </View>
+              </SurfaceCard>
+
               <View style={styles.metricGrid}>
                 <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
                   <ThemedText type="smallBold">{context.people.length}</ThemedText>
@@ -1001,6 +1047,17 @@ const styles = StyleSheet.create({
   },
   playbackCard: {
     gap: Spacing.three,
+  },
+  selectionCard: {
+    gap: Spacing.two,
+  },
+  changeSelectionButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
   },
   playbackTitle: {
     gap: Spacing.one,
