@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 import { timestamps } from './timestamps';
 
@@ -17,6 +17,7 @@ export const people = sqliteTable(
     /** ISO `YYYY-MM-DD`; year optional → may be `--MM-DD`. */
     birthday: text('birthday'),
     avatarUri: text('avatar_uri'),
+    nativeContactId: text('native_contact_id'),
     notes: text('notes'),
     connectionScore: integer('connection_score').notNull().default(0),
     lastContactedAt: integer('last_contacted_at', { mode: 'timestamp_ms' }),
@@ -25,6 +26,7 @@ export const people = sqliteTable(
   (t) => [
     index('people_name_idx').on(t.name),
     index('people_last_contacted_idx').on(t.lastContactedAt),
+    uniqueIndex('people_native_contact_id_idx').on(t.nativeContactId),
   ],
 );
 

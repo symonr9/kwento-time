@@ -9,6 +9,7 @@ import m0004 from './0004_dusty_speed.sql';
 import m0005 from './0005_outgoing_kid_colt.sql';
 import m0006 from './0006_round_swarm.sql';
 import m0007 from './0007_deep_argent.sql';
+import m0008 from './0008_mean_vivisector.sql';
 
   export default {
     journal,
@@ -20,7 +21,8 @@ m0003,
 m0004,
 m0005,
 m0006,
-m0007
+m0007,
+m0008
     }
   }
   

@@ -17,6 +17,17 @@ export async function getPersonById(id: number) {
   return row;
 }
 
+/** Fetch a person bound to a native device contact id, if any. */
+export async function getPersonByNativeContactId(nativeContactId: string) {
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(people)
+    .where(eq(people.nativeContactId, nativeContactId))
+    .limit(1);
+  return row;
+}
+
 /** Everyone, alphabetical — the default "all people" list view. */
 export async function getAllPeople() {
   const db = await getDb();
@@ -38,6 +49,25 @@ export async function updatePerson(id: number, data: Partial<NewPerson>) {
   const db = await getDb();
   const [row] = await db.update(people).set(data).where(eq(people.id, id)).returning();
   return row;
+}
+
+/**
+ * Create or refresh a person from a native contact. The stable contact id is
+ * the dedupe key so contacts with the same display name stay distinct.
+ */
+export async function createOrUpdatePersonFromContact(data: NewPerson & { nativeContactId: string }) {
+  const existing = await getPersonByNativeContactId(data.nativeContactId);
+
+  if (!existing) {
+    return createPerson(data);
+  }
+
+  return updatePerson(existing.id, {
+    avatarUri: existing.avatarUri ?? data.avatarUri,
+    name: existing.name || data.name,
+    nativeContactId: data.nativeContactId,
+    notes: existing.notes ?? data.notes,
+  });
 }
 
 /** Remove a person — cascades to their tags, places, conversations, topics, etc. */

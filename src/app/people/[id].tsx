@@ -1,6 +1,6 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,7 +12,7 @@ import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsForPerson } from '@/db/queries/conversations';
 import { getOpenFollowUpsForPerson, resolveFollowUp } from '@/db/queries/follow-ups';
-import { getPersonById } from '@/db/queries/people';
+import { getPersonById, getPersonByNativeContactId, updatePerson } from '@/db/queries/people';
 import {
   addPersonToPlace,
   getAllPlaces,
@@ -28,6 +28,9 @@ import {
 } from '@/db/queries/topics';
 import type { Conversation, FollowUp, Person, Place } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+import { openDeviceContact, pickDeviceContactPerson } from '@/services/contacts';
+
+type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
 type PersonPlace = Awaited<ReturnType<typeof getPlacesForPerson>>[number];
 type PersonTag = Awaited<ReturnType<typeof getTagsForItem>>[number];
@@ -68,6 +71,7 @@ export default function PersonDetailsScreen() {
   const personId = Number(params.id);
   const [details, setDetails] = useState<PersonDetails>(initialDetails);
   const [isLoading, setIsLoading] = useState(true);
+  const [isContactActionRunning, setIsContactActionRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadPerson = useCallback(
@@ -199,6 +203,52 @@ export default function PersonDetailsScreen() {
     }
   }
 
+  async function handleBindContact() {
+    if (!person) return;
+
+    setIsContactActionRunning(true);
+    setError(null);
+
+    try {
+      const contact = await pickDeviceContactPerson();
+      if (!contact) {
+        return;
+      }
+
+      const existing = await getPersonByNativeContactId(contact.nativeContactId);
+      if (existing && existing.id !== person.id) {
+        setError(`${contact.name} is already bound to ${existing.name}.`);
+        return;
+      }
+
+      await updatePerson(person.id, {
+        avatarUri: person.avatarUri ?? contact.avatarUri ?? undefined,
+        nativeContactId: contact.nativeContactId,
+        notes: person.notes ?? contact.notes ?? undefined,
+      });
+      await loadPerson();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to bind contact.');
+    } finally {
+      setIsContactActionRunning(false);
+    }
+  }
+
+  async function handleOpenContact() {
+    if (!person?.nativeContactId) return;
+
+    setIsContactActionRunning(true);
+    setError(null);
+
+    try {
+      await openDeviceContact(person.nativeContactId, person.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to open contact.');
+    } finally {
+      setIsContactActionRunning(false);
+    }
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <ScrollView
@@ -272,6 +322,23 @@ export default function PersonDetailsScreen() {
                   <ThemedText type="smallBold">Edit person</ThemedText>
                 </Pressable>
               </Link>
+
+              <View style={styles.actionRow}>
+                {person.nativeContactId ? (
+                  <ContactActionButton
+                    disabled={isContactActionRunning}
+                    icon={{ ios: 'person.crop.circle', android: 'contacts', web: 'contacts' }}
+                    label="Open contact"
+                    onPress={() => void handleOpenContact()}
+                  />
+                ) : null}
+                <ContactActionButton
+                  disabled={isContactActionRunning}
+                  icon={{ ios: 'link', android: 'link', web: 'link' }}
+                  label={person.nativeContactId ? 'Change contact' : 'Bind contact'}
+                  onPress={() => void handleBindContact()}
+                />
+              </View>
 
               <View style={styles.metricGrid}>
                 <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
@@ -726,6 +793,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
+  contactActionButton: {
+    flexGrow: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
   symbolFallback: {
     width: 18,
     height: 18,
@@ -735,3 +813,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+function ContactActionButton({
+  disabled,
+  icon,
+  label,
+  onPress,
+}: {
+  disabled: boolean;
+  icon: SymbolName;
+  label: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.contactActionButton,
+        {
+          backgroundColor: theme.backgroundSelected,
+          opacity: pressed || disabled ? 0.72 : 1,
+        },
+      ]}>
+      <SymbolView
+        name={icon}
+        size={18}
+        tintColor={theme.text}
+        fallback={<View style={[styles.symbolFallback, { backgroundColor: theme.text }]} />}
+      />
+      <ThemedText type="smallBold">{label}</ThemedText>
+    </Pressable>
+  );
+}

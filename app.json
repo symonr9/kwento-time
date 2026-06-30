@@ -60,6 +60,12 @@
           "cameraPermission": "Allow Kwento Time to take profile photos for people and places you save.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Kwento Time to import people you choose from Contacts."
+        }
       ]
     ],
     "experiments": {
