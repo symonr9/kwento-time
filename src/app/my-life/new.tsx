@@ -1,6 +1,6 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent, type CSSProperties } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -193,11 +193,26 @@ function DatePickerField({
     onChange(formatDateInputValue(selectedDate));
   }
 
+  function handleWebChange(event: ChangeEvent<HTMLInputElement>) {
+    onChange(event.currentTarget.value);
+  }
+
   return (
     <View style={styles.dateField}>
       <ThemedText type="smallBold">{label}</ThemedText>
       {Platform.OS === 'web' ? (
-        <DateTimePicker mode="date" value={date} onChange={handleChange} />
+        <input
+          aria-label={label}
+          type="date"
+          value={value}
+          onChange={handleWebChange}
+          style={{
+            ...webDateInputStyle,
+            backgroundColor: theme.background,
+            borderColor: theme.border,
+            color: theme.text,
+          }}
+        />
       ) : (
         <>
           <Pressable
@@ -219,6 +234,15 @@ function DatePickerField({
     </View>
   );
 }
+
+const webDateInputStyle: CSSProperties = {
+  minHeight: 48,
+  borderWidth: StyleSheet.hairlineWidth,
+  borderStyle: 'solid',
+  borderRadius: Radius.small,
+  paddingInline: Spacing.three,
+  fontSize: 16,
+};
 
 const styles = StyleSheet.create({
   dateField: {

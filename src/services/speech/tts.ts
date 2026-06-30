@@ -13,15 +13,16 @@ export type SpeechPlaybackCallbacks = {
 };
 
 async function activateBriefingKeepAwake() {
-  keepAwakeActivation = activateKeepAwakeAsync(BRIEFING_SPEECH_TAG)
-    .then(() => {
-      isKeepAwakeActive = true;
-    })
-    .finally(() => {
-      keepAwakeActivation = null;
-    });
+  keepAwakeActivation = activateKeepAwakeAsync(BRIEFING_SPEECH_TAG);
 
-  await keepAwakeActivation;
+  try {
+    await keepAwakeActivation;
+    isKeepAwakeActive = true;
+  } catch {
+    isKeepAwakeActive = false;
+  } finally {
+    keepAwakeActivation = null;
+  }
 }
 
 async function deactivateBriefingKeepAwake() {
