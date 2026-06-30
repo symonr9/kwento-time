@@ -311,15 +311,24 @@ export default function PersonDetailsScreen() {
 
               <Link href={{ pathname: '/people/[id]/edit', params: { id: String(person.id) } }} asChild>
                 <Pressable
+                  accessibilityLabel="Edit person"
                   accessibilityRole="button"
                   style={({ pressed }) => [
-                    styles.secondaryButton,
+                    styles.primaryEditButton,
                     {
-                      backgroundColor: theme.backgroundSelected,
+                      backgroundColor: theme.primary,
                       opacity: pressed ? 0.72 : 1,
                     },
                   ]}>
-                  <ThemedText type="smallBold">Edit person</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'square.and.pencil', android: 'edit', web: 'edit' }}
+                    size={18}
+                    tintColor="#FFFFFF"
+                    fallback={<View style={styles.primaryEditFallback} />}
+                  />
+                  <ThemedText type="smallBold" style={styles.primaryEditText}>
+                    Edit person
+                  </ThemedText>
                 </Pressable>
               </Link>
 
@@ -787,6 +796,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+  },
+  primaryEditButton: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    boxShadow: '0 10px 22px rgba(36, 48, 58, 0.14)',
+  },
+  primaryEditFallback: {
+    width: 18,
+    height: 18,
+    borderRadius: Radius.small,
+    backgroundColor: '#FFFFFF',
+  },
+  primaryEditText: {
+    color: '#FFFFFF',
   },
   actionRow: {
     flexDirection: 'row',
