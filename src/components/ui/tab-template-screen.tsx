@@ -47,7 +47,18 @@ export function TabTemplateScreen({
       contentInsetAdjustmentBehavior="automatic">
       <View style={styles.inner}>
         <View style={styles.header}>
-          <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+          <View style={styles.hero}>
+            <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+            <ThemedText type="smallBold" themeColor="primary">
+              {eyebrow}
+            </ThemedText>
+            <ThemedText type="title">
+              {title}
+            </ThemedText>
+            <ThemedText themeColor="textSecondary">
+              {description}
+            </ThemedText>
+          </View>
           {showSettingsAction ? (
             <Link href="/settings" asChild>
               <Pressable
@@ -70,18 +81,6 @@ export function TabTemplateScreen({
               </Pressable>
             </Link>
           ) : null}
-        </View>
-
-        <View style={styles.hero}>
-          <ThemedText type="smallBold" themeColor="primary">
-            {eyebrow}
-          </ThemedText>
-          <ThemedText type="title">
-            {title}
-          </ThemedText>
-          <ThemedText themeColor="textSecondary">
-            {description}
-          </ThemedText>
         </View>
 
         <View style={styles.metricGrid}>
@@ -132,7 +131,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

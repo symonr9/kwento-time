@@ -92,7 +92,13 @@ export default function PlacesScreen() {
         contentInsetAdjustmentBehavior="automatic">
         <View style={styles.inner}>
           <View style={styles.header}>
-            <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+            <View style={styles.hero}>
+              <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+              <ThemedText type="subtitle" themeColor="primary">
+                Places
+              </ThemedText>
+            </View>
+
             <Link href="/settings" asChild>
               <Pressable
                 accessibilityLabel="Open settings"
@@ -113,12 +119,6 @@ export default function PlacesScreen() {
                 />
               </Pressable>
             </Link>
-          </View>
-
-          <View style={styles.hero}>
-            <ThemedText type="smallBold" themeColor="primary">
-              Places
-            </ThemedText>
           </View>
 
           <View style={styles.filterPanel}>
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

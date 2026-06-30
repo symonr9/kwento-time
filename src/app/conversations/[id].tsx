@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },

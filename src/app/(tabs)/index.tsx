@@ -277,7 +277,13 @@ export default function HomeScreen() {
         contentInsetAdjustmentBehavior="automatic">
         <View style={styles.inner}>
           <View style={styles.header}>
-            <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+            <View style={styles.hero}>
+              <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
+              <ThemedText type="subtitle" themeColor="primary">
+                Kwento Time
+              </ThemedText>
+            </View>
+
             <Link href="/settings" asChild>
               <Pressable
                 accessibilityLabel="Open settings"
@@ -298,12 +304,6 @@ export default function HomeScreen() {
                 />
               </Pressable>
             </Link>
-          </View>
-
-          <View style={styles.hero}>
-            <ThemedText type="smallBold" themeColor="primary">
-              Today
-            </ThemedText>
           </View>
 
           {isLoading ? (
@@ -337,10 +337,10 @@ export default function HomeScreen() {
                     />
                   </Link>
 
-                  <Link href="/conversations/voice" asChild>
+                  <Link href="/my-life/new" asChild>
                     <IconActionButton
-                      icon={{ ios: 'waveform', android: 'mic', web: 'mic' }}
-                      label="Voice note"
+                      icon={{ ios: 'heart.text.square', android: 'favorite', web: 'favorite' }}
+                      label="Life update"
                       style={styles.quickActionButton}
                     />
                   </Link>
@@ -353,10 +353,10 @@ export default function HomeScreen() {
                     />
                   </Link>
 
-                  <Link href="/my-life/new" asChild>
+                  <Link href="/conversations/voice" asChild>
                     <IconActionButton
-                      icon={{ ios: 'heart.text.square', android: 'favorite', web: 'favorite' }}
-                      label="Life update"
+                      icon={{ ios: 'waveform', android: 'mic', web: 'mic' }}
+                      label="Voice note"
                       style={styles.quickActionButton}
                     />
                   </Link>
@@ -408,52 +408,56 @@ export default function HomeScreen() {
                 </View>
               </ExpandableSection>
 
-              <ExpandableSection
-                title="Needs structure"
-                count={pendingExtractions.length}
-                defaultExpanded={pendingExtractions.length > 0}>
+              {
+                pendingExtractions.length > 0 && (
+                  <ExpandableSection
+                    title="Needs structure"
+                    count={pendingExtractions.length}
+                    defaultExpanded={pendingExtractions.length > 0}>
 
-                {pendingExtractions.length === 0 ? (
-                  <EmptyState
-                    title="No confirmed transcripts waiting"
-                    body="Confirmed transcripts will appear here before topics and follow-ups are saved."
-                  />
-                ) : (
-                  <View style={styles.list}>
-                    {pendingExtractions.map((conversation) => (
-                      <Link
-                        key={conversation.id}
-                        href={{
-                          pathname: '/conversations/[id]/structure',
-                          params: { id: String(conversation.id) },
-                        }}
-                        asChild>
-                        <Pressable
-                          accessibilityRole="button"
-                          style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
-                          <SurfaceCard tone="primaryMuted" style={styles.row}>
-                            <View style={styles.rowHeader}>
-                              <ThemedText type="smallBold">
-                                {conversation.personName ?? 'Transcript'}
-                              </ThemedText>
-                              <ThemedText type="small" themeColor="textSecondary">
-                                {formatShortDate(conversation.occurredAt)}
-                              </ThemedText>
-                            </View>
-                            <ThemedText type="small" themeColor="textSecondary" selectable>
-                              {conversation.summary ?? conversation.rawTranscript ?? 'Ready for structure'}
-                            </ThemedText>
-                            <ThemedText type="small" themeColor="textSecondary">
-                              {conversation.source}
-                              {conversation.placeName ? ` at ${conversation.placeName}` : ''}
-                            </ThemedText>
-                          </SurfaceCard>
-                        </Pressable>
-                      </Link>
-                    ))}
-                  </View>
-                )}
-              </ExpandableSection>
+                    {pendingExtractions.length === 0 ? (
+                      <EmptyState
+                        title="No confirmed transcripts waiting"
+                        body="Confirmed transcripts will appear here before topics and follow-ups are saved."
+                      />
+                    ) : (
+                      <View style={styles.list}>
+                        {pendingExtractions.map((conversation) => (
+                          <Link
+                            key={conversation.id}
+                            href={{
+                              pathname: '/conversations/[id]/structure',
+                              params: { id: String(conversation.id) },
+                            }}
+                            asChild>
+                            <Pressable
+                              accessibilityRole="button"
+                              style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}>
+                              <SurfaceCard tone="primaryMuted" style={styles.row}>
+                                <View style={styles.rowHeader}>
+                                  <ThemedText type="smallBold">
+                                    {conversation.personName ?? 'Transcript'}
+                                  </ThemedText>
+                                  <ThemedText type="small" themeColor="textSecondary">
+                                    {formatShortDate(conversation.occurredAt)}
+                                  </ThemedText>
+                                </View>
+                                <ThemedText type="small" themeColor="textSecondary" selectable>
+                                  {conversation.summary ?? conversation.rawTranscript ?? 'Ready for structure'}
+                                </ThemedText>
+                                <ThemedText type="small" themeColor="textSecondary">
+                                  {conversation.source}
+                                  {conversation.placeName ? ` at ${conversation.placeName}` : ''}
+                                </ThemedText>
+                              </SurfaceCard>
+                            </Pressable>
+                          </Link>
+                        ))}
+                      </View>
+                    )}
+                  </ExpandableSection>
+                )
+              }
 
               <ExpandableSection title="Upcoming reminders" count={reminders.length} defaultExpanded={false}>
 
@@ -752,8 +756,8 @@ export default function HomeScreen() {
             </>
           ) : null}
         </View>
-      </ScrollView>
-    </View>
+      </ScrollView >
+    </View >
   );
 }
 
@@ -772,7 +776,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -832,6 +836,7 @@ const styles = StyleSheet.create({
   },
   quickActionButton: {
     flexGrow: 1,
+    width: 144
   },
   row: {
     minHeight: 84,

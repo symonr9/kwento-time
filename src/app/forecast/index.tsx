@@ -201,7 +201,7 @@ export default function ForecastScreen() {
           </View>
 
           <View style={styles.hero}>
-            <ThemedText type="smallBold" themeColor="primary">
+            <ThemedText type="subtitle" themeColor="primary">
               Forecast
             </ThemedText>
           </View>
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   scopeHeader: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,

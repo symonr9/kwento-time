@@ -19,9 +19,9 @@ import { Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { isBiometricLockEnabled, setBiometricLockEnabled } from '@/db/queries/settings';
 import { useAppearancePreference } from '@/hooks/use-appearance-preference';
 import { useTheme } from '@/hooks/use-theme';
-import type { AppearanceMode } from '@/services/preferences';
 import { getBiometricAvailability } from '@/services/auth';
 import { generateBackupJson, importBackupJson } from '@/services/backup';
+import type { AppearanceMode } from '@/services/preferences';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -174,7 +174,7 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.hero}>
-            <ThemedText type="smallBold" themeColor="primary">
+            <ThemedText type="subtitle" themeColor="primary">
               Settings
             </ThemedText>
           </View>
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    minHeight: 44,
+    minHeight: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },
