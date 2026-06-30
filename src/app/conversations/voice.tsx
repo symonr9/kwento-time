@@ -26,6 +26,7 @@ export default function VoiceConversationScreen() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder, 250);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
+  const [draftConversationId, setDraftConversationId] = useState<number | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,6 +58,7 @@ export default function VoiceConversationScreen() {
       await recorder.prepareToRecordAsync();
       recorder.record();
       setRecordingUri(null);
+      setDraftConversationId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to start recording.');
       await finishAudioRecordingSession();
@@ -89,6 +91,14 @@ export default function VoiceConversationScreen() {
   }
 
   async function saveDraftConversation(audioUri: string) {
+    if (draftConversationId) {
+      router.replace({
+        pathname: '/conversations/[id]/review',
+        params: { id: String(draftConversationId) },
+      });
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
@@ -97,8 +107,9 @@ export default function VoiceConversationScreen() {
         audioUri,
         extractionStatus: 'not_needed',
         source: 'voice',
-        transcriptStatus: 'ready_for_review',
+        transcriptStatus: 'pending_transcription',
       });
+      setDraftConversationId(savedConversation.id);
       router.replace({
         pathname: '/conversations/[id]/review',
         params: { id: String(savedConversation.id) },
@@ -119,7 +130,14 @@ export default function VoiceConversationScreen() {
       error={error}
       isSaving={isSaving}
       saveLabel="Review transcript"
-      onSave={() => (recordingUri ? saveDraftConversation(recordingUri) : setError('Record audio before reviewing.'))}>
+      onSave={() => {
+        if (!recordingUri) {
+          setError('Record audio before reviewing.');
+          return;
+        }
+
+        void saveDraftConversation(recordingUri);
+      }}>
       <View
         style={[
           styles.recorderPanel,

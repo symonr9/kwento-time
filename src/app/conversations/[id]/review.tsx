@@ -12,6 +12,7 @@ import { createPerson, getAllPeople } from '@/db/queries/people';
 import { addPersonToPlace, createPlace, getAllPlaces } from '@/db/queries/places';
 import { createTag, getAllTags, getTagsForItem, setTagsForItem } from '@/db/queries/tags';
 import type { Person, Place, Tag } from '@/db/schema';
+import { buildStructuredConversationDraft } from '@/features/conversations';
 import { useTheme } from '@/hooks/use-theme';
 import {
   TranscriptionUnavailableError,
@@ -241,6 +242,7 @@ export default function ReviewConversationTranscriptScreen() {
     { label: 'No place', value: null },
     ...places.map((place) => ({ avatarUri: place.avatarUri, label: place.name, value: place.id })),
   ];
+  const extractionPreview = rawTranscript.trim() ? buildStructuredConversationDraft(rawTranscript) : null;
 
   return (
     <FormScreen
@@ -308,6 +310,8 @@ export default function ReviewConversationTranscriptScreen() {
         style={formControlStyles.notesInput}
       />
 
+      {extractionPreview ? <ExtractionPreview draft={extractionPreview} /> : null}
+
       <SelectableChipField
         label="Person"
         options={personOptions}
@@ -348,6 +352,21 @@ export default function ReviewConversationTranscriptScreen() {
         onSelectedTagIdsChange={setSelectedTagIds}
       />
     </FormScreen>
+  );
+}
+
+function ExtractionPreview({ draft }: { draft: ReturnType<typeof buildStructuredConversationDraft> }) {
+  const theme = useTheme();
+  const topicsLabel = `${draft.topics.length} talking ${draft.topics.length === 1 ? 'point' : 'points'}`;
+  const followUpsLabel = `${draft.followUps.length} follow-${draft.followUps.length === 1 ? 'up' : 'ups'}`;
+
+  return (
+    <View style={[styles.previewPanel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      <ThemedText type="smallBold">Structure preview</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        Confirming this transcript will draft {topicsLabel} and {followUpsLabel}.
+      </ThemedText>
+    </View>
   );
 }
 
@@ -428,6 +447,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+  },
+  previewPanel: {
+    gap: Spacing.one,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    padding: Spacing.three,
   },
   inlineCreateRow: {
     flexDirection: 'row',
