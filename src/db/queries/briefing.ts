@@ -68,6 +68,15 @@ export type BriefingRetrievedData = {
   };
 };
 
+type BriefingPersonSeed = {
+  avatarUri: string | null;
+  connectionScore: number;
+  id: number;
+  isPrimary: boolean;
+  lastContactedAt: Date | null;
+  name: string;
+};
+
 function groupByPersonId<Row extends { personId: number | null }>(rows: Row[]) {
   const grouped = new Map<number, Row[]>();
 
@@ -116,6 +125,85 @@ async function getBriefingLifeItems() {
     .limit(MAX_GENERAL_LIFE_ITEMS);
 }
 
+async function hydrateBriefingPeople(personSeeds: BriefingPersonSeed[]): Promise<BriefingRetrievedPerson[]> {
+  const personIds = personSeeds.map((person) => person.id);
+
+  if (personIds.length === 0) {
+    return [];
+  }
+
+  const db = await getDb();
+  const [conversationRows, followUpRows, topicRows] = await Promise.all([
+    db
+      .select({
+        id: conversations.id,
+        occurredAt: conversations.occurredAt,
+        personId: conversations.personId,
+        summary: conversations.summary,
+      })
+      .from(conversations)
+      .where(inArray(conversations.personId, personIds))
+      .orderBy(desc(conversations.occurredAt)),
+    db
+      .select({
+        id: followUps.id,
+        createdAt: followUps.createdAt,
+        personId: followUps.personId,
+        question: followUps.question,
+      })
+      .from(followUps)
+      .where(and(inArray(followUps.personId, personIds), eq(followUps.resolved, false)))
+      .orderBy(desc(followUps.createdAt)),
+    db
+      .select({
+        id: topics.id,
+        content: topics.content,
+        expiresAt: topicExpiry.expiresAt,
+        lastMentionedAt: topics.lastMentionedAt,
+        personId: topics.personId,
+        state: topicExpiry.state,
+      })
+      .from(topics)
+      .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
+      .where(and(inArray(topics.personId, personIds), eq(topics.resolved, false), eq(topics.isForUser, false)))
+      .orderBy(desc(topics.lastMentionedAt)),
+  ]);
+
+  const conversationsByPerson = groupByPersonId(
+    takeByPerson(conversationRows, MAX_RECENT_CONVERSATIONS_PER_PERSON),
+  );
+  const followUpsByPerson = groupByPersonId(takeByPerson(followUpRows, MAX_RECENT_FOLLOW_UPS_PER_PERSON));
+  const topicsByPerson = groupByPersonId(takeByPerson(topicRows, MAX_TOPICS_PER_PERSON));
+
+  return personSeeds.map((person) => ({
+    avatarUri: person.avatarUri,
+    id: person.id,
+    connectionScore: person.connectionScore,
+    conversations: (conversationsByPerson.get(person.id) ?? []).map<BriefingRetrievedConversation>(
+      (conversation) => ({
+        id: conversation.id,
+        occurredAt: conversation.occurredAt,
+        summary: conversation.summary,
+      }),
+    ),
+    followUps: (followUpsByPerson.get(person.id) ?? []).map<BriefingRetrievedFollowUp>((followUp) => ({
+      id: followUp.id,
+      createdAt: followUp.createdAt,
+      question: followUp.question,
+    })),
+    isPrimary: person.isPrimary,
+    lastContactedAt: person.lastContactedAt,
+    name: person.name,
+    topics: (topicsByPerson.get(person.id) ?? []).map<BriefingRetrievedTopic>((topic) => ({
+      id: topic.id,
+      content: topic.content,
+      expiresAt: topic.expiresAt,
+      lastMentionedAt: topic.lastMentionedAt,
+      state: topic.state,
+    })),
+  }));
+}
+
 export async function getGeneralBriefingRetrieval(generatedAt = new Date()): Promise<BriefingRetrievedData> {
   return {
     generatedAt,
@@ -162,80 +250,48 @@ export async function getBriefingRetrieval(placeId: number, generatedAt = new Da
     };
   }
 
-  const [conversationRows, followUpRows, topicRows] = await Promise.all([
-    db
-      .select({
-        id: conversations.id,
-        occurredAt: conversations.occurredAt,
-        personId: conversations.personId,
-        summary: conversations.summary,
-      })
-      .from(conversations)
-      .where(inArray(conversations.personId, personIds))
-      .orderBy(desc(conversations.occurredAt)),
-    db
-      .select({
-        id: followUps.id,
-        createdAt: followUps.createdAt,
-        personId: followUps.personId,
-        question: followUps.question,
-      })
-      .from(followUps)
-      .where(and(inArray(followUps.personId, personIds), eq(followUps.resolved, false)))
-      .orderBy(desc(followUps.createdAt)),
-    db
-      .select({
-        id: topics.id,
-        content: topics.content,
-        expiresAt: topicExpiry.expiresAt,
-        lastMentionedAt: topics.lastMentionedAt,
-        personId: topics.personId,
-        state: topicExpiry.state,
-      })
-      .from(topics)
-      .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
-      .where(and(inArray(topics.personId, personIds), eq(topics.resolved, false), eq(topics.isForUser, false)))
-      .orderBy(desc(topics.lastMentionedAt)),
-  ]);
+  return {
+    generatedAt,
+    lifeItems: await getBriefingLifeItems(),
+    people: await hydrateBriefingPeople(linkedPeople),
+    place: { avatarUri: place.avatarUri, id: place.id, name: place.name },
+  };
+}
 
-  const conversationsByPerson = groupByPersonId(
-    takeByPerson(conversationRows, MAX_RECENT_CONVERSATIONS_PER_PERSON),
-  );
-  const followUpsByPerson = groupByPersonId(takeByPerson(followUpRows, MAX_RECENT_FOLLOW_UPS_PER_PERSON));
-  const topicsByPerson = groupByPersonId(takeByPerson(topicRows, MAX_TOPICS_PER_PERSON));
-
-  const retrievedPeople: BriefingRetrievedPerson[] = linkedPeople.map((person) => ({
-    avatarUri: person.avatarUri,
-    id: person.id,
-    connectionScore: person.connectionScore,
-    conversations: (conversationsByPerson.get(person.id) ?? []).map<BriefingRetrievedConversation>(
-      (conversation) => ({
-        id: conversation.id,
-        occurredAt: conversation.occurredAt,
-        summary: conversation.summary,
-      }),
-    ),
-    followUps: (followUpsByPerson.get(person.id) ?? []).map<BriefingRetrievedFollowUp>((followUp) => ({
-      id: followUp.id,
-      createdAt: followUp.createdAt,
-      question: followUp.question,
-    })),
-    isPrimary: person.isPrimary,
-    lastContactedAt: person.lastContactedAt,
-    name: person.name,
-    topics: (topicsByPerson.get(person.id) ?? []).map<BriefingRetrievedTopic>((topic) => ({
-      id: topic.id,
-      content: topic.content,
-      expiresAt: topic.expiresAt,
-      lastMentionedAt: topic.lastMentionedAt,
-      state: topic.state,
-    })),
+export async function getCustomBriefingRetrieval({
+  generatedAt = new Date(),
+  includeLifeItems,
+  personIds,
+}: {
+  generatedAt?: Date;
+  includeLifeItems: boolean;
+  personIds: number[];
+}): Promise<BriefingRetrievedData> {
+  const db = await getDb();
+  const uniquePersonIds = [...new Set(personIds)];
+  const selectedPeopleRows =
+    uniquePersonIds.length > 0
+      ? await db
+          .select({
+            id: people.id,
+            connectionScore: people.connectionScore,
+            avatarUri: safeAvatarUri(people.avatarUri),
+            lastContactedAt: people.lastContactedAt,
+            name: people.name,
+          })
+          .from(people)
+          .where(inArray(people.id, uniquePersonIds))
+          .orderBy(desc(people.lastContactedAt), desc(people.connectionScore))
+      : [];
+  const selectedPeople = selectedPeopleRows.map<BriefingPersonSeed>((person) => ({
+    ...person,
+    isPrimary: false,
   }));
 
   return {
     generatedAt,
-    lifeItems: await getBriefingLifeItems(),
-    people: retrievedPeople,
-    place: { avatarUri: place.avatarUri, id: place.id, name: place.name },
+    lifeItems: includeLifeItems ? await getBriefingLifeItems() : [],
+    people: await hydrateBriefingPeople(selectedPeople),
+    place: { avatarUri: null, id: null, name: 'Custom briefing' },
   };
 }

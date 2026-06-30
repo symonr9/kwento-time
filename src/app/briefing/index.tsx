@@ -1,16 +1,25 @@
 import { router, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
+import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { SegmentedField } from '@/components/ui/form-controls';
+import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-row';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { getBriefingRetrieval, getGeneralBriefingRetrieval, type BriefingRetrievedData } from '@/db/queries/briefing';
+import {
+  getBriefingRetrieval,
+  getCustomBriefingRetrieval,
+  type BriefingRetrievedData,
+} from '@/db/queries/briefing';
+import { getPeopleListSummaries } from '@/db/queries/people';
 import { getAllPlaces } from '@/db/queries/places';
-import type { Place } from '@/db/schema';
+import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
+import type { Place, Tag } from '@/db/schema';
 import {
   buildBriefingContext,
   narrateBriefing,
@@ -33,12 +42,22 @@ const lengthOptions: { label: string; value: BriefingLength }[] = [
 ];
 
 type PlaybackStatus = 'idle' | 'paused' | 'playing';
+type BriefingSetupMode = 'custom' | 'place' | null;
+type PersonListItem = Awaited<ReturnType<typeof getPeopleListSummaries>>[number];
 
 export default function BriefingScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [places, setPlaces] = useState<Place[]>([]);
+  const [people, setPeople] = useState<PersonListItem[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [personTagLinks, setPersonTagLinks] = useState<{ itemId: number; tagId: number }[]>([]);
+  const [setupMode, setSetupMode] = useState<BriefingSetupMode>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
+  const [selectedPersonIds, setSelectedPersonIds] = useState<number[]>([]);
+  const [includeLifeUpdates, setIncludeLifeUpdates] = useState(true);
+  const [personSearch, setPersonSearch] = useState('');
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [length, setLength] = useState<BriefingLength>('medium');
   const [context, setContext] = useState<BriefingContext | null>(null);
   const [preview, setPreview] = useState<BriefingRetrievedData | null>(null);
@@ -59,19 +78,27 @@ export default function BriefingScreen() {
     useCallback(() => {
       let isActive = true;
 
-      async function loadPlaces() {
+      async function loadBriefingOptions() {
         setIsLoading(true);
         setError(null);
 
         try {
-          const rows = await getAllPlaces();
+          const [placeRows, personRows, tagRows, tagLinkRows] = await Promise.all([
+            getAllPlaces(),
+            getPeopleListSummaries(),
+            getAllTags(),
+            getItemTagLinks('person'),
+          ]);
           if (isActive) {
-            setPlaces(rows);
+            setPlaces(placeRows);
+            setPeople(personRows);
+            setTags(tagRows);
+            setPersonTagLinks(tagLinkRows);
             setSelectedPlaceId((current) => current ?? null);
           }
         } catch (err) {
           if (isActive) {
-            setError(err instanceof Error ? err.message : 'Unable to load places.');
+            setError(err instanceof Error ? err.message : 'Unable to load briefing options.');
           }
         } finally {
           if (isActive) {
@@ -80,7 +107,7 @@ export default function BriefingScreen() {
         }
       }
 
-      void loadPlaces();
+      void loadBriefingOptions();
 
       return () => {
         isActive = false;
@@ -114,14 +141,16 @@ export default function BriefingScreen() {
         return;
       }
 
+      if (setupMode !== 'place' || selectedPlaceId === null) {
+        setPreview(null);
+        return;
+      }
+
       setError(null);
 
       try {
         const generatedAt = new Date();
-        const nextPreview =
-          selectedPlaceId === null
-            ? await getGeneralBriefingRetrieval(generatedAt)
-            : await getBriefingRetrieval(selectedPlaceId, generatedAt);
+        const nextPreview = await getBriefingRetrieval(selectedPlaceId, generatedAt);
 
         if (isActive) {
           setPreview(nextPreview);
@@ -138,7 +167,37 @@ export default function BriefingScreen() {
     return () => {
       isActive = false;
     };
-  }, [isLoading, selectedPlaceId]);
+  }, [isLoading, selectedPlaceId, setupMode]);
+
+  const filteredPeople = people.filter((person) => {
+    const query = personSearch.trim().toLowerCase();
+    const personTagIds = personTagLinks.filter((link) => link.itemId === person.id).map((link) => link.tagId);
+    const personTagNames = tags
+      .filter((tag) => personTagIds.includes(tag.id))
+      .map((tag) => tag.name);
+    const matchesTag = selectedTagId === null || personTagIds.includes(selectedTagId);
+
+    if (!matchesTag) return false;
+    if (!query) return true;
+
+    return [
+      person.name,
+      person.nickname,
+      person.howWeMet,
+      person.birthday,
+      person.notes,
+      person.primaryPlaceName,
+      ...personTagNames,
+    ]
+      .filter(Boolean)
+      .some((value) => value?.toLowerCase().includes(query));
+  });
+
+  function toggleSelectedPerson(personId: number) {
+    setSelectedPersonIds((current) =>
+      current.includes(personId) ? current.filter((id) => id !== personId) : [...current, personId],
+    );
+  }
 
   async function playScript(nextScript: string, durationSeconds: number) {
     setError(null);
@@ -201,10 +260,30 @@ export default function BriefingScreen() {
     setError(null);
 
     try {
+      if (setupMode === null) {
+        setError('Choose how you want to build this briefing.');
+        return;
+      }
+
+      if (setupMode === 'place' && selectedPlaceId === null) {
+        setError('Choose a place for this briefing.');
+        return;
+      }
+
+      if (setupMode === 'custom' && selectedPersonIds.length === 0 && !includeLifeUpdates) {
+        setError('Choose at least one person or include life updates.');
+        return;
+      }
+
+      const selectedPlace = selectedPlaceId;
       const retrieved =
-        selectedPlaceId === null
-          ? await getGeneralBriefingRetrieval(generatedAt)
-          : await getBriefingRetrieval(selectedPlaceId, generatedAt);
+        setupMode === 'place' && selectedPlace !== null
+          ? await getBriefingRetrieval(selectedPlace, generatedAt)
+          : await getCustomBriefingRetrieval({
+              generatedAt,
+              includeLifeItems: includeLifeUpdates,
+              personIds: selectedPersonIds,
+            });
       const scored = scoreBriefingData(retrieved, generatedAt);
       const nextContext = buildBriefingContext(retrieved, scored, length);
       const nextScript = narrateBriefing(nextContext);
@@ -269,29 +348,90 @@ export default function BriefingScreen() {
           {!isLoading ? (
             <SurfaceCard style={styles.form}>
               <View style={styles.field}>
-                <ThemedText type="smallBold">Briefing scope</ThemedText>
-                <View style={styles.placeList}>
-                  <BriefingScopeCard
-                    isGeneral
-                    isSelected={selectedPlaceId === null}
-                    title="General"
-                    onPress={() => setSelectedPlaceId(null)}>
-                    {selectedPlaceId === null ? <BriefingPreview preview={preview} /> : null}
-                  </BriefingScopeCard>
-
-                  {places.map((place) => (
-                    <BriefingScopeCard
-                      key={place.id}
-                      avatarUri={place.avatarUri}
-                      isSelected={selectedPlaceId === place.id}
-                      title={place.name}
-                      subtitle={place.address}
-                      onPress={() => setSelectedPlaceId(place.id)}>
-                      {selectedPlaceId === place.id ? <BriefingPreview preview={preview} /> : null}
-                    </BriefingScopeCard>
-                  ))}
+                <ThemedText type="smallBold">Build briefing</ThemedText>
+                <View style={styles.modeGrid}>
+                  <BriefingModeCard
+                    isSelected={setupMode === 'place'}
+                    title="Select by Place"
+                    subtitle="Pick one known place and include everyone linked there."
+                    onPress={() => setSetupMode('place')}
+                  />
+                  <BriefingModeCard
+                    isSelected={setupMode === 'custom'}
+                    title="Create your own"
+                    subtitle="Choose individual people and whether to include life updates."
+                    onPress={() => setSetupMode('custom')}
+                  />
                 </View>
               </View>
+
+              {setupMode === 'place' ? (
+                <View style={styles.field}>
+                  <ThemedText type="smallBold">Choose a place</ThemedText>
+                  <View style={styles.placeList}>
+                    {places.map((place) => (
+                      <BriefingScopeCard
+                        key={place.id}
+                        avatarUri={place.avatarUri}
+                        isSelected={selectedPlaceId === place.id}
+                        title={place.name}
+                        subtitle={place.address}
+                        onPress={() => setSelectedPlaceId(place.id)}>
+                        {selectedPlaceId === place.id ? <BriefingPreview preview={preview} /> : null}
+                      </BriefingScopeCard>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {setupMode === 'custom' ? (
+                <View style={styles.field}>
+                  <ThemedText type="smallBold">Choose people</ThemedText>
+                  <TextInput
+                    value={personSearch}
+                    onChangeText={setPersonSearch}
+                    placeholder="Search people"
+                    placeholderTextColor={theme.textSecondary}
+                    autoCapitalize="none"
+                    style={[
+                      styles.searchInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.border,
+                        color: theme.text,
+                      },
+                    ]}
+                  />
+                  <HorizontalFilterChipRow
+                    selectedValue={selectedTagId}
+                    onChange={setSelectedTagId}
+                    options={[
+                      { label: 'Any tag', value: null },
+                      ...tags.map((tag) => ({ label: tag.name, value: tag.id })),
+                    ]}
+                  />
+                  <CustomLifeUpdateOption selected={includeLifeUpdates} onPress={() => setIncludeLifeUpdates((v) => !v)} />
+                  <View style={styles.customPeopleList}>
+                    {filteredPeople.map((person) => (
+                      <CustomPersonOption
+                        key={person.id}
+                        person={person}
+                        selected={selectedPersonIds.includes(person.id)}
+                        onPress={() => toggleSelectedPerson(person.id)}
+                      />
+                    ))}
+                  </View>
+                  {people.length === 0 ? (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Add people before creating a people-based briefing.
+                    </ThemedText>
+                  ) : filteredPeople.length === 0 ? (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      No people match this search or tag.
+                    </ThemedText>
+                  ) : null}
+                </View>
+              ) : null}
 
               <SegmentedField label="Length" options={lengthOptions} value={length} onChange={setLength} />
 
@@ -468,6 +608,121 @@ export default function BriefingScreen() {
   );
 }
 
+function BriefingModeCard({
+  isSelected,
+  onPress,
+  subtitle,
+  title,
+}: {
+  isSelected: boolean;
+  onPress: () => void;
+  subtitle: string;
+  title: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.modeCard,
+        {
+          backgroundColor: isSelected ? theme.primaryMuted : theme.backgroundElement,
+          borderColor: isSelected ? theme.primary : theme.border,
+          opacity: pressed ? 0.72 : 1,
+        },
+      ]}>
+      <ThemedText type="smallBold">{title}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        {subtitle}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function CustomLifeUpdateOption({ onPress, selected }: { onPress: () => void; selected: boolean }) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.customOption,
+        {
+          backgroundColor: selected ? theme.primaryMuted : theme.backgroundElement,
+          borderColor: selected ? theme.primary : theme.border,
+          opacity: pressed ? 0.72 : 1,
+        },
+      ]}>
+      <View style={[styles.checkCircle, { backgroundColor: selected ? theme.primary : theme.background }]}>
+        {selected ? (
+          <SymbolView
+            name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+            size={14}
+            tintColor="#FFFFFF"
+            fallback={<ThemedText type="smallBold" style={styles.checkFallback}>✓</ThemedText>}
+          />
+        ) : null}
+      </View>
+      <View style={styles.scopeCopy}>
+        <ThemedText type="smallBold">Life updates</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Include your current life context in this briefing.
+        </ThemedText>
+      </View>
+    </Pressable>
+  );
+}
+
+function CustomPersonOption({
+  onPress,
+  person,
+  selected,
+}: {
+  onPress: () => void;
+  person: PersonListItem;
+  selected: boolean;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.customOption,
+        {
+          backgroundColor: selected ? theme.primaryMuted : theme.backgroundElement,
+          borderColor: selected ? theme.primary : theme.border,
+          opacity: pressed ? 0.72 : 1,
+        },
+      ]}>
+      <AvatarPreview name={person.name} uri={person.avatarUri} size={44} />
+      <View style={styles.scopeCopy}>
+        <ThemedText type="smallBold">{person.name}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {person.primaryPlaceName ?? `${person.talkingPointsCount} talking points`}
+        </ThemedText>
+      </View>
+      <View style={[styles.checkCircle, { backgroundColor: selected ? theme.primary : theme.background }]}>
+        {selected ? (
+          <SymbolView
+            name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+            size={14}
+            tintColor="#FFFFFF"
+            fallback={<ThemedText type="smallBold" style={styles.checkFallback}>✓</ThemedText>}
+          />
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 function BriefingScopeCard({
   avatarUri,
   children,
@@ -639,8 +894,56 @@ const styles = StyleSheet.create({
   field: {
     gap: Spacing.one,
   },
+  modeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  modeCard: {
+    flexGrow: 1,
+    width: 148,
+    minHeight: 96,
+    justifyContent: 'center',
+    gap: Spacing.one,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    padding: Spacing.three,
+  },
   placeList: {
     gap: Spacing.two,
+  },
+  customPeopleList: {
+    gap: Spacing.two,
+  },
+  customOption: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    padding: Spacing.two,
+  },
+  checkCircle: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+  },
+  checkFallback: {
+    color: '#FFFFFF',
+  },
+  searchInput: {
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
   },
   scopeHeader: {
     minHeight: 20,
