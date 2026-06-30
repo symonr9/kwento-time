@@ -372,11 +372,28 @@ const styles = StyleSheet.create({
   },
   addButton: {
     minHeight: 40,
+    alignSelf: 'flex-start',
     justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  addButtonText: {
+    textAlign: 'center',
+  },
+  removeButtonText: {
+    textAlign: 'center',
   },
   removeButton: {
-    minHeight: 36,
+    minHeight: 40,
+    alignSelf: 'flex-start',
     justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
   },
   inlineCreateRow: {
     flexDirection: 'row',
@@ -408,6 +425,8 @@ function StructuredTopicsField({
   topics: StructuredTopicDraft[];
   onChange: (topics: StructuredTopicDraft[]) => void;
 }) {
+  const theme = useTheme();
+
   function updateTopic(id: string, patch: Partial<StructuredTopicDraft>) {
     onChange(topics.map((topic) => (topic.id === id ? { ...topic, ...patch } : topic)));
   }
@@ -450,8 +469,16 @@ function StructuredTopicsField({
             <Pressable
               accessibilityRole="button"
               onPress={() => removeTopic(topic.id)}
-              style={styles.removeButton}>
-              <ThemedText type="smallBold">Remove talking point</ThemedText>
+              style={({ pressed }) => [
+                styles.removeButton,
+                {
+                  borderColor: theme.border,
+                  opacity: pressed ? 0.72 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold" style={styles.removeButtonText}>
+                Remove talking point
+              </ThemedText>
             </Pressable>
           ) : null}
         </View>
@@ -459,8 +486,16 @@ function StructuredTopicsField({
       <Pressable
         accessibilityRole="button"
         onPress={() => onChange([...topics, createTopicDraft()])}
-        style={styles.addButton}>
-        <ThemedText type="smallBold">+ Add talking point</ThemedText>
+        style={({ pressed }) => [
+          styles.addButton,
+          {
+            borderColor: theme.border,
+            opacity: pressed ? 0.72 : 1,
+          },
+        ]}>
+        <ThemedText type="smallBold" style={styles.addButtonText}>
+          + Add talking point
+        </ThemedText>
       </Pressable>
     </View>
   );
@@ -473,6 +508,8 @@ function StructuredFollowUpsField({
   followUps: StructuredFollowUpDraft[];
   onChange: (followUps: StructuredFollowUpDraft[]) => void;
 }) {
+  const theme = useTheme();
+
   function updateFollowUp(id: string, patch: Partial<StructuredFollowUpDraft>) {
     onChange(followUps.map((followUp) => (followUp.id === id ? { ...followUp, ...patch } : followUp)));
   }
@@ -515,8 +552,16 @@ function StructuredFollowUpsField({
             <Pressable
               accessibilityRole="button"
               onPress={() => removeFollowUp(followUp.id)}
-              style={styles.removeButton}>
-              <ThemedText type="smallBold">Remove follow-up</ThemedText>
+              style={({ pressed }) => [
+                styles.removeButton,
+                {
+                  borderColor: theme.border,
+                  opacity: pressed ? 0.72 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold" style={styles.removeButtonText}>
+                Remove follow-up
+              </ThemedText>
             </Pressable>
           ) : null}
         </View>
@@ -524,8 +569,16 @@ function StructuredFollowUpsField({
       <Pressable
         accessibilityRole="button"
         onPress={() => onChange([...followUps, createFollowUpDraft()])}
-        style={styles.addButton}>
-        <ThemedText type="smallBold">+ Add follow-up</ThemedText>
+        style={({ pressed }) => [
+          styles.addButton,
+          {
+            borderColor: theme.border,
+            opacity: pressed ? 0.72 : 1,
+          },
+        ]}>
+        <ThemedText type="smallBold" style={styles.addButtonText}>
+          + Add follow-up
+        </ThemedText>
       </Pressable>
     </View>
   );

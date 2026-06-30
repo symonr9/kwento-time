@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
@@ -199,6 +199,8 @@ function StructuredTopicsField({
   topics: StructuredTopicDraft[];
   onChange: (topics: StructuredTopicDraft[]) => void;
 }) {
+  const theme = useTheme();
+
   function updateTopic(id: string, patch: Partial<StructuredTopicDraft>) {
     onChange(topics.map((topic) => (topic.id === id ? { ...topic, ...patch } : topic)));
   }
@@ -238,15 +240,37 @@ function StructuredTopicsField({
             onChange={(importance) => updateTopic(topic.id, { importance })}
           />
           {topics.length > 1 ? (
-            <ThemedText type="smallBold" onPress={() => removeTopic(topic.id)}>
-              Remove talking point
-            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => removeTopic(topic.id)}
+              style={({ pressed }) => [
+                styles.removeButton,
+                {
+                  borderColor: theme.border,
+                  opacity: pressed ? 0.72 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold" style={styles.actionButtonText}>
+                Remove talking point
+              </ThemedText>
+            </Pressable>
           ) : null}
         </View>
       ))}
-      <ThemedText type="smallBold" onPress={() => onChange([...topics, createTopicDraft()])}>
-        + Add talking point
-      </ThemedText>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => onChange([...topics, createTopicDraft()])}
+        style={({ pressed }) => [
+          styles.addButton,
+          {
+            borderColor: theme.border,
+            opacity: pressed ? 0.72 : 1,
+          },
+        ]}>
+        <ThemedText type="smallBold" style={styles.actionButtonText}>
+          + Add talking point
+        </ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -258,6 +282,8 @@ function StructuredFollowUpsField({
   followUps: StructuredFollowUpDraft[];
   onChange: (followUps: StructuredFollowUpDraft[]) => void;
 }) {
+  const theme = useTheme();
+
   function updateFollowUp(id: string, patch: Partial<StructuredFollowUpDraft>) {
     onChange(followUps.map((followUp) => (followUp.id === id ? { ...followUp, ...patch } : followUp)));
   }
@@ -297,15 +323,37 @@ function StructuredFollowUpsField({
             onChange={(importance) => updateFollowUp(followUp.id, { importance })}
           />
           {followUps.length > 1 ? (
-            <ThemedText type="smallBold" onPress={() => removeFollowUp(followUp.id)}>
-              Remove follow-up
-            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => removeFollowUp(followUp.id)}
+              style={({ pressed }) => [
+                styles.removeButton,
+                {
+                  borderColor: theme.border,
+                  opacity: pressed ? 0.72 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold" style={styles.actionButtonText}>
+                Remove follow-up
+              </ThemedText>
+            </Pressable>
           ) : null}
         </View>
       ))}
-      <ThemedText type="smallBold" onPress={() => onChange([...followUps, createFollowUpDraft()])}>
-        + Add follow-up
-      </ThemedText>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => onChange([...followUps, createFollowUpDraft()])}
+        style={({ pressed }) => [
+          styles.addButton,
+          {
+            borderColor: theme.border,
+            opacity: pressed ? 0.72 : 1,
+          },
+        ]}>
+        <ThemedText type="smallBold" style={styles.actionButtonText}>
+          + Add follow-up
+        </ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -320,6 +368,28 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     padding: Spacing.three,
+  },
+  addButton: {
+    minHeight: 40,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  removeButton: {
+    minHeight: 40,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
+  actionButtonText: {
+    textAlign: 'center',
   },
   transcriptPanel: {
     gap: Spacing.one,
