@@ -63,6 +63,11 @@ function createFollowUpDraft(): StructuredFollowUpDraft {
   };
 }
 
+function describeOperationError(operation: string, err: unknown) {
+  const message = err instanceof Error ? err.message : String(err);
+  return `${operation} failed: ${message}`;
+}
+
 export default function NewConversationScreen() {
   const theme = useTheme();
   const [summary, setSummary] = useState('');
@@ -104,7 +109,7 @@ export default function NewConversationScreen() {
           }
         } catch (err) {
           if (isActive) {
-            setError(err instanceof Error ? err.message : 'Unable to load form options.');
+            setError(describeOperationError('Loading conversation form people, places, and tags', err));
           }
         }
       }
@@ -121,11 +126,11 @@ export default function NewConversationScreen() {
     const trimmedSummary = summary.trim();
 
     const conversation: NewConversation = {
-      audioUri: audioUri.trim() || undefined,
-      placeId: selectedPlaceId ?? undefined,
-      rawTranscript: rawTranscript.trim() || undefined,
-      summary: trimmedSummary || undefined,
-      personId: selectedPersonId ?? undefined,
+      audioUri: audioUri.trim() || null,
+      placeId: selectedPlaceId,
+      rawTranscript: rawTranscript.trim() || null,
+      summary: trimmedSummary || null,
+      personId: selectedPersonId,
       source: 'manual',
     };
 
@@ -156,7 +161,7 @@ export default function NewConversationScreen() {
       await setTagsForItem('conversation', savedConversation.id, selectedTagIds);
       router.replace('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to save conversation.');
+      setError(describeOperationError('Saving conversation with selected person/place/tags', err));
     } finally {
       setIsSaving(false);
     }
@@ -179,7 +184,7 @@ export default function NewConversationScreen() {
       setSelectedPersonId(person.id);
       setNewPersonName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to add person.');
+      setError(describeOperationError(`Adding person "${name}" from conversation form`, err));
     } finally {
       setIsCreatingPerson(false);
     }
@@ -202,7 +207,7 @@ export default function NewConversationScreen() {
       setSelectedPlaceId(place.id);
       setNewPlaceName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to add place.');
+      setError(describeOperationError(`Adding place "${name}" from conversation form`, err));
     } finally {
       setIsCreatingPlace(false);
     }
@@ -220,7 +225,7 @@ export default function NewConversationScreen() {
       setSelectedTagIds((current) => [...current, tag.id]);
       setNewTagName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to add tag.');
+      setError(describeOperationError(`Adding tag "${name}" from conversation form`, err));
     }
   }
 

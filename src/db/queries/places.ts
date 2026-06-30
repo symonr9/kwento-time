@@ -18,7 +18,7 @@ export async function getAllPlaces() {
 export async function getPlacesListSummaries() {
   const db = await getDb();
 
-  return db
+  const rows = await db
     .select({
       id: places.id,
       address: places.address,
@@ -33,6 +33,11 @@ export async function getPlacesListSummaries() {
     .leftJoin(personPlaces, eq(personPlaces.placeId, places.id))
     .groupBy(places.id)
     .orderBy(asc(places.name));
+
+  return rows.map((row) => ({
+    ...row,
+    peopleCount: Number(row.peopleCount ?? 0),
+  }));
 }
 
 export async function getPlaceById(id: number) {

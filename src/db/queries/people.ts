@@ -38,7 +38,7 @@ export async function getAllPeople() {
 export async function getPeopleListSummaries() {
   const db = await getDb();
 
-  return db
+  const rows = await db
     .select({
       id: people.id,
       avatarUri: people.avatarUri,
@@ -63,6 +63,12 @@ export async function getPeopleListSummaries() {
     .leftJoin(places, eq(places.id, personPlaces.placeId))
     .groupBy(people.id)
     .orderBy(asc(people.name));
+
+  return rows.map((row) => ({
+    ...row,
+    followUpsCount: Number(row.followUpsCount ?? 0),
+    talkingPointsCount: Number(row.talkingPointsCount ?? 0),
+  }));
 }
 
 /** Case-insensitive name/nickname search for the "find a person" UI. */

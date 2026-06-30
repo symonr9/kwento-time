@@ -48,7 +48,8 @@ export default function PeopleScreen() {
       }
     } catch (err) {
       if (isActive) {
-        setError(err instanceof Error ? err.message : 'Unable to load people.');
+        const message = err instanceof Error ? err.message : String(err);
+        setError(`Loading people, tags, and tag links failed: ${message}`);
       }
     } finally {
       if (isActive) {

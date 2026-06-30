@@ -68,9 +68,13 @@ export async function logStructuredConversation({
       .insert(conversations)
       .values({
         ...conversation,
+        audioUri: conversation.audioUri ?? null,
         extractionStatus: conversation.extractionStatus ?? 'completed',
+        personId: conversation.personId ?? null,
+        rawTranscript: conversation.rawTranscript ?? null,
+        summary: conversation.summary ?? null,
         transcriptStatus: conversation.transcriptStatus ?? 'confirmed',
-        placeId: conversation.placeId ?? placeId ?? undefined,
+        placeId: conversation.placeId ?? placeId ?? null,
       })
       .returning();
 
@@ -83,11 +87,11 @@ export async function logStructuredConversation({
         .insert(topics)
         .values(
           topicInputs.map((topic) => ({
-            category: topic.category,
+            category: topic.category ?? null,
             content: topic.content,
             conversationId: row.id,
             importance: topic.importance ?? 1,
-            personId: row.personId ?? undefined,
+            personId: row.personId ?? null,
             tone: topic.tone ?? 'light',
           })),
         )
@@ -107,10 +111,10 @@ export async function logStructuredConversation({
         .insert(followUps)
         .values(
           followUpQuestions.map((followUp) => ({
-            category: followUp.category,
+            category: followUp.category ?? null,
             conversationId: row.id,
             importance: followUp.importance ?? 1,
-            personId: row.personId ?? undefined,
+            personId: row.personId ?? null,
             question: followUp.question,
             tone: followUp.tone ?? 'light',
           })),
@@ -163,11 +167,11 @@ export async function applyStructuredConversationDetails(
         .insert(topics)
         .values(
           topicInputs.map((topic) => ({
-            category: topic.category,
+            category: topic.category ?? null,
             content: topic.content,
             conversationId,
             importance: topic.importance ?? 1,
-            personId: conversation.personId ?? undefined,
+            personId: conversation.personId ?? null,
             tone: topic.tone ?? 'light',
           })),
         )
@@ -187,10 +191,10 @@ export async function applyStructuredConversationDetails(
         .insert(followUps)
         .values(
           followUpInputs.map((followUp) => ({
-            category: followUp.category,
+            category: followUp.category ?? null,
             conversationId,
             importance: followUp.importance ?? 1,
-            personId: conversation.personId ?? undefined,
+            personId: conversation.personId ?? null,
             question: followUp.question,
             tone: followUp.tone ?? 'light',
           })),
