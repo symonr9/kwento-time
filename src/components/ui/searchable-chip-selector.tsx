@@ -104,11 +104,14 @@ export function SearchableChipSelector<Value extends number | string | null>({
               style={[
                 styles.chip,
                 {
-                  backgroundColor: isSelected ? theme.primaryMuted : theme.background,
+                  backgroundColor: isSelected ? theme.primaryMuted : theme.backgroundElement,
                   borderColor: isSelected ? theme.primary : theme.border,
+                  boxShadow: isSelected
+                    ? '0 8px 18px rgba(36, 48, 58, 0.14)'
+                    : '0 5px 12px rgba(36, 48, 58, 0.08)',
                 },
               ]}>
-              {option.avatarUri ? <Avatar name={option.label} uri={option.avatarUri} size={24} /> : null}
+              {option.avatarUri ? <Avatar name={option.label} uri={option.avatarUri} size={28} /> : null}
               <ThemedText
                 type="smallBold"
                 themeColor={isSelected ? 'text' : 'textSecondary'}
@@ -153,14 +156,14 @@ const styles = StyleSheet.create({
   },
   chip: {
     maxWidth: '100%',
-    minHeight: 36,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.three,
   },
   chipLabel: {
     flexShrink: 1,

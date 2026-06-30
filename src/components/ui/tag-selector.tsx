@@ -81,13 +81,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   addButton: {
-    minHeight: 52,
-    minWidth: 72,
+    minHeight: 40,
+    minWidth: 52,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.small,
     borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
   },
   addButtonText: {
     color: '#FFFFFF',

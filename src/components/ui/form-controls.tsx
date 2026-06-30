@@ -274,7 +274,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addMultiTextFieldButton: {
-    minHeight: 40,
+    minHeight: 34,
+    alignSelf: 'flex-start',
     justifyContent: 'center',
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.two,
   },
 });
