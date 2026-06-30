@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,8 +21,15 @@ import { isBiometricLockEnabled, setBiometricLockEnabled } from '@/db/queries/se
 import { useAppearancePreference } from '@/hooks/use-appearance-preference';
 import { useTheme } from '@/hooks/use-theme';
 import { getBiometricAvailability } from '@/services/auth';
-import { generateBackupJson, importBackupJson } from '@/services/backup';
+import { generateBackupJson, importBackupJson, previewBackupJson, type BackupPreview } from '@/services/backup';
 import type { AppearanceMode } from '@/services/preferences';
+
+function formatBackupDate(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -29,6 +37,7 @@ export default function SettingsScreen() {
     useAppearancePreference();
   const insets = useSafeAreaInsets();
   const [backupJson, setBackupJson] = useState('');
+  const [backupPreview, setBackupPreview] = useState<BackupPreview | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
@@ -75,6 +84,7 @@ export default function SettingsScreen() {
     try {
       const json = await generateBackupJson();
       setBackupJson(json);
+      setBackupPreview(previewBackupJson(json));
       setNotice('Backup JSON generated.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to export backup.');
@@ -83,24 +93,59 @@ export default function SettingsScreen() {
     }
   }
 
-  async function handleImport() {
+  function handleBackupJsonChange(value: string) {
+    setBackupJson(value);
+    setBackupPreview(null);
+  }
+
+  function handlePreviewImport() {
     if (!backupJson.trim()) {
-      setError('Paste backup JSON before importing.');
+      setError('Paste backup JSON before previewing.');
       return;
     }
 
+    setNotice(null);
+    setError(null);
+
+    try {
+      const preview = previewBackupJson(backupJson);
+      setBackupPreview(preview);
+      setNotice(`Backup preview ready: ${preview.totalRows} rows from ${formatBackupDate(preview.exportedAt)}.`);
+    } catch (err) {
+      setBackupPreview(null);
+      setError(err instanceof Error ? err.message : 'Unable to preview backup.');
+    }
+  }
+
+  async function runImport() {
     setIsImporting(true);
     setNotice(null);
     setError(null);
 
     try {
       const result = await importBackupJson(backupJson);
-      setNotice(`Imported ${result.importedRows} rows. Existing conflicting rows were skipped.`);
+      setNotice(`Processed ${result.importedRows} backup rows. Existing conflicting rows were skipped.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to import backup.');
     } finally {
       setIsImporting(false);
     }
+  }
+
+  function handleImport() {
+    if (!backupPreview) {
+      setError('Preview the backup before importing.');
+      return;
+    }
+
+    Alert.alert(
+      'Import backup?',
+      `Import ${backupPreview.totalRows} rows from ${formatBackupDate(backupPreview.exportedAt)}. Existing conflicts will be skipped.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Import', onPress: () => void runImport() },
+      ],
+    );
   }
 
   async function handleToggleBiometric() {
@@ -250,7 +295,7 @@ export default function SettingsScreen() {
               multiline
               textAlignVertical="top"
               value={backupJson}
-              onChangeText={setBackupJson}
+              onChangeText={handleBackupJsonChange}
               placeholder="Generate a backup or paste one here."
               placeholderTextColor={theme.textSecondary}
               style={[
@@ -262,6 +307,7 @@ export default function SettingsScreen() {
                 },
               ]}
             />
+            {backupPreview ? <BackupPreviewCard preview={backupPreview} /> : null}
             <View style={styles.actionRow}>
               <Pressable
                 accessibilityRole="button"
@@ -281,6 +327,18 @@ export default function SettingsScreen() {
                     Generate
                   </ThemedText>
                 )}
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={handlePreviewImport}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}>
+                <ThemedText type="smallBold">Preview</ThemedText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -304,6 +362,53 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function BackupPreviewCard({ preview }: { preview: BackupPreview }) {
+  const theme = useTheme();
+  const rows = Object.entries(preview.tableCounts)
+    .filter(([, count]) => count > 0)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  return (
+    <View
+      style={[
+        styles.previewCard,
+        {
+          backgroundColor: theme.primaryMuted,
+          borderColor: theme.border,
+        },
+      ]}>
+      <View style={styles.rowHeader}>
+        <View style={styles.settingCopy}>
+          <ThemedText type="smallBold">Backup preview</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {preview.totalRows} rows · exported {formatBackupDate(preview.exportedAt)}
+          </ThemedText>
+        </View>
+        <ThemedText type="small" themeColor="textSecondary">
+          v{preview.version}
+        </ThemedText>
+      </View>
+      {rows.length > 0 ? (
+        <View style={styles.previewRows}>
+          {rows.map(([tableName, count]) => (
+            <View key={tableName} style={styles.previewRow}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {tableName}
+              </ThemedText>
+              <ThemedText type="smallBold">{count}</ThemedText>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      {preview.warnings.map((warning) => (
+        <ThemedText key={warning} type="small" themeColor="textSecondary">
+          {warning}
+        </ThemedText>
+      ))}
+    </View>
   );
 }
 
@@ -349,6 +454,23 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.three,
+  },
+  previewCard: {
+    gap: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    padding: Spacing.three,
+  },
+  previewRows: {
+    gap: Spacing.one,
+  },
+  previewRow: {
+    minHeight: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
   },
   rowHeader: {
     flexDirection: 'row',
