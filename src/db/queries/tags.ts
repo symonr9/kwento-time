@@ -2,6 +2,7 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import { itemTags, people, personTags, tags, type ItemTagType, type NewTag } from '../schema';
+import { safeAvatarUri } from './avatar-sql';
 
 export type TagWithUsageCounts = {
   id: number;
@@ -135,7 +136,7 @@ export async function getPeopleByTag(tagId: number) {
       id: people.id,
       name: people.name,
       nickname: people.nickname,
-      avatarUri: people.avatarUri,
+      avatarUri: safeAvatarUri(people.avatarUri),
     })
     .from(personTags)
     .innerJoin(people, eq(personTags.personId, people.id))

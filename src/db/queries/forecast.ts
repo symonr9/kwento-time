@@ -11,6 +11,7 @@ import {
   topicExpiry,
   topics,
 } from '../schema';
+import { safeAvatarUri } from './avatar-sql';
 
 const MAX_RECENT_CONVERSATIONS_PER_PERSON = 2;
 const MAX_RECENT_FOLLOW_UPS_PER_PERSON = 2;
@@ -127,7 +128,11 @@ export async function getGeneralForecastRetrieval(generatedAt = new Date()): Pro
 
 export async function getForecastRetrieval(placeId: number, generatedAt = new Date()): Promise<ForecastRetrievedData> {
   const db = await getDb();
-  const [place] = await db.select().from(places).where(eq(places.id, placeId)).limit(1);
+  const [place] = await db
+    .select({ avatarUri: safeAvatarUri(places.avatarUri), id: places.id, name: places.name })
+    .from(places)
+    .where(eq(places.id, placeId))
+    .limit(1);
 
   if (!place) {
     throw new Error('Place not found.');
@@ -137,7 +142,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
     .select({
       id: people.id,
       connectionScore: people.connectionScore,
-      avatarUri: people.avatarUri,
+      avatarUri: safeAvatarUri(people.avatarUri),
       isPrimary: personPlaces.isPrimary,
       lastContactedAt: people.lastContactedAt,
       name: people.name,

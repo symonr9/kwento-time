@@ -3,6 +3,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { resolveAvatarReference } from '@/services/avatar-storage';
 
 type AvatarProps = {
   name: string;
@@ -17,6 +18,7 @@ function getInitial(name: string) {
 
 export function Avatar({ name, size = 40, style, uri }: AvatarProps) {
   const theme = useTheme();
+  const resolvedUri = resolveAvatarReference(uri);
 
   return (
     <View
@@ -30,8 +32,8 @@ export function Avatar({ name, size = 40, style, uri }: AvatarProps) {
         },
         style,
       ]}>
-      {uri ? (
-        <Image source={{ uri }} style={styles.image} contentFit="cover" />
+      {resolvedUri ? (
+        <Image source={{ uri: resolvedUri }} style={styles.image} contentFit="cover" />
       ) : (
         <ThemedText type="smallBold">{getInitial(name)}</ThemedText>
       )}

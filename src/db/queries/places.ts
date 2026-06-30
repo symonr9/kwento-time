@@ -2,16 +2,46 @@ import { and, asc, count, desc, eq, or } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import { conversations, followUps, people, personPlaces, places, type NewPlace } from '../schema';
+import { persistAvatarReference } from '../../services/avatar-storage';
+import { safeAvatarUri } from './avatar-sql';
+
+const placeColumns = {
+  id: places.id,
+  address: places.address,
+  avatarUri: safeAvatarUri(places.avatarUri),
+  createdAt: places.createdAt,
+  name: places.name,
+  notes: places.notes,
+  updatedAt: places.updatedAt,
+};
+
+async function normalizePlaceWrite(data: NewPlace): Promise<NewPlace> {
+  return {
+    ...data,
+    avatarUri: await persistAvatarReference(data.avatarUri),
+  };
+}
+
+async function normalizePlacePatch(data: Partial<NewPlace>): Promise<Partial<NewPlace>> {
+  if (!('avatarUri' in data)) {
+    return data;
+  }
+
+  return {
+    ...data,
+    avatarUri: await persistAvatarReference(data.avatarUri),
+  };
+}
 
 export async function createPlace(data: NewPlace) {
   const db = await getDb();
-  const [row] = await db.insert(places).values(data).returning();
+  const [row] = await db.insert(places).values(await normalizePlaceWrite(data)).returning(placeColumns);
   return row;
 }
 
 export async function getAllPlaces() {
   const db = await getDb();
-  return db.select().from(places).orderBy(asc(places.name));
+  return db.select(placeColumns).from(places).orderBy(asc(places.name));
 }
 
 /** Place list rows with linked-person counts for scan-friendly cards. */
@@ -22,7 +52,7 @@ export async function getPlacesListSummaries() {
     .select({
       id: places.id,
       address: places.address,
-      avatarUri: places.avatarUri,
+      avatarUri: safeAvatarUri(places.avatarUri),
       createdAt: places.createdAt,
       name: places.name,
       notes: places.notes,
@@ -42,13 +72,17 @@ export async function getPlacesListSummaries() {
 
 export async function getPlaceById(id: number) {
   const db = await getDb();
-  const [row] = await db.select().from(places).where(eq(places.id, id)).limit(1);
+  const [row] = await db.select(placeColumns).from(places).where(eq(places.id, id)).limit(1);
   return row;
 }
 
 export async function updatePlace(id: number, data: Partial<NewPlace>) {
   const db = await getDb();
-  const [row] = await db.update(places).set(data).where(eq(places.id, id)).returning();
+  const [row] = await db
+    .update(places)
+    .set(await normalizePlacePatch(data))
+    .where(eq(places.id, id))
+    .returning(placeColumns);
   return row;
 }
 
@@ -65,7 +99,7 @@ export async function getPlacesForPerson(personId: number) {
       id: places.id,
       name: places.name,
       address: places.address,
-      avatarUri: places.avatarUri,
+      avatarUri: safeAvatarUri(places.avatarUri),
       notes: places.notes,
       isPrimary: personPlaces.isPrimary,
     })
@@ -79,7 +113,7 @@ export async function getPlacesForPerson(personId: number) {
 export async function getPrimaryPlaceForPerson(personId: number) {
   const db = await getDb();
   const [row] = await db
-    .select({ id: places.id, name: places.name, address: places.address, avatarUri: places.avatarUri })
+    .select({ id: places.id, name: places.name, address: places.address, avatarUri: safeAvatarUri(places.avatarUri) })
     .from(personPlaces)
     .innerJoin(places, eq(personPlaces.placeId, places.id))
     .where(and(eq(personPlaces.personId, personId), eq(personPlaces.isPrimary, true)))
@@ -98,7 +132,7 @@ export async function getPeopleForPlace(placeId: number) {
       id: people.id,
       name: people.name,
       nickname: people.nickname,
-      avatarUri: people.avatarUri,
+      avatarUri: safeAvatarUri(people.avatarUri),
       isPrimary: personPlaces.isPrimary,
     })
     .from(personPlaces)

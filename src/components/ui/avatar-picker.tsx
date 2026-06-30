@@ -8,6 +8,7 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { persistAvatarReference, resolveAvatarReference } from '@/services/avatar-storage';
 
 type AvatarPickerProps = {
   label: string;
@@ -30,7 +31,7 @@ function getInitial(name: string) {
 
 async function persistAvatarUri(uri: string) {
   if (Platform.OS === 'web' || !FileSystem.documentDirectory) {
-    return uri;
+    return persistAvatarReference(uri);
   }
 
   const extensionMatch = uri.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/);
@@ -47,6 +48,7 @@ export function AvatarPicker({ label, name, onChange, uri }: AvatarPickerProps) 
   const theme = useTheme();
   const [message, setMessage] = useState<string | null>(null);
   const [isPicking, setIsPicking] = useState(false);
+  const previewUri = resolveAvatarReference(uri);
 
   async function handleResult(result: ImagePicker.ImagePickerResult) {
     if (result.canceled) {
@@ -107,8 +109,8 @@ export function AvatarPicker({ label, name, onChange, uri }: AvatarPickerProps) 
       <ThemedText type="smallBold">{label}</ThemedText>
       <View style={styles.row}>
         <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
-          {uri ? (
-            <Image source={{ uri }} style={styles.avatarImage} contentFit="cover" />
+          {previewUri ? (
+            <Image source={{ uri: previewUri }} style={styles.avatarImage} contentFit="cover" />
           ) : (
             <ThemedText type="subtitle" style={styles.initial}>
               {getInitial(name)}

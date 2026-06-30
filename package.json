@@ -63,6 +63,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "tsx --test \"src/**/*.test.ts\"",
+    "postinstall": "node ./scripts/patch-expo-sqlite-web-sync.js",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",

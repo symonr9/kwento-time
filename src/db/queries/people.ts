@@ -2,18 +2,53 @@ import { and, asc, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
 
 import { getDb } from '../client';
 import { followUps, people, personPlaces, places, topics, type NewPerson, type Person } from '../schema';
+import { persistAvatarReference } from '../../services/avatar-storage';
+import { safeAvatarUri } from './avatar-sql';
+
+const personColumns = {
+  id: people.id,
+  avatarUri: safeAvatarUri(people.avatarUri),
+  birthday: people.birthday,
+  connectionScore: people.connectionScore,
+  createdAt: people.createdAt,
+  howWeMet: people.howWeMet,
+  lastContactedAt: people.lastContactedAt,
+  name: people.name,
+  nativeContactId: people.nativeContactId,
+  nickname: people.nickname,
+  notes: people.notes,
+  updatedAt: people.updatedAt,
+};
+
+async function normalizePersonWrite(data: NewPerson): Promise<NewPerson> {
+  return {
+    ...data,
+    avatarUri: await persistAvatarReference(data.avatarUri),
+  };
+}
+
+async function normalizePersonPatch(data: Partial<NewPerson>): Promise<Partial<NewPerson>> {
+  if (!('avatarUri' in data)) {
+    return data;
+  }
+
+  return {
+    ...data,
+    avatarUri: await persistAvatarReference(data.avatarUri),
+  };
+}
 
 /** Add a new person to remember. */
 export async function createPerson(data: NewPerson): Promise<Person> {
   const db = await getDb();
-  const [row] = await db.insert(people).values(data).returning();
+  const [row] = await db.insert(people).values(await normalizePersonWrite(data)).returning(personColumns);
   return row;
 }
 
 /** Fetch a single person by id, or `undefined` if not found. */
 export async function getPersonById(id: number) {
   const db = await getDb();
-  const [row] = await db.select().from(people).where(eq(people.id, id)).limit(1);
+  const [row] = await db.select(personColumns).from(people).where(eq(people.id, id)).limit(1);
   return row;
 }
 
@@ -21,7 +56,7 @@ export async function getPersonById(id: number) {
 export async function getPersonByNativeContactId(nativeContactId: string) {
   const db = await getDb();
   const [row] = await db
-    .select()
+    .select(personColumns)
     .from(people)
     .where(eq(people.nativeContactId, nativeContactId))
     .limit(1);
@@ -31,7 +66,7 @@ export async function getPersonByNativeContactId(nativeContactId: string) {
 /** Everyone, alphabetical — the default "all people" list view. */
 export async function getAllPeople() {
   const db = await getDb();
-  return db.select().from(people).orderBy(asc(people.name));
+  return db.select(personColumns).from(people).orderBy(asc(people.name));
 }
 
 /** People list rows with summary counts for scan-friendly cards. */
@@ -41,7 +76,7 @@ export async function getPeopleListSummaries() {
   const rows = await db
     .select({
       id: people.id,
-      avatarUri: people.avatarUri,
+      avatarUri: safeAvatarUri(people.avatarUri),
       birthday: people.birthday,
       connectionScore: people.connectionScore,
       createdAt: people.createdAt,
@@ -75,7 +110,7 @@ export async function getPeopleListSummaries() {
 export async function searchPeopleByName(query: string) {
   const db = await getDb();
   return db
-    .select()
+    .select(personColumns)
     .from(people)
     .where(or(like(people.name, `%${query}%`), like(people.nickname, `%${query}%`)))
     .orderBy(asc(people.name));
@@ -84,7 +119,11 @@ export async function searchPeopleByName(query: string) {
 /** Update profile fields (name, notes, avatar, birthday, etc.). */
 export async function updatePerson(id: number, data: Partial<NewPerson>) {
   const db = await getDb();
-  const [row] = await db.update(people).set(data).where(eq(people.id, id)).returning();
+  const [row] = await db
+    .update(people)
+    .set(await normalizePersonPatch(data))
+    .where(eq(people.id, id))
+    .returning(personColumns);
   return row;
 }
 
@@ -120,7 +159,7 @@ export async function bumpLastContacted(id: number, when: Date = new Date()) {
     .update(people)
     .set({ lastContactedAt: when })
     .where(eq(people.id, id))
-    .returning();
+    .returning(personColumns);
   return row;
 }
 
@@ -131,7 +170,7 @@ export async function setConnectionScore(id: number, score: number) {
     .update(people)
     .set({ connectionScore: score })
     .where(eq(people.id, id))
-    .returning();
+    .returning(personColumns);
   return row;
 }
 
@@ -144,7 +183,7 @@ export async function getPeopleToReachOutTo(staleDays = 30) {
   const db = await getDb();
   const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
   return db
-    .select()
+    .select(personColumns)
     .from(people)
     .where(or(isNull(people.lastContactedAt), lt(people.lastContactedAt, cutoff)))
     .orderBy(asc(people.connectionScore), asc(people.lastContactedAt));
@@ -165,7 +204,7 @@ export async function getUpcomingBirthdays(daysAhead = 14) {
     mmddWindow.push(d.toISOString().slice(5, 10)); // "MM-DD"
   }
   return db
-    .select()
+    .select(personColumns)
     .from(people)
     .where(inArray(sql`substr(${people.birthday}, -5)`, mmddWindow))
     .orderBy(asc(people.name));
