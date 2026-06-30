@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ExpandableSection } from '@/components/ui/expandable-section';
+import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-row';
 import { IconActionButton } from '@/components/ui/icon-action-button';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -608,39 +609,36 @@ export default function HomeScreen() {
                       },
                     ]}
                   />
-                  <View style={styles.filterChips}>
-                    <FilterChip label="Any person" selected={conversationPersonId === null} onPress={() => setConversationPersonId(null)} />
-                    {conversationPeople.map((conversation) => (
-                      <FilterChip
-                        key={conversation.personId}
-                        label={conversation.personName ?? 'Person'}
-                        selected={conversationPersonId === conversation.personId}
-                        onPress={() => setConversationPersonId(conversation.personId)}
-                      />
-                    ))}
-                  </View>
-                  <View style={styles.filterChips}>
-                    <FilterChip label="Any place" selected={conversationPlaceId === null} onPress={() => setConversationPlaceId(null)} />
-                    {conversationPlaces.map((conversation) => (
-                      <FilterChip
-                        key={conversation.placeId}
-                        label={conversation.placeName ?? 'Place'}
-                        selected={conversationPlaceId === conversation.placeId}
-                        onPress={() => setConversationPlaceId(conversation.placeId)}
-                      />
-                    ))}
-                  </View>
-                  <View style={styles.filterChips}>
-                    <FilterChip label="Any tag" selected={conversationTagId === null} onPress={() => setConversationTagId(null)} />
-                    {tags.map((tag) => (
-                      <FilterChip
-                        key={tag.id}
-                        label={tag.name}
-                        selected={conversationTagId === tag.id}
-                        onPress={() => setConversationTagId(tag.id)}
-                      />
-                    ))}
-                  </View>
+                  <HorizontalFilterChipRow
+                    selectedValue={conversationPersonId}
+                    onChange={setConversationPersonId}
+                    options={[
+                      { label: 'Any person', value: null },
+                      ...conversationPeople.map((conversation) => ({
+                        label: conversation.personName ?? 'Person',
+                        value: conversation.personId,
+                      })),
+                    ]}
+                  />
+                  <HorizontalFilterChipRow
+                    selectedValue={conversationPlaceId}
+                    onChange={setConversationPlaceId}
+                    options={[
+                      { label: 'Any place', value: null },
+                      ...conversationPlaces.map((conversation) => ({
+                        label: conversation.placeName ?? 'Place',
+                        value: conversation.placeId,
+                      })),
+                    ]}
+                  />
+                  <HorizontalFilterChipRow
+                    selectedValue={conversationTagId}
+                    onChange={setConversationTagId}
+                    options={[
+                      { label: 'Any tag', value: null },
+                      ...tags.map((tag) => ({ label: tag.name, value: tag.id })),
+                    ]}
+                  />
                 </View>
 
                 {conversations.length === 0 ? (
@@ -703,23 +701,24 @@ export default function HomeScreen() {
                       },
                     ]}
                   />
-                  <View style={styles.filterChips}>
-                    <FilterChip label="Any tone" selected={lifeTone === null} onPress={() => setLifeTone(null)} />
-                    <FilterChip label="Light" selected={lifeTone === 'light'} onPress={() => setLifeTone('light')} />
-                    <FilterChip label="Medium" selected={lifeTone === 'medium'} onPress={() => setLifeTone('medium')} />
-                    <FilterChip label="Personal" selected={lifeTone === 'personal'} onPress={() => setLifeTone('personal')} />
-                  </View>
-                  <View style={styles.filterChips}>
-                    <FilterChip label="Any tag" selected={lifeTagId === null} onPress={() => setLifeTagId(null)} />
-                    {tags.map((tag) => (
-                      <FilterChip
-                        key={tag.id}
-                        label={tag.name}
-                        selected={lifeTagId === tag.id}
-                        onPress={() => setLifeTagId(tag.id)}
-                      />
-                    ))}
-                  </View>
+                  <HorizontalFilterChipRow
+                    selectedValue={lifeTone}
+                    onChange={setLifeTone}
+                    options={[
+                      { label: 'Any tone', value: null },
+                      { label: 'Light', value: 'light' },
+                      { label: 'Medium', value: 'medium' },
+                      { label: 'Personal', value: 'personal' },
+                    ]}
+                  />
+                  <HorizontalFilterChipRow
+                    selectedValue={lifeTagId}
+                    onChange={setLifeTagId}
+                    options={[
+                      { label: 'Any tag', value: null },
+                      ...tags.map((tag) => ({ label: tag.name, value: tag.id })),
+                    ]}
+                  />
                 </View>
 
                 {lifeItems.length === 0 ? (
@@ -875,47 +874,4 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
-  filterChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  filterChip: {
-    minHeight: 34,
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
 });
-
-function FilterChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[
-        styles.filterChip,
-        {
-          backgroundColor: selected ? theme.primaryMuted : theme.background,
-          borderColor: theme.border,
-        },
-      ]}>
-      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}

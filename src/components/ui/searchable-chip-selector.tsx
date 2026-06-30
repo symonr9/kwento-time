@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
@@ -16,7 +16,6 @@ export type SearchableChipOption<Value extends number | string | null> = {
 type SearchableChipSelectorProps<Value extends number | string | null> = {
   description?: string;
   label?: string;
-  maxVisibleOptions?: number;
   options: SearchableChipOption<Value>[];
   searchPlaceholder?: string;
   selectedValues: Value[];
@@ -27,7 +26,6 @@ type SearchableChipSelectorProps<Value extends number | string | null> = {
 export function SearchableChipSelector<Value extends number | string | null>({
   description,
   label,
-  maxVisibleOptions = 24,
   options,
   searchPlaceholder = 'Search',
   selectedValues,
@@ -49,9 +47,6 @@ export function SearchableChipSelector<Value extends number | string | null>({
     ...matchingOptions.filter((option) => selectedKeys.has(String(option.value))),
     ...matchingOptions.filter((option) => !selectedKeys.has(String(option.value))),
   ];
-  const visibleOptions = sortedOptions.slice(0, maxVisibleOptions);
-  const hiddenCount = Math.max(0, sortedOptions.length - visibleOptions.length);
-
   function toggleValue(value: Value) {
     const isSelected = selectedKeys.has(String(value));
 
@@ -91,8 +86,18 @@ export function SearchableChipSelector<Value extends number | string | null>({
           },
         ]}
       />
-      <View style={styles.chipList}>
-        {visibleOptions.map((option) => {
+      <FlatList
+        data={sortedOptions}
+        horizontal
+        keyboardShouldPersistTaps="handled"
+        keyExtractor={(option) => String(option.value)}
+        showsHorizontalScrollIndicator={false}
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={5}
+        removeClippedSubviews
+        contentContainerStyle={styles.chipList}
+        renderItem={({ item: option }) => {
           const isSelected = selectedKeys.has(String(option.value));
 
           return (
@@ -120,14 +125,9 @@ export function SearchableChipSelector<Value extends number | string | null>({
               </ThemedText>
             </Pressable>
           );
-        })}
-      </View>
-      {hiddenCount > 0 ? (
-        <ThemedText type="small" themeColor="textSecondary">
-          {hiddenCount} more match. Keep typing to narrow the list.
-        </ThemedText>
-      ) : null}
-      {visibleOptions.length === 0 ? (
+        }}
+      />
+      {sortedOptions.length === 0 ? (
         <ThemedText type="small" themeColor="textSecondary">
           No matches.
         </ThemedText>
@@ -150,9 +150,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   chipList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.two,
+    paddingRight: Spacing.one,
+    paddingVertical: Spacing.one,
   },
   chip: {
     maxWidth: '100%',

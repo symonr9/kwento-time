@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
+import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-row';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { createOrUpdatePersonFromContact, getPeopleListSummaries } from '@/db/queries/people';
@@ -220,17 +221,14 @@ export default function PeopleScreen() {
                 },
               ]}
             />
-            <View style={styles.filterChips}>
-              <FilterChip label="Any tag" selected={selectedTagId === null} onPress={() => setSelectedTagId(null)} />
-              {tags.map((tag) => (
-                <FilterChip
-                  key={tag.id}
-                  label={tag.name}
-                  selected={selectedTagId === tag.id}
-                  onPress={() => setSelectedTagId(tag.id)}
-                />
-              ))}
-            </View>
+            <HorizontalFilterChipRow
+              selectedValue={selectedTagId}
+              onChange={setSelectedTagId}
+              options={[
+                { label: 'Any tag', value: null },
+                ...tags.map((tag) => ({ label: tag.name, value: tag.id })),
+              ]}
+            />
           </View>
 
           {isLoading ? (
@@ -368,19 +366,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
-  filterChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  filterChip: {
-    minHeight: 34,
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
   list: {
     gap: Spacing.two,
   },
@@ -433,36 +418,6 @@ function ContactImportButton({
         fallback={<View style={[styles.settingsFallback, { backgroundColor: theme.text }]} />}
       />
       <ThemedText type="smallBold">{label}</ThemedText>
-    </Pressable>
-  );
-}
-
-function FilterChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[
-        styles.filterChip,
-        {
-          backgroundColor: selected ? theme.primaryMuted : theme.background,
-          borderColor: theme.border,
-        },
-      ]}>
-      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
-        {label}
-      </ThemedText>
     </Pressable>
   );
 }
