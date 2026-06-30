@@ -9,18 +9,19 @@ import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { createOrUpdatePersonFromContact, getAllPeople } from '@/db/queries/people';
+import { createOrUpdatePersonFromContact, getPeopleListSummaries } from '@/db/queries/people';
 import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
-import type { Person, Tag } from '@/db/schema';
+import type { Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 import { getDeviceContactPeople, pickDeviceContactPerson } from '@/services/contacts';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
+type PersonListItem = Awaited<ReturnType<typeof getPeopleListSummaries>>[number];
 
 export default function PeopleScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const [people, setPeople] = useState<Person[]>([]);
+  const [people, setPeople] = useState<PersonListItem[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagLinks, setTagLinks] = useState<{ itemId: number; tagId: number }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,7 +37,7 @@ export default function PeopleScreen() {
 
     try {
       const [rows, tagRows, linkRows] = await Promise.all([
-        getAllPeople(),
+        getPeopleListSummaries(),
         getAllTags(),
         getItemTagLinks('person'),
       ]);
@@ -267,10 +268,18 @@ export default function PeopleScreen() {
                     <Pressable
                       accessibilityRole="button"
                       style={({ pressed }) => [styles.rowLink, { opacity: pressed ? 0.72 : 1 }]}>
-                      <ThemedText type="smallBold">{person.name}</ThemedText>
+                      <ThemedText type="subtitle">{person.name}</ThemedText>
                       {person.nickname ? (
                         <ThemedText type="small" themeColor="textSecondary">
                           {person.nickname}
+                        </ThemedText>
+                      ) : null}
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {person.talkingPointsCount} talking points · {person.followUpsCount} follow-ups
+                      </ThemedText>
+                      {person.primaryPlaceName ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          Primary place: {person.primaryPlaceName}
                         </ThemedText>
                       ) : null}
                     </Pressable>

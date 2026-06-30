@@ -1,7 +1,7 @@
-import { asc, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
 
 import { getDb } from '../client';
-import { people, type NewPerson, type Person } from '../schema';
+import { followUps, people, personPlaces, places, topics, type NewPerson, type Person } from '../schema';
 
 /** Add a new person to remember. */
 export async function createPerson(data: NewPerson): Promise<Person> {
@@ -32,6 +32,37 @@ export async function getPersonByNativeContactId(nativeContactId: string) {
 export async function getAllPeople() {
   const db = await getDb();
   return db.select().from(people).orderBy(asc(people.name));
+}
+
+/** People list rows with summary counts for scan-friendly cards. */
+export async function getPeopleListSummaries() {
+  const db = await getDb();
+
+  return db
+    .select({
+      id: people.id,
+      avatarUri: people.avatarUri,
+      birthday: people.birthday,
+      connectionScore: people.connectionScore,
+      createdAt: people.createdAt,
+      howWeMet: people.howWeMet,
+      lastContactedAt: people.lastContactedAt,
+      name: people.name,
+      nativeContactId: people.nativeContactId,
+      nickname: people.nickname,
+      notes: people.notes,
+      primaryPlaceName: places.name,
+      updatedAt: people.updatedAt,
+      followUpsCount: sql<number>`count(distinct case when ${followUps.resolved} = 0 then ${followUps.id} end)`,
+      talkingPointsCount: sql<number>`count(distinct case when ${topics.resolved} = 0 and ${topics.isForUser} = 0 then ${topics.id} end)`,
+    })
+    .from(people)
+    .leftJoin(followUps, eq(followUps.personId, people.id))
+    .leftJoin(topics, eq(topics.personId, people.id))
+    .leftJoin(personPlaces, and(eq(personPlaces.personId, people.id), eq(personPlaces.isPrimary, true)))
+    .leftJoin(places, eq(places.id, personPlaces.placeId))
+    .groupBy(people.id)
+    .orderBy(asc(people.name));
 }
 
 /** Case-insensitive name/nickname search for the "find a person" UI. */
