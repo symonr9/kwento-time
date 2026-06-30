@@ -13,7 +13,7 @@ import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsPendingExtraction, getRecentConversations } from '@/db/queries/conversations';
 import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
-import { getActiveMyLifeItems } from '@/db/queries/my-life';
+import { getActiveMyLifeItems, getLatestMyLifeItem } from '@/db/queries/my-life';
 import {
   getUpcomingReminders,
   setReminderNotificationId,
@@ -24,6 +24,10 @@ import { extendTopicExpiry, getTopicsExpiringSoonWithPeople, resolveTopic } from
 import type { MyLifeItem, Reminder, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 import { ensureNotificationPermissions, scheduleReminderNotification } from '@/services/notifications';
+import {
+  clearExpiredLifeUpdateReminderDismissal,
+  dismissLifeUpdateReminderForOneDay,
+} from '@/services/preferences';
 
 type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[number];
 type PendingExtraction = Awaited<ReturnType<typeof getConversationsPendingExtraction>>[number];
@@ -32,6 +36,7 @@ type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>
 
 const forecastHref = '/forecast' as Href;
 const tagsHref = '/tags' as Href;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function formatShortDate(value: Date) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(value);
@@ -58,6 +63,7 @@ export default function HomeScreen() {
   const [lifeTagId, setLifeTagId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [showLifeUpdateReminder, setShowLifeUpdateReminder] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -76,6 +82,8 @@ export default function HomeScreen() {
         tagRows,
         conversationTagRows,
         lifeTagRows,
+        latestLifeUpdate,
+        dismissedUntil,
       ] = await Promise.all([
         getRecentConversations(10),
         getConversationsPendingExtraction(10),
@@ -86,9 +94,16 @@ export default function HomeScreen() {
         getAllTags(),
         getItemTagLinks('conversation'),
         getItemTagLinks('my_life_item'),
+        getLatestMyLifeItem(),
+        clearExpiredLifeUpdateReminderDismissal(),
       ]);
 
       if (isActive) {
+        const now = new Date();
+        const hasRecentLifeUpdate =
+          latestLifeUpdate !== undefined && now.getTime() - latestLifeUpdate.createdAt.getTime() < DAY_MS;
+        const isDismissed = dismissedUntil !== null && dismissedUntil > now;
+
         setConversations(conversationRows);
         setPendingExtractions(pendingExtractionRows);
         setExpiringTopics(expiringTopicRows);
@@ -98,6 +113,7 @@ export default function HomeScreen() {
         setTags(tagRows);
         setConversationTagLinks(conversationTagRows);
         setLifeTagLinks(lifeTagRows);
+        setShowLifeUpdateReminder(!hasRecentLifeUpdate && !isDismissed);
       }
     } catch (err) {
       if (isActive) {
@@ -264,6 +280,17 @@ export default function HomeScreen() {
     }
   }
 
+  async function handleDismissLifeUpdateReminder() {
+    setError(null);
+
+    try {
+      await dismissLifeUpdateReminderForOneDay();
+      setShowLifeUpdateReminder(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to dismiss life update reminder.');
+    }
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <ScrollView
@@ -327,6 +354,52 @@ export default function HomeScreen() {
 
           {!isLoading && !error ? (
             <>
+              {showLifeUpdateReminder ? (
+                <SurfaceCard tone="highlightMuted" style={styles.lifeReminderCard}>
+                  <View style={styles.lifeReminderHeader}>
+                    <View style={styles.lifeReminderCopy}>
+                      <ThemedText type="smallBold">How was your day?</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        Add a quick life update so your briefings remember what is current for you.
+                      </ThemedText>
+                    </View>
+                    <Pressable
+                      accessibilityLabel="Dismiss life update reminder"
+                      accessibilityRole="button"
+                      onPress={() => void handleDismissLifeUpdateReminder()}
+                      style={({ pressed }) => [
+                        styles.dismissButton,
+                        {
+                          backgroundColor: theme.backgroundElement,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <SymbolView
+                        name={{ ios: 'xmark', android: 'close', web: 'close' }}
+                        size={16}
+                        tintColor={theme.text}
+                        fallback={<ThemedText type="smallBold">x</ThemedText>}
+                      />
+                    </Pressable>
+                  </View>
+                  <Link href="/my-life/new" asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.lifeReminderAction,
+                        {
+                          backgroundColor: theme.primary,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}>
+                      <ThemedText type="smallBold" style={styles.lifeReminderActionText}>
+                        Create life update
+                      </ThemedText>
+                    </Pressable>
+                  </Link>
+                </SurfaceCard>
+              ) : null}
+
               <View style={styles.section}>
                 <View style={styles.quickActions}>
                   <Link href="/conversations/new" asChild>
@@ -866,6 +939,40 @@ const styles = StyleSheet.create({
   },
   stateCard: {
     alignItems: 'center',
+  },
+  lifeReminderCard: {
+    gap: Spacing.three,
+  },
+  lifeReminderHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  lifeReminderCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one,
+  },
+  dismissButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+  },
+  lifeReminderAction: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: Radius.small,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
+  lifeReminderActionText: {
+    color: '#FFFFFF',
   },
   filterPanel: {
     gap: Spacing.two,

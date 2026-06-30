@@ -64,6 +64,12 @@ export async function getActiveMyLifeItems() {
   return db.select().from(myLifeItems).where(eq(myLifeItems.resolved, false)).orderBy(desc(myLifeItems.createdAt));
 }
 
+export async function getLatestMyLifeItem() {
+  const db = await getDb();
+  const [row] = await db.select().from(myLifeItems).orderBy(desc(myLifeItems.createdAt)).limit(1);
+  return row;
+}
+
 /**
  * Active items at-or-below a given openness level — e.g. pass `['light']`
  * before talking to a coworker, or `['light', 'medium', 'personal']` for a
