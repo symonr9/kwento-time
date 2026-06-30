@@ -24,6 +24,7 @@ export default function NewTopicScreen() {
   const params = useLocalSearchParams<{ conversationId?: string; personId?: string }>();
   const conversationId = parseNumericParam(params.conversationId);
   const requestedPersonId = parseNumericParam(params.personId);
+  const isPersonContext = requestedPersonId !== null;
   const [people, setPeople] = useState<Person[]>([]);
   const [content, setContent] = useState('');
   const [tone, setTone] = useState<Topic['tone']>('light');
@@ -115,22 +116,24 @@ export default function NewTopicScreen() {
       />
       <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
 
-      <SearchableChipSelector
-        label="Person"
-        options={[
-          { label: 'No person', value: null },
-          ...people.map((person) => ({
-            avatarUri: person.avatarUri,
-            description: person.nickname,
-            label: person.name,
-            value: person.id,
-          })),
-        ]}
-        searchPlaceholder="Search people"
-        selectedValues={[selectedPersonId]}
-        selectionMode="single"
-        onSelectedValuesChange={(values) => setSelectedPersonId(values[0] ?? null)}
-      />
+      {!isPersonContext ? (
+        <SearchableChipSelector
+          label="Person"
+          options={[
+            { label: 'No person', value: null },
+            ...people.map((person) => ({
+              avatarUri: person.avatarUri,
+              description: person.nickname,
+              label: person.name,
+              value: person.id,
+            })),
+          ]}
+          searchPlaceholder="Search people"
+          selectedValues={[selectedPersonId]}
+          selectionMode="single"
+          onSelectedValuesChange={(values) => setSelectedPersonId(values[0] ?? null)}
+        />
+      ) : null}
     </FormScreen>
   );
 }
