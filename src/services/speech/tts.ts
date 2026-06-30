@@ -2,6 +2,8 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as Speech from 'expo-speech';
 
 const FORECAST_SPEECH_TAG = 'kwento-forecast-speech';
+let keepAwakeActivation: Promise<void> | null = null;
+let isKeepAwakeActive = false;
 
 export type SpeechPlaybackCallbacks = {
   onDone?: () => void;
@@ -9,6 +11,39 @@ export type SpeechPlaybackCallbacks = {
   onStart?: () => void;
   onStopped?: () => void;
 };
+
+async function activateForecastKeepAwake() {
+  keepAwakeActivation = activateKeepAwakeAsync(FORECAST_SPEECH_TAG)
+    .then(() => {
+      isKeepAwakeActive = true;
+    })
+    .finally(() => {
+      keepAwakeActivation = null;
+    });
+
+  await keepAwakeActivation;
+}
+
+async function deactivateForecastKeepAwake() {
+  if (keepAwakeActivation) {
+    await keepAwakeActivation.catch(() => {});
+  }
+
+  if (!isKeepAwakeActive) {
+    return;
+  }
+
+  try {
+    await deactivateKeepAwake(FORECAST_SPEECH_TAG);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!message.includes('has not activated yet')) {
+      throw err;
+    }
+  } finally {
+    isKeepAwakeActive = false;
+  }
+}
 
 export async function speakForecastScript(script: string, callbacks: SpeechPlaybackCallbacks = {}) {
   const trimmedScript = script.trim();
@@ -18,20 +53,20 @@ export async function speakForecastScript(script: string, callbacks: SpeechPlayb
   }
 
   await Speech.stop();
-  await activateKeepAwakeAsync(FORECAST_SPEECH_TAG);
+  await activateForecastKeepAwake();
 
   Speech.speak(trimmedScript, {
     onDone: () => {
-      void deactivateKeepAwake(FORECAST_SPEECH_TAG);
+      void deactivateForecastKeepAwake();
       callbacks.onDone?.();
     },
     onError: (error) => {
-      void deactivateKeepAwake(FORECAST_SPEECH_TAG);
+      void deactivateForecastKeepAwake();
       callbacks.onError?.(error instanceof Error ? error : new Error(String(error)));
     },
     onStart: callbacks.onStart,
     onStopped: () => {
-      void deactivateKeepAwake(FORECAST_SPEECH_TAG);
+      void deactivateForecastKeepAwake();
       callbacks.onStopped?.();
     },
     pitch: 1,
@@ -41,7 +76,7 @@ export async function speakForecastScript(script: string, callbacks: SpeechPlayb
 
 export async function stopForecastSpeech() {
   await Speech.stop();
-  await deactivateKeepAwake(FORECAST_SPEECH_TAG);
+  await deactivateForecastKeepAwake();
 }
 
 export async function pauseForecastSpeech() {
