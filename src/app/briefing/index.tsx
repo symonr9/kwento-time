@@ -19,13 +19,20 @@ import {
   type BriefingLength,
 } from '@/features/briefing';
 import { useTheme } from '@/hooks/use-theme';
-import { speakBriefingScript, stopBriefingSpeech } from '@/services/speech';
+import {
+  pauseBriefingSpeech,
+  resumeBriefingSpeech,
+  speakBriefingScript,
+  stopBriefingSpeech,
+} from '@/services/speech';
 
 const lengthOptions: { label: string; value: BriefingLength }[] = [
   { label: 'Short', value: 'short' },
   { label: 'Medium', value: 'medium' },
   { label: 'Long', value: 'long' },
 ];
+
+type PlaybackStatus = 'idle' | 'paused' | 'playing';
 
 export default function BriefingScreen() {
   const theme = useTheme();
@@ -36,10 +43,17 @@ export default function BriefingScreen() {
   const [context, setContext] = useState<BriefingContext | null>(null);
   const [preview, setPreview] = useState<BriefingRetrievedData | null>(null);
   const [script, setScript] = useState<string | null>(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle');
+  const [playbackDurationSeconds, setPlaybackDurationSeconds] = useState(0);
+  const [playbackElapsedSeconds, setPlaybackElapsedSeconds] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isSpeaking = playbackStatus === 'playing';
+  const isPaused = playbackStatus === 'paused';
+  const playbackProgress =
+    playbackDurationSeconds > 0 ? Math.min(1, playbackElapsedSeconds / playbackDurationSeconds) : 0;
+  const remainingSeconds = Math.max(0, playbackDurationSeconds - playbackElapsedSeconds);
 
   useFocusEffect(
     useCallback(() => {
@@ -81,6 +95,18 @@ export default function BriefingScreen() {
   }, []);
 
   useEffect(() => {
+    if (playbackStatus !== 'playing' || playbackDurationSeconds <= 0) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setPlaybackElapsedSeconds((current) => Math.min(playbackDurationSeconds, current + 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [playbackDurationSeconds, playbackStatus]);
+
+  useEffect(() => {
     let isActive = true;
 
     async function loadPreview() {
@@ -114,21 +140,27 @@ export default function BriefingScreen() {
     };
   }, [isLoading, selectedPlaceId]);
 
-  async function playScript(nextScript: string) {
+  async function playScript(nextScript: string, durationSeconds: number) {
     setError(null);
+    setPlaybackDurationSeconds(durationSeconds);
+    setPlaybackElapsedSeconds(0);
+    setPlaybackStatus('idle');
 
     try {
       await speakBriefingScript(nextScript, {
-        onDone: () => setIsSpeaking(false),
+        onDone: () => {
+          setPlaybackElapsedSeconds(durationSeconds);
+          setPlaybackStatus('idle');
+        },
         onError: (err) => {
-          setIsSpeaking(false);
+          setPlaybackStatus('idle');
           setError(err.message);
         },
-        onStart: () => setIsSpeaking(true),
-        onStopped: () => setIsSpeaking(false),
+        onStart: () => setPlaybackStatus('playing'),
+        onStopped: () => setPlaybackStatus('idle'),
       });
     } catch (err) {
-      setIsSpeaking(false);
+      setPlaybackStatus('idle');
       setError(err instanceof Error ? err.message : 'Unable to play briefing.');
     }
   }
@@ -136,15 +168,30 @@ export default function BriefingScreen() {
   async function handleStopSpeech() {
     try {
       await stopBriefingSpeech();
-      setIsSpeaking(false);
+      setPlaybackStatus('idle');
+      setPlaybackElapsedSeconds(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to stop playback.');
     }
   }
 
   async function handleReplay() {
-    if (script) {
-      await playScript(script);
+    if (script && context) {
+      await playScript(script, context.length.seconds);
+    }
+  }
+
+  async function handlePauseResume() {
+    try {
+      if (isPaused) {
+        await resumeBriefingSpeech();
+        setPlaybackStatus('playing');
+      } else if (isSpeaking) {
+        await pauseBriefingSpeech();
+        setPlaybackStatus('paused');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update playback.');
     }
   }
 
@@ -163,7 +210,7 @@ export default function BriefingScreen() {
       const nextScript = narrateBriefing(nextContext);
       setContext(nextContext);
       setScript(nextScript);
-      await playScript(nextScript);
+      await playScript(nextScript, nextContext.length.seconds);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate briefing.');
     } finally {
@@ -298,7 +345,7 @@ export default function BriefingScreen() {
                   <View style={styles.playbackTitle}>
                     <ThemedText type="smallBold">Playback</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {isSpeaking ? 'Speaking now' : 'Ready'}
+                      {isSpeaking ? 'Speaking now' : isPaused ? 'Paused' : 'Ready'}
                     </ThemedText>
                   </View>
                   <View
@@ -308,7 +355,38 @@ export default function BriefingScreen() {
                     ]}
                   />
                 </View>
+                <View style={styles.progressArea}>
+                  <View style={[styles.progressTrack, { backgroundColor: theme.border }]}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          backgroundColor: theme.primary,
+                          width: `${playbackProgress * 100}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {isSpeaking || isPaused
+                      ? `${remainingSeconds}s remaining`
+                      : `${context.length.seconds}s narration target`}
+                  </ThemedText>
+                </View>
                 <View style={styles.actionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={!isSpeaking && !isPaused}
+                    onPress={handlePauseResume}
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      {
+                        backgroundColor: theme.backgroundSelected,
+                        opacity: pressed || (!isSpeaking && !isPaused) ? 0.72 : 1,
+                      },
+                    ]}>
+                    <ThemedText type="smallBold">{isPaused ? 'Resume' : 'Pause'}</ThemedText>
+                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     onPress={handleReplay}
@@ -633,6 +711,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  progressArea: {
+    gap: Spacing.one,
+  },
+  progressTrack: {
+    height: 8,
+    overflow: 'hidden',
+    borderRadius: 4,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   secondaryButton: {
     flexGrow: 1,
