@@ -14,12 +14,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { AvatarPicker } from '@/components/ui/avatar-picker';
+import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { TagSelector } from '@/components/ui/tag-selector';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { createPerson } from '@/db/queries/people';
+import { addPersonToPlace, getAllPlaces } from '@/db/queries/places';
 import { createTag, getAllTags, setTagsForItem } from '@/db/queries/tags';
-import type { NewPerson, Tag } from '@/db/schema';
+import type { NewPerson, Place, Tag } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
 type PersonForm = {
@@ -49,6 +51,8 @@ export default function NewPersonScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState<PersonForm>(initialForm);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [selectedPlaceIds, setSelectedPlaceIds] = useState<number[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -62,20 +66,21 @@ export default function NewPersonScreen() {
   useEffect(() => {
     let isActive = true;
 
-    async function loadTags() {
+    async function loadFormOptions() {
       try {
-        const rows = await getAllTags();
+        const [tagRows, placeRows] = await Promise.all([getAllTags(), getAllPlaces()]);
         if (isActive) {
-          setTags(rows);
+          setTags(tagRows);
+          setPlaces(placeRows);
         }
       } catch (err) {
         if (isActive) {
-          setError(err instanceof Error ? err.message : 'Unable to load tags.');
+          setError(err instanceof Error ? err.message : 'Unable to load person form.');
         }
       }
     }
 
-    void loadTags();
+    void loadFormOptions();
 
     return () => {
       isActive = false;
@@ -118,7 +123,10 @@ export default function NewPersonScreen() {
 
     try {
       const savedPerson = await createPerson(person);
-      await setTagsForItem('person', savedPerson.id, selectedTagIds);
+      await Promise.all([
+        setTagsForItem('person', savedPerson.id, selectedTagIds),
+        ...selectedPlaceIds.map((placeId) => addPersonToPlace(savedPerson.id, placeId)),
+      ]);
       router.replace('/people');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save person.');
@@ -267,6 +275,20 @@ export default function NewPersonScreen() {
                 ]}
               />
             </View>
+
+            <SearchableChipSelector
+              label="Places"
+              description="Link this person to places where you might run into them."
+              options={places.map((place) => ({
+                avatarUri: place.avatarUri,
+                description: place.address,
+                label: place.name,
+                value: place.id,
+              }))}
+              searchPlaceholder="Search places"
+              selectedValues={selectedPlaceIds}
+              onSelectedValuesChange={setSelectedPlaceIds}
+            />
 
             <TagSelector
               availableTags={tags}
