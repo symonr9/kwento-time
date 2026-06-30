@@ -77,7 +77,7 @@ Keep the UX instant: never block the UI on the network. Write the transcript bef
 
 ## Data model (core entities)
 
-`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (raw transcript, GPT-4o summary, audio path, timestamp) · `Topic` (talking point, category, `isActive`) · `TopicExpiry` (lifecycle: active → expiring → extended → archived) · `FollowUp` (question, `resolved`) · `Reminder` (`scheduledAt`, type, `sent`) · `MyLifeItem` (content, tone: light/medium/personal, `isActive`).
+`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (raw transcript, GPT-4o summary, audio path, timestamp) · `Topic` (talking point, tone, `isActive`) · `TopicExpiry` (lifecycle: active → expiring → extended → archived) · `FollowUp` (question, tone, `resolved`) · `Reminder` (`scheduledAt`, type, `sent`) · `MyLifeItem` (content, tone: light/medium/personal, `isActive`).
 
 All in a single on-device SQLite DB, accessed via Drizzle. See [src/db/CLAUDE.md](src/db/CLAUDE.md).
 

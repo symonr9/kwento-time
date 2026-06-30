@@ -31,11 +31,9 @@ type ExistingStructuredConversationData = {
   topics?: StructuredTopicInput[];
 };
 
-type StructuredTopicInput = Pick<NewTopic, 'content'> &
-  Partial<Pick<NewTopic, 'category' | 'importance' | 'tone'>>;
+type StructuredTopicInput = Pick<NewTopic, 'content'> & Partial<Pick<NewTopic, 'tone'>>;
 
-type StructuredFollowUpInput = Pick<NewFollowUp, 'question'> &
-  Partial<Pick<NewFollowUp, 'category' | 'importance' | 'tone'>>;
+type StructuredFollowUpInput = Pick<NewFollowUp, 'question'> & Partial<Pick<NewFollowUp, 'tone'>>;
 
 /**
  * Log a conversation and bump the person's `lastContactedAt` in the same
@@ -87,10 +85,8 @@ export async function logStructuredConversation({
         .insert(topics)
         .values(
           topicInputs.map((topic) => ({
-            category: topic.category ?? null,
             content: topic.content,
             conversationId: row.id,
-            importance: topic.importance ?? 1,
             personId: row.personId ?? null,
             tone: topic.tone ?? 'light',
           })),
@@ -111,9 +107,7 @@ export async function logStructuredConversation({
         .insert(followUps)
         .values(
           followUpQuestions.map((followUp) => ({
-            category: followUp.category ?? null,
             conversationId: row.id,
-            importance: followUp.importance ?? 1,
             personId: row.personId ?? null,
             question: followUp.question,
             tone: followUp.tone ?? 'light',
@@ -167,10 +161,8 @@ export async function applyStructuredConversationDetails(
         .insert(topics)
         .values(
           topicInputs.map((topic) => ({
-            category: topic.category ?? null,
             content: topic.content,
             conversationId,
-            importance: topic.importance ?? 1,
             personId: conversation.personId ?? null,
             tone: topic.tone ?? 'light',
           })),
@@ -191,9 +183,7 @@ export async function applyStructuredConversationDetails(
         .insert(followUps)
         .values(
           followUpInputs.map((followUp) => ({
-            category: followUp.category ?? null,
             conversationId,
-            importance: followUp.importance ?? 1,
             personId: conversation.personId ?? null,
             question: followUp.question,
             tone: followUp.tone ?? 'light',
@@ -257,8 +247,6 @@ export async function getConversationDetails(id: number) {
       .select({
         id: topics.id,
         content: topics.content,
-        category: topics.category,
-        importance: topics.importance,
         tone: topics.tone,
         resolved: topics.resolved,
         createdAt: topics.createdAt,
@@ -268,7 +256,7 @@ export async function getConversationDetails(id: number) {
       .from(topics)
       .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
       .where(eq(topics.conversationId, id))
-      .orderBy(desc(topics.importance), asc(topics.createdAt)),
+      .orderBy(asc(topics.createdAt)),
     db
       .select({
         id: followUps.id,

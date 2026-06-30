@@ -49,7 +49,7 @@ function scoreItems(person: ForecastRetrievedPerson, now: Date) {
 
   const topicItems: ScoredForecastItem[] = person.topics.map((topic) => ({
     personId: person.id,
-    salience: clamp01(topicFreshnessScore(topic, now) * 0.7 + clamp01(topic.importance / 5) * 0.3),
+    salience: topicFreshnessScore(topic, now),
     text: topic.content,
     type: 'topic',
   }));

@@ -96,7 +96,7 @@ Given `{ placeId, at: Date, filters }`, retrieve candidate **people** and their 
   - **Recent conversations:** latest summary/snippet for recap.
   - **Recent life events:** recent extracted events (future `life_events` table; until then, parsed from conversation summaries).
   - **Shared interests:** overlap between the person's tags/interests and the user's own.
-- Retrieval is **bounded** (caps per person/category) so the context never balloons regardless of history size.
+- Retrieval is **bounded** (caps per person and item type) so the context never balloons regardless of history size.
 
 ---
 

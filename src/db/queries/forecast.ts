@@ -34,7 +34,6 @@ export type ForecastRetrievedTopic = {
   id: number;
   content: string;
   expiresAt: Date | null;
-  importance: number;
   lastMentionedAt: Date;
   state: 'active' | 'expiring' | 'extended' | 'archived' | null;
 };
@@ -189,7 +188,6 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
         id: topics.id,
         content: topics.content,
         expiresAt: topicExpiry.expiresAt,
-        importance: topics.importance,
         lastMentionedAt: topics.lastMentionedAt,
         personId: topics.personId,
         state: topicExpiry.state,
@@ -197,7 +195,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
       .from(topics)
       .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
       .where(and(inArray(topics.personId, personIds), eq(topics.resolved, false), eq(topics.isForUser, false)))
-      .orderBy(desc(topics.importance), desc(topics.lastMentionedAt)),
+      .orderBy(desc(topics.lastMentionedAt)),
   ]);
 
   const conversationsByPerson = groupByPersonId(
@@ -229,7 +227,6 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
       id: topic.id,
       content: topic.content,
       expiresAt: topic.expiresAt,
-      importance: topic.importance,
       lastMentionedAt: topic.lastMentionedAt,
       state: topic.state,
     })),

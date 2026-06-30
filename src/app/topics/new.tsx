@@ -14,12 +14,6 @@ const toneOptions: { label: string; value: Topic['tone'] }[] = [
   { label: 'Personal', value: 'personal' },
 ];
 
-const importanceOptions: { label: string; value: '1' | '2' | '3' }[] = [
-  { label: '1', value: '1' },
-  { label: '2', value: '2' },
-  { label: '3', value: '3' },
-];
-
 function parseNumericParam(value: string | string[] | undefined) {
   const rawValue = Array.isArray(value) ? value[0] : value;
   const numericValue = Number(rawValue);
@@ -32,9 +26,7 @@ export default function NewTopicScreen() {
   const requestedPersonId = parseNumericParam(params.personId);
   const [people, setPeople] = useState<Person[]>([]);
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState('');
   const [tone, setTone] = useState<Topic['tone']>('light');
-  const [importance, setImportance] = useState<'1' | '2' | '3'>('1');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(requestedPersonId);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,10 +72,8 @@ export default function NewTopicScreen() {
     }
 
     const topic: NewTopic = {
-      category: category.trim() || undefined,
       content: trimmedContent,
       conversationId: conversationId ?? undefined,
-      importance: Number(importance),
       personId: selectedPersonId ?? undefined,
       tone,
     };
@@ -123,14 +113,7 @@ export default function NewTopicScreen() {
         textAlignVertical="top"
         style={formControlStyles.notesInput}
       />
-      <TextField
-        label="Category"
-        value={category}
-        onChangeText={setCategory}
-        placeholder="Work, family, travel"
-      />
       <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
-      <SegmentedField label="Importance" options={importanceOptions} value={importance} onChange={setImportance} />
 
       <SearchableChipSelector
         label="Person"

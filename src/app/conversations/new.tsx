@@ -16,20 +16,15 @@ import { createTag, getAllTags, setTagsForItem } from '@/db/queries/tags';
 import type { NewConversation, Person, Place, Tag, Topic } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
 
-type ImportanceValue = '1' | '2' | '3';
 type StructuredTopicDraft = {
   id: string;
   content: string;
-  category: string;
   tone: Topic['tone'];
-  importance: ImportanceValue;
 };
 type StructuredFollowUpDraft = {
   id: string;
   question: string;
-  category: string;
   tone: Topic['tone'];
-  importance: ImportanceValue;
 };
 
 const toneOptions: { label: string; value: Topic['tone'] }[] = [
@@ -38,18 +33,10 @@ const toneOptions: { label: string; value: Topic['tone'] }[] = [
   { label: 'Personal', value: 'personal' },
 ];
 
-const importanceOptions: { label: string; value: ImportanceValue }[] = [
-  { label: 'Low', value: '1' },
-  { label: 'Medium', value: '2' },
-  { label: 'High', value: '3' },
-];
-
 function createTopicDraft(): StructuredTopicDraft {
   return {
     id: `${Date.now()}-${Math.random()}`,
-    category: '',
     content: '',
-    importance: '1',
     tone: 'light',
   };
 }
@@ -57,8 +44,6 @@ function createTopicDraft(): StructuredTopicDraft {
 function createFollowUpDraft(): StructuredFollowUpDraft {
   return {
     id: `${Date.now()}-${Math.random()}`,
-    category: '',
-    importance: '1',
     question: '',
     tone: 'light',
   };
@@ -143,8 +128,6 @@ export default function NewConversationScreen() {
         conversation,
         followUps: followUps
           .map((followUp) => ({
-            category: followUp.category.trim() || undefined,
-            importance: Number(followUp.importance),
             question: followUp.question.trim(),
             tone: followUp.tone,
           }))
@@ -152,9 +135,7 @@ export default function NewConversationScreen() {
         placeId: selectedPlaceId,
         topics: topics
           .map((topic) => ({
-            category: topic.category.trim() || undefined,
             content: topic.content.trim(),
-            importance: Number(topic.importance),
             tone: topic.tone,
           }))
           .filter((topic) => topic.content.length > 0),
@@ -453,23 +434,11 @@ function StructuredTopicsField({
           onChangeText={(content) => updateTopic(topic.id, { content })}
           placeholder="Something talked about"
         />
-        <TextField
-          label="Category"
-          value={topic.category}
-          onChangeText={(category) => updateTopic(topic.id, { category })}
-          placeholder="Family, work, health..."
-        />
         <SegmentedField
           label="Tone"
           options={toneOptions}
           value={topic.tone}
           onChange={(tone) => updateTopic(topic.id, { tone })}
-        />
-        <SegmentedField
-          label="Importance"
-          options={importanceOptions}
-          value={topic.importance}
-          onChange={(importance) => updateTopic(topic.id, { importance })}
         />
         {topics.length > 1 ? (
           <Pressable
@@ -553,23 +522,11 @@ function StructuredFollowUpsField({
           onChangeText={(question) => updateFollowUp(followUp.id, { question })}
           placeholder="Something to follow up on"
         />
-        <TextField
-          label="Category"
-          value={followUp.category}
-          onChangeText={(category) => updateFollowUp(followUp.id, { category })}
-          placeholder="Family, work, health..."
-        />
         <SegmentedField
           label="Tone"
           options={toneOptions}
           value={followUp.tone}
           onChange={(tone) => updateFollowUp(followUp.id, { tone })}
-        />
-        <SegmentedField
-          label="Importance"
-          options={importanceOptions}
-          value={followUp.importance}
-          onChange={(importance) => updateFollowUp(followUp.id, { importance })}
         />
         {followUps.length > 1 ? (
           <Pressable

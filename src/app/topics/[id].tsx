@@ -12,19 +12,11 @@ const toneOptions: { label: string; value: Topic['tone'] }[] = [
   { label: 'Personal', value: 'personal' },
 ];
 
-const importanceOptions: { label: string; value: '1' | '2' | '3' }[] = [
-  { label: '1', value: '1' },
-  { label: '2', value: '2' },
-  { label: '3', value: '3' },
-];
-
 export default function EditTopicScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const topicId = Number(params.id);
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState('');
   const [tone, setTone] = useState<Topic['tone']>('light');
-  const [importance, setImportance] = useState<'1' | '2' | '3'>('1');
   const [personId, setPersonId] = useState<number | null>(null);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,9 +44,7 @@ export default function EditTopicScreen() {
             }
 
             setContent(topic.content);
-            setCategory(topic.category ?? '');
             setTone(topic.tone);
-            setImportance(String(topic.importance) as '1' | '2' | '3');
             setPersonId(topic.personId);
             setConversationId(topic.conversationId);
           }
@@ -86,9 +76,7 @@ export default function EditTopicScreen() {
 
     try {
       await updateTopic(topicId, {
-        category: category.trim() || undefined,
         content: trimmedContent,
-        importance: Number(importance),
         tone,
       });
 
@@ -122,14 +110,7 @@ export default function EditTopicScreen() {
         textAlignVertical="top"
         style={formControlStyles.notesInput}
       />
-      <TextField
-        label="Category"
-        value={category}
-        onChangeText={setCategory}
-        placeholder="Work, family, travel"
-      />
       <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
-      <SegmentedField label="Importance" options={importanceOptions} value={importance} onChange={setImportance} />
     </FormScreen>
   );
 }

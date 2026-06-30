@@ -14,8 +14,6 @@ export const followUps = sqliteTable(
       onDelete: 'set null',
     }),
     question: text('question').notNull(),
-    category: text('category'),
-    importance: integer('importance').notNull().default(1),
     tone: text('tone', { enum: ['light', 'medium', 'personal'] })
       .notNull()
       .default('light'),

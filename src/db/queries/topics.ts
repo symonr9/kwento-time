@@ -31,8 +31,6 @@ export async function getTopicFormDetails(id: number) {
       conversationId: topics.conversationId,
       isForUser: topics.isForUser,
       content: topics.content,
-      category: topics.category,
-      importance: topics.importance,
       tone: topics.tone,
       resolved: topics.resolved,
       expiryState: topicExpiry.state,
@@ -59,7 +57,7 @@ export async function getTopicWithExpiry(id: number) {
 
 /**
  * Open talking points about a person — the "before you meet" briefing.
- * Highest importance, most-recently-mentioned first.
+ * Most-recently-mentioned first.
  */
 export async function getActiveTopicsForPerson(personId: number) {
   const db = await getDb();
@@ -67,7 +65,7 @@ export async function getActiveTopicsForPerson(personId: number) {
     .select()
     .from(topics)
     .where(and(eq(topics.personId, personId), eq(topics.resolved, false), eq(topics.isForUser, false)))
-    .orderBy(desc(topics.importance), desc(topics.lastMentionedAt));
+    .orderBy(desc(topics.lastMentionedAt));
 }
 
 /** Open talking points about a person with lifecycle metadata for management UI. */
@@ -78,7 +76,7 @@ export async function getActiveTopicsWithExpiryForPerson(personId: number) {
     .from(topics)
     .leftJoin(topicExpiry, eq(topicExpiry.topicId, topics.id))
     .where(and(eq(topics.personId, personId), eq(topics.resolved, false), eq(topics.isForUser, false)))
-    .orderBy(desc(topics.importance), desc(topics.lastMentionedAt));
+    .orderBy(desc(topics.lastMentionedAt));
 }
 
 /** Things going on in the user's own life, to bring up next time they talk to someone. */
@@ -88,15 +86,6 @@ export async function getOpenTopicsAboutUser() {
     .select()
     .from(topics)
     .where(and(eq(topics.isForUser, true), eq(topics.resolved, false)))
-    .orderBy(desc(topics.importance), desc(topics.lastMentionedAt));
-}
-
-export async function getTopicsByCategory(personId: number, category: string) {
-  const db = await getDb();
-  return db
-    .select()
-    .from(topics)
-    .where(and(eq(topics.personId, personId), eq(topics.category, category), eq(topics.resolved, false)))
     .orderBy(desc(topics.lastMentionedAt));
 }
 
@@ -171,7 +160,6 @@ export async function getTopicsExpiringSoonWithPeople(now = new Date(), limit = 
     .select({
       topicId: topics.id,
       content: topics.content,
-      importance: topics.importance,
       personId: topics.personId,
       personName: people.name,
       state: topicExpiry.state,
@@ -186,7 +174,7 @@ export async function getTopicsExpiringSoonWithPeople(now = new Date(), limit = 
         or(eq(topicExpiry.state, 'expiring'), lte(topicExpiry.expiresAt, horizon)),
       ),
     )
-    .orderBy(asc(topicExpiry.expiresAt), desc(topics.importance))
+    .orderBy(asc(topicExpiry.expiresAt), desc(topics.lastMentionedAt))
     .limit(limit);
 }
 

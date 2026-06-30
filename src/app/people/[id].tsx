@@ -466,9 +466,9 @@ export default function PersonDetailsScreen() {
                   topics.map(({ topic, expiry }) => (
                     <SurfaceCard key={topic.id} style={styles.row}>
                       <View style={styles.rowHeader}>
-                        <ThemedText type="smallBold">{topic.category ?? 'Topic'}</ThemedText>
+                        <ThemedText type="smallBold">Talking point</ThemedText>
                         <ThemedText type="small" themeColor="textSecondary">
-                          Importance {topic.importance}
+                          {topic.tone}
                         </ThemedText>
                       </View>
                       <ThemedText type="small" themeColor="textSecondary" selectable>
