@@ -1,13 +1,13 @@
 import type {
   BriefingContext,
-  ForecastLength,
-  ForecastRetrievedData,
-  ScoredForecastItem,
-  ScoredForecastPerson,
-} from '@/features/forecast/types';
+  BriefingLength,
+  BriefingRetrievedData,
+  ScoredBriefingItem,
+  ScoredBriefingPerson,
+} from '@/features/briefing/types';
 
-export const forecastLengthBudgets: Record<
-  ForecastLength,
+export const briefingLengthBudgets: Record<
+  BriefingLength,
   { approxWords: number; itemCount: number; peopleCount: number; seconds: number }
 > = {
   short: { approxWords: 75, itemCount: 4, peopleCount: 3, seconds: 30 },
@@ -15,8 +15,8 @@ export const forecastLengthBudgets: Record<
   long: { approxWords: 300, itemCount: 12, peopleCount: 8, seconds: 120 },
 };
 
-function selectRoundRobin(people: ScoredForecastPerson[], itemCount: number) {
-  const selected = new Map<number, ScoredForecastItem[]>();
+function selectRoundRobin(people: ScoredBriefingPerson[], itemCount: number) {
+  const selected = new Map<number, ScoredBriefingItem[]>();
   let total = 0;
   let cursor = 0;
 
@@ -42,11 +42,11 @@ function selectRoundRobin(people: ScoredForecastPerson[], itemCount: number) {
 }
 
 export function buildBriefingContext(
-  data: ForecastRetrievedData,
-  scoredPeople: ScoredForecastPerson[],
-  length: ForecastLength,
+  data: BriefingRetrievedData,
+  scoredPeople: ScoredBriefingPerson[],
+  length: BriefingLength,
 ): BriefingContext {
-  const budget = forecastLengthBudgets[length];
+  const budget = briefingLengthBudgets[length];
   const people = scoredPeople.slice(0, budget.peopleCount);
   const selectedItems = selectRoundRobin(people, budget.itemCount);
 

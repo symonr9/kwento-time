@@ -1,6 +1,6 @@
-import type { ForecastRetrievedData } from '@/features/forecast';
+import type { BriefingRetrievedData } from '@/features/briefing';
 
-export type CarPlayMenuItemKind = 'forecast' | 'general-forecast' | 'people-places' | 'place-forecast';
+export type CarPlayMenuItemKind = 'briefing' | 'general-briefing' | 'people-places' | 'place-briefing';
 
 export type CarPlayMenuItem = {
   id: string;
@@ -21,7 +21,7 @@ export type CarPlayPlaybackState = {
   progress: number;
 };
 
-export type CarPlayForecastSummary = {
+export type CarPlayBriefingSummary = {
   conversations: {
     personName: string;
     summary: string;
@@ -54,4 +54,4 @@ export type CarPlayPlaceOverview = {
   }[];
 };
 
-export type CarPlayForecastData = ForecastRetrievedData;
+export type CarPlayBriefingData = BriefingRetrievedData;

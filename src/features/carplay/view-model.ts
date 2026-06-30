@@ -1,7 +1,7 @@
-import type { BriefingContext } from '@/features/forecast';
+import type { BriefingContext } from '@/features/briefing';
 import type {
-  CarPlayForecastData,
-  CarPlayForecastSummary,
+  CarPlayBriefingData,
+  CarPlayBriefingSummary,
   CarPlayMenu,
   CarPlayPlaceOption,
   CarPlayPlaceOverview,
@@ -9,11 +9,11 @@ import type {
 } from '@/features/carplay/types';
 
 const FORECAST_MENU_ITEM = {
-  id: 'forecast',
+  id: 'briefing',
   imageUri: null,
-  kind: 'forecast' as const,
+  kind: 'briefing' as const,
   subtitle: 'Choose a place or general overview',
-  title: 'Forecast',
+  title: 'Briefing',
 };
 
 const PEOPLE_PLACES_MENU_ITEM = {
@@ -35,21 +35,21 @@ export function createCarPlayHomeMenu(): CarPlayMenu {
   };
 }
 
-export function createCarPlayForecastMenu(places: CarPlayPlaceOption[]): CarPlayMenu {
+export function createCarPlayBriefingMenu(places: CarPlayPlaceOption[]): CarPlayMenu {
   return {
-    title: 'Forecast',
+    title: 'Briefing',
     items: [
       {
         id: 'general',
         imageUri: null,
-        kind: 'general-forecast',
+        kind: 'general-briefing',
         subtitle: 'General life overview',
         title: 'General',
       },
       ...places.map((place) => ({
         id: `place-${place.id}`,
         imageUri: place.avatarUri ?? null,
-        kind: 'place-forecast' as const,
+        kind: 'place-briefing' as const,
         subtitle: place.subtitle ?? null,
         title: place.name,
       })),
@@ -68,17 +68,17 @@ export function createCarPlayPlaybackState(durationSeconds: number, elapsedSecon
   };
 }
 
-export function createCarPlayForecastSummary({
+export function createCarPlayBriefingSummary({
   context,
   data,
   elapsedSeconds = 0,
   script,
 }: {
   context: BriefingContext;
-  data: CarPlayForecastData;
+  data: CarPlayBriefingData;
   elapsedSeconds?: number;
   script: string;
-}): CarPlayForecastSummary {
+}): CarPlayBriefingSummary {
   return {
     conversations: data.people.flatMap((person) =>
       person.conversations.slice(0, 1).map((conversation) => ({

@@ -1,6 +1,6 @@
 # src/services/speech — Text-to-speech & playback
 
-Reads the Social Forecast script aloud, designed for **hands-free / driving** use. Spec: [docs/features/social-forecast.md](../../../docs/features/social-forecast.md).
+Reads the Briefing script aloud, designed for **hands-free / driving** use. Spec: [docs/features/briefing.md](../../../docs/features/briefing.md).
 
 ## Responsibilities
 
@@ -8,7 +8,7 @@ Reads the Social Forecast script aloud, designed for **hands-free / driving** us
 speech/
   tts.ts            # expo-speech wrapper: speak/pause/resume/stop, voice + rate/pitch
   session.ts        # audio session/routing config + keep-awake during playback
-  index.ts          # typed API the forecast feature calls
+  index.ts          # typed API the briefing feature calls
 ```
 
 ## Rules

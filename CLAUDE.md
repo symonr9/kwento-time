@@ -16,7 +16,7 @@ A mobile-first, **local-first** relationship intelligence app for iOS and Androi
 
 Users log conversation notes via on-device AI voice input or text. The app remembers who said what, surfaces talking points before social events, and nudges users to follow up. **All data lives on the device.**
 
-> **Product/business/infra charter:** [PROJECT.md](PROJECT.md). **Feature specs:** [docs/](docs/) (e.g. [Social Forecast](docs/features/social-forecast.md)). **This file** is the engineering guide (architecture + conventions).
+> **Product/business/infra charter:** [PROJECT.md](PROJECT.md). **Feature specs:** [docs/](docs/) (e.g. [Briefing](docs/features/briefing.md)). **This file** is the engineering guide (architecture + conventions).
 
 ---
 
@@ -36,13 +36,13 @@ This project runs **Expo SDK 56** (React 19.2, React Native 0.85.3) — newer th
 
 ### Two AI surfaces — keep them separate
 
-| | Capture-time **extraction** | Briefing-time **narration** (Social Forecast) |
+| | Capture-time **extraction** | Briefing-time **narration** (Briefing) |
 |---|---|---|
 | Model | Cloud **GPT-4o** (opt-in, post-confirm) | **Deterministic templates** (default, free) **or** offline tiny LLM (`llama.rn`, Premium + trial — never bundled, downloaded post-install) |
 | Job | Extract structured rows | Synthesize/prioritize/narrate already-retrieved data |
 | DB access | Writes structured rows | **Never reads or writes the DB** |
 
-**Deterministic-retrieval rule (Social Forecast):** a deterministic SQL + scoring layer retrieves and ranks the data; the LLM is a *narrator over a fixed fact set* and gets a bounded context, never the database. A non-LLM template narrator must produce the same briefing when no model is present. See [docs/features/social-forecast.md](docs/features/social-forecast.md).
+**Deterministic-retrieval rule (Briefing):** a deterministic SQL + scoring layer retrieves and ranks the data; the LLM is a *narrator over a fixed fact set* and gets a bounded context, never the database. A non-LLM template narrator must produce the same briefing when no model is present. See [docs/features/briefing.md](docs/features/briefing.md).
 
 ## Hybrid AI pipeline (the critical path)
 
@@ -65,9 +65,9 @@ Keep the UX instant: never block the UI on the network. Write the transcript bef
 - **Drizzle ORM** (SQLite adapter) — typed, schema-first query builder.
 - **Whisper.rn** — on-device transcription (free, offline).
 - **OpenAI SDK (GPT-4o)** — entity extraction, called from device (optionally via Cloudflare Worker proxy).
-- **llama.rn** (GGUF on-device LLM) — Social Forecast narration, fully offline. Native module → dev-client rebuild, no Expo Go/web. Alternatives: react-native-executorch, Cactus.
+- **llama.rn** (GGUF on-device LLM) — Briefing narration, fully offline. Native module → dev-client rebuild, no Expo Go/web. Alternatives: react-native-executorch, Cactus.
 - **expo-speech** — offline OS text-to-speech for hands-free briefing playback.
-- **Apple CarPlay (planned iOS native integration)** — audio-first Social Forecast + read-only People/Places reference. Requires Apple entitlement approval plus a native CarPlay scene/template layer; Expo Go cannot run it. Spec: [docs/features/apple-carplay.md](docs/features/apple-carplay.md).
+- **Apple CarPlay (planned iOS native integration)** — audio-first Briefing + read-only People/Places reference. Requires Apple entitlement approval plus a native CarPlay scene/template layer; Expo Go cannot run it. Spec: [docs/features/apple-carplay.md](docs/features/apple-carplay.md).
 - **Expo Background Fetch** + scheduled tasks — nightly recompute (health scores, expiry, reminders).
 - **expo-notifications** — local push (no Expo Push Service / server).
 - **expo-local-authentication** — biometric lock (Face ID / Touch ID) on app open.
@@ -115,7 +115,7 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 | [src/constants/](src/constants/CLAUDE.md) | Theme, colors, spacing, app-wide constants |
 | [src/hooks/](src/hooks/CLAUDE.md) | Shared React hooks |
 | [src/db/](src/db/CLAUDE.md) | Drizzle schema, SQLite client, migrations, query layer |
-| [src/features/](src/features/CLAUDE.md) | Domain feature modules (people, conversations, topics, places, voice, forecast, …) |
+| [src/features/](src/features/CLAUDE.md) | Domain feature modules (people, conversations, topics, places, voice, briefing, …) |
 | [src/services/](src/services/CLAUDE.md) | Device/external integrations (AI, audio, llm, speech, notifications, background, auth, backup) |
 | [src/lib/](src/lib/CLAUDE.md) | Pure utilities & helpers (no side effects) |
 | [src/types/](src/types/CLAUDE.md) | Shared cross-cutting TypeScript types |
@@ -128,7 +128,7 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 - **Functional components + hooks** only. Co-locate feature-specific UI/logic in `src/features/<feature>/`; promote to `src/components` or `src/hooks` only once genuinely shared.
 - **Buttons include icons by default.** For new reusable or primary action buttons, use `src/components/ui/icon-action-button.tsx` or an equivalent icon-bearing component so actions are scannable and consistent.
 - **Tags are shared labels.** Use `tags` plus the polymorphic `item_tags` table for people, places, conversations, and life updates; do not add one-off tag columns or item-specific tag tables for new taggable entities.
-- **CarPlay stays audio-first and read-only.** Keep CarPlay templates sparse, use narration for forecast detail, show only short summary text/progress, and route all create/edit/delete flows back to the phone app. Shared logic belongs in `@/features/carplay`; native iOS scene/entitlement work must be isolated behind a thin bridge.
+- **CarPlay stays audio-first and read-only.** Keep CarPlay templates sparse, use narration for briefing detail, show only short summary text/progress, and route all create/edit/delete flows back to the phone app. Shared logic belongs in `@/features/carplay`; native iOS scene/entitlement work must be isolated behind a thin bridge.
 - **DB access through Drizzle query syntax**; drop to raw SQL only for complex aggregations (e.g. health-score multi-table joins). Never embed SQL strings in components — keep them in `src/db/queries/`.
 - React Compiler is enabled — avoid manual `useMemo`/`useCallback` unless profiling shows a need.
 
@@ -140,8 +140,8 @@ This Expo project lives at the **git repo root** (it was flattened out of a nest
 4. Place Mode + "How Are You?" page.
 5. Topic-expiry jobs + local notification scheduling + health-score engine.
 6. Biometric lock + freemium gating + iCloud sync / JSON export + TestFlight / App Store submission.
-7. **Social Forecast** — deterministic retrieval + scoring + template narrator + TTS (ships first, offline), then on-device LLM synthesis + downloadable model registry. Builds on Place Mode (4); benefits from extraction (3). Spec: [docs/features/social-forecast.md](docs/features/social-forecast.md).
-8. **Apple CarPlay** — native iOS entitlement/scene bridge for Forecast and read-only People/Places, powered by the same deterministic forecast context. Spec: [docs/features/apple-carplay.md](docs/features/apple-carplay.md).
+7. **Briefing** — deterministic retrieval + scoring + template narrator + TTS (ships first, offline), then on-device LLM synthesis + downloadable model registry. Builds on Place Mode (4); benefits from extraction (3). Spec: [docs/features/briefing.md](docs/features/briefing.md).
+8. **Apple CarPlay** — native iOS entitlement/scene bridge for Briefing and read-only People/Places, powered by the same deterministic briefing context. Spec: [docs/features/apple-carplay.md](docs/features/apple-carplay.md).
 
 ## Developer context
 

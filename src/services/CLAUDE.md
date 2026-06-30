@@ -8,7 +8,7 @@ The **side-effecting boundary** of the app: anything that touches the OS, the ne
 services/
   ai/              # OpenAI GPT-4o entity extraction; prompt templates + response schema
   audio/           # expo-av recording + Whisper.rn on-device transcription wrapper
-  llm/             # on-device GGUF LLM (llama.rn) runtime + model manager — Social Forecast narration (offline, NO DB access)
+  llm/             # on-device GGUF LLM (llama.rn) runtime + model manager — Briefing narration (offline, NO DB access)
   speech/          # text-to-speech (expo-speech) + hands-free playback/session control
   notifications/   # expo-notifications — schedule/cancel local reminders
   background/      # Expo Background Fetch tasks: nightly health recompute, expiry checks, reminder scheduling

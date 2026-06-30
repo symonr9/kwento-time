@@ -4,14 +4,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  createCarPlayForecastMenu,
-  createCarPlayForecastSummary,
+  createCarPlayBriefingMenu,
+  createCarPlayBriefingSummary,
   createCarPlayHomeMenu,
   createCarPlayPeoplePlacesMenu,
   createCarPlayPlaybackState,
 } from './view-model';
-import type { BriefingContext } from '@/features/forecast';
-import type { CarPlayForecastData } from './types';
+import type { BriefingContext } from '@/features/briefing';
+import type { CarPlayBriefingData } from './types';
 
 const now = new Date('2026-06-28T12:00:00.000Z');
 
@@ -51,7 +51,7 @@ const context: BriefingContext = {
   },
 };
 
-const data: CarPlayForecastData = {
+const data: CarPlayBriefingData = {
   generatedAt: now,
   lifeItems: [],
   people: [
@@ -87,16 +87,16 @@ describe('CarPlay view models', () => {
     assert.equal(menu.title, 'Kwento Time');
     assert.deepEqual(
       menu.items.map((item) => item.title),
-      ['Forecast', 'People and Places'],
+      ['Briefing', 'People and Places'],
     );
   });
 
-  it('puts General first before place forecast choices', () => {
-    const menu = createCarPlayForecastMenu([
+  it('puts General first before place briefing choices', () => {
+    const menu = createCarPlayBriefingMenu([
       { avatarUri: 'file:///gym.jpg', id: 2, name: 'Gym', subtitle: 'Main Street' },
     ]);
 
-    assert.equal(menu.items[0]?.kind, 'general-forecast');
+    assert.equal(menu.items[0]?.kind, 'general-briefing');
     assert.equal(menu.items[1]?.id, 'place-2');
     assert.equal(menu.items[1]?.imageUri, 'file:///gym.jpg');
   });
@@ -109,8 +109,8 @@ describe('CarPlay view models', () => {
     });
   });
 
-  it('builds a forecast summary with minimal readable text and avatar metadata', () => {
-    const summary = createCarPlayForecastSummary({
+  it('builds a briefing summary with minimal readable text and avatar metadata', () => {
+    const summary = createCarPlayBriefingSummary({
       context,
       data,
       elapsedSeconds: 15,

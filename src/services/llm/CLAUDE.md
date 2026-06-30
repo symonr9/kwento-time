@@ -1,10 +1,10 @@
 # src/services/llm — On-device LLM
 
-Offline GGUF inference for the **Enhanced (LLM) narration mode** of Social Forecast. Wraps the runtime and manages models. **This service must never access the database** — callers pass it a bounded context and it returns text.
+Offline GGUF inference for the **Enhanced (LLM) narration mode** of Briefing. Wraps the runtime and manages models. **This service must never access the database** — callers pass it a bounded context and it returns text.
 
-> **This service is Premium-only and optional.** The free/default path is **deterministic mode** — a template narrator in `@/features/forecast` that needs no model and no network. This service only smooths wording when a user opts into Enhanced mode (with a free trial). Everything must work without it.
+> **This service is Premium-only and optional.** The free/default path is **deterministic mode** — a template narrator in `@/features/briefing` that needs no model and no network. This service only smooths wording when a user opts into Enhanced mode (with a free trial). Everything must work without it.
 
-Spec & model details: [docs/features/social-forecast.md](../../../docs/features/social-forecast.md).
+Spec & model details: [docs/features/briefing.md](../../../docs/features/briefing.md).
 
 ## Responsibilities
 
@@ -24,4 +24,4 @@ llm/
 - **Lazy-load** the model (don't block app start); load on first Enhanced briefing, unload under memory pressure.
 - **Ollama is not an on-device option** — it's a desktop/server runtime. Honor the preference by (a) using Ollama as a *dev-side* tool to pick/test/quantize models, then hosting the GGUF for download, and (b) optionally supporting a *remote* Ollama HTTP backend (online, opt-in, not the offline default — see spec §8c). On-device inference here is `llama.rn` + GGUF.
 - **Narration only.** Low temperature, hard token cap from the caller's length budget, prompt that says *use only the provided facts*. **Validate output**: if a person name appears that wasn't in the context, reject so the caller can fall back to the deterministic narrator.
-- Expose a tiny, swappable API so the runtime (or a remote Ollama backend) can be replaced without touching `@/features/forecast`.
+- Expose a tiny, swappable API so the runtime (or a remote Ollama backend) can be replaced without touching `@/features/briefing`.

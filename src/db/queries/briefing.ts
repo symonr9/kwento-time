@@ -18,19 +18,19 @@ const MAX_RECENT_FOLLOW_UPS_PER_PERSON = 2;
 const MAX_GENERAL_LIFE_ITEMS = 5;
 const MAX_TOPICS_PER_PERSON = 3;
 
-export type ForecastRetrievedConversation = {
+export type BriefingRetrievedConversation = {
   id: number;
   occurredAt: Date;
   summary: string | null;
 };
 
-export type ForecastRetrievedFollowUp = {
+export type BriefingRetrievedFollowUp = {
   id: number;
   createdAt: Date;
   question: string;
 };
 
-export type ForecastRetrievedTopic = {
+export type BriefingRetrievedTopic = {
   id: number;
   content: string;
   expiresAt: Date | null;
@@ -38,29 +38,29 @@ export type ForecastRetrievedTopic = {
   state: 'active' | 'expiring' | 'extended' | 'archived' | null;
 };
 
-export type ForecastRetrievedPerson = {
+export type BriefingRetrievedPerson = {
   avatarUri: string | null;
   id: number;
   connectionScore: number;
-  conversations: ForecastRetrievedConversation[];
-  followUps: ForecastRetrievedFollowUp[];
+  conversations: BriefingRetrievedConversation[];
+  followUps: BriefingRetrievedFollowUp[];
   isPrimary: boolean;
   lastContactedAt: Date | null;
   name: string;
-  topics: ForecastRetrievedTopic[];
+  topics: BriefingRetrievedTopic[];
 };
 
-export type ForecastRetrievedLifeItem = {
+export type BriefingRetrievedLifeItem = {
   id: number;
   content: string;
   createdAt: Date;
   tone: string;
 };
 
-export type ForecastRetrievedData = {
+export type BriefingRetrievedData = {
   generatedAt: Date;
-  lifeItems: ForecastRetrievedLifeItem[];
-  people: ForecastRetrievedPerson[];
+  lifeItems: BriefingRetrievedLifeItem[];
+  people: BriefingRetrievedPerson[];
   place: {
     avatarUri: string | null;
     id: number | null;
@@ -100,7 +100,7 @@ function takeByPerson<Row extends { personId: number | null }>(rows: Row[], limi
   });
 }
 
-async function getForecastLifeItems() {
+async function getBriefingLifeItems() {
   const db = await getDb();
 
   return db
@@ -116,16 +116,16 @@ async function getForecastLifeItems() {
     .limit(MAX_GENERAL_LIFE_ITEMS);
 }
 
-export async function getGeneralForecastRetrieval(generatedAt = new Date()): Promise<ForecastRetrievedData> {
+export async function getGeneralBriefingRetrieval(generatedAt = new Date()): Promise<BriefingRetrievedData> {
   return {
     generatedAt,
-    lifeItems: await getForecastLifeItems(),
+    lifeItems: await getBriefingLifeItems(),
     people: [],
     place: { avatarUri: null, id: null, name: 'General' },
   };
 }
 
-export async function getForecastRetrieval(placeId: number, generatedAt = new Date()): Promise<ForecastRetrievedData> {
+export async function getBriefingRetrieval(placeId: number, generatedAt = new Date()): Promise<BriefingRetrievedData> {
   const db = await getDb();
   const [place] = await db
     .select({ avatarUri: safeAvatarUri(places.avatarUri), id: places.id, name: places.name })
@@ -156,7 +156,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
   if (personIds.length === 0) {
     return {
       generatedAt,
-      lifeItems: await getForecastLifeItems(),
+      lifeItems: await getBriefingLifeItems(),
       people: [],
       place: { avatarUri: place.avatarUri, id: place.id, name: place.name },
     };
@@ -204,18 +204,18 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
   const followUpsByPerson = groupByPersonId(takeByPerson(followUpRows, MAX_RECENT_FOLLOW_UPS_PER_PERSON));
   const topicsByPerson = groupByPersonId(takeByPerson(topicRows, MAX_TOPICS_PER_PERSON));
 
-  const retrievedPeople: ForecastRetrievedPerson[] = linkedPeople.map((person) => ({
+  const retrievedPeople: BriefingRetrievedPerson[] = linkedPeople.map((person) => ({
     avatarUri: person.avatarUri,
     id: person.id,
     connectionScore: person.connectionScore,
-    conversations: (conversationsByPerson.get(person.id) ?? []).map<ForecastRetrievedConversation>(
+    conversations: (conversationsByPerson.get(person.id) ?? []).map<BriefingRetrievedConversation>(
       (conversation) => ({
         id: conversation.id,
         occurredAt: conversation.occurredAt,
         summary: conversation.summary,
       }),
     ),
-    followUps: (followUpsByPerson.get(person.id) ?? []).map<ForecastRetrievedFollowUp>((followUp) => ({
+    followUps: (followUpsByPerson.get(person.id) ?? []).map<BriefingRetrievedFollowUp>((followUp) => ({
       id: followUp.id,
       createdAt: followUp.createdAt,
       question: followUp.question,
@@ -223,7 +223,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
     isPrimary: person.isPrimary,
     lastContactedAt: person.lastContactedAt,
     name: person.name,
-    topics: (topicsByPerson.get(person.id) ?? []).map<ForecastRetrievedTopic>((topic) => ({
+    topics: (topicsByPerson.get(person.id) ?? []).map<BriefingRetrievedTopic>((topic) => ({
       id: topic.id,
       content: topic.content,
       expiresAt: topic.expiresAt,
@@ -234,7 +234,7 @@ export async function getForecastRetrieval(placeId: number, generatedAt = new Da
 
   return {
     generatedAt,
-    lifeItems: await getForecastLifeItems(),
+    lifeItems: await getBriefingLifeItems(),
     people: retrievedPeople,
     place: { avatarUri: place.avatarUri, id: place.id, name: place.name },
   };

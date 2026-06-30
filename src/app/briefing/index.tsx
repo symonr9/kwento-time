@@ -8,33 +8,33 @@ import { Avatar } from '@/components/ui/avatar';
 import { SegmentedField } from '@/components/ui/form-controls';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { getForecastRetrieval, getGeneralForecastRetrieval, type ForecastRetrievedData } from '@/db/queries/forecast';
+import { getBriefingRetrieval, getGeneralBriefingRetrieval, type BriefingRetrievedData } from '@/db/queries/briefing';
 import { getAllPlaces } from '@/db/queries/places';
 import type { Place } from '@/db/schema';
 import {
   buildBriefingContext,
   narrateBriefing,
-  scoreForecastData,
+  scoreBriefingData,
   type BriefingContext,
-  type ForecastLength,
-} from '@/features/forecast';
+  type BriefingLength,
+} from '@/features/briefing';
 import { useTheme } from '@/hooks/use-theme';
-import { speakForecastScript, stopForecastSpeech } from '@/services/speech';
+import { speakBriefingScript, stopBriefingSpeech } from '@/services/speech';
 
-const lengthOptions: { label: string; value: ForecastLength }[] = [
+const lengthOptions: { label: string; value: BriefingLength }[] = [
   { label: 'Short', value: 'short' },
   { label: 'Medium', value: 'medium' },
   { label: 'Long', value: 'long' },
 ];
 
-export default function ForecastScreen() {
+export default function BriefingScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
-  const [length, setLength] = useState<ForecastLength>('medium');
+  const [length, setLength] = useState<BriefingLength>('medium');
   const [context, setContext] = useState<BriefingContext | null>(null);
-  const [preview, setPreview] = useState<ForecastRetrievedData | null>(null);
+  const [preview, setPreview] = useState<BriefingRetrievedData | null>(null);
   const [script, setScript] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -76,7 +76,7 @@ export default function ForecastScreen() {
 
   useEffect(() => {
     return () => {
-      void stopForecastSpeech();
+      void stopBriefingSpeech();
     };
   }, []);
 
@@ -94,15 +94,15 @@ export default function ForecastScreen() {
         const generatedAt = new Date();
         const nextPreview =
           selectedPlaceId === null
-            ? await getGeneralForecastRetrieval(generatedAt)
-            : await getForecastRetrieval(selectedPlaceId, generatedAt);
+            ? await getGeneralBriefingRetrieval(generatedAt)
+            : await getBriefingRetrieval(selectedPlaceId, generatedAt);
 
         if (isActive) {
           setPreview(nextPreview);
         }
       } catch (err) {
         if (isActive) {
-          setError(err instanceof Error ? err.message : 'Unable to load forecast preview.');
+          setError(err instanceof Error ? err.message : 'Unable to load briefing preview.');
         }
       }
     }
@@ -118,7 +118,7 @@ export default function ForecastScreen() {
     setError(null);
 
     try {
-      await speakForecastScript(nextScript, {
+      await speakBriefingScript(nextScript, {
         onDone: () => setIsSpeaking(false),
         onError: (err) => {
           setIsSpeaking(false);
@@ -129,13 +129,13 @@ export default function ForecastScreen() {
       });
     } catch (err) {
       setIsSpeaking(false);
-      setError(err instanceof Error ? err.message : 'Unable to play forecast.');
+      setError(err instanceof Error ? err.message : 'Unable to play briefing.');
     }
   }
 
   async function handleStopSpeech() {
     try {
-      await stopForecastSpeech();
+      await stopBriefingSpeech();
       setIsSpeaking(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to stop playback.');
@@ -156,16 +156,16 @@ export default function ForecastScreen() {
     try {
       const retrieved =
         selectedPlaceId === null
-          ? await getGeneralForecastRetrieval(generatedAt)
-          : await getForecastRetrieval(selectedPlaceId, generatedAt);
-      const scored = scoreForecastData(retrieved, generatedAt);
+          ? await getGeneralBriefingRetrieval(generatedAt)
+          : await getBriefingRetrieval(selectedPlaceId, generatedAt);
+      const scored = scoreBriefingData(retrieved, generatedAt);
       const nextContext = buildBriefingContext(retrieved, scored, length);
       const nextScript = narrateBriefing(nextContext);
       setContext(nextContext);
       setScript(nextScript);
       await playScript(nextScript);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate forecast.');
+      setError(err instanceof Error ? err.message : 'Unable to generate briefing.');
     } finally {
       setIsGenerating(false);
     }
@@ -202,7 +202,7 @@ export default function ForecastScreen() {
 
           <View style={styles.hero}>
             <ThemedText type="subtitle" themeColor="primary">
-              Forecast
+              Briefing
             </ThemedText>
           </View>
 
@@ -222,26 +222,26 @@ export default function ForecastScreen() {
           {!isLoading ? (
             <SurfaceCard style={styles.form}>
               <View style={styles.field}>
-                <ThemedText type="smallBold">Forecast scope</ThemedText>
+                <ThemedText type="smallBold">Briefing scope</ThemedText>
                 <View style={styles.placeList}>
-                  <ForecastScopeCard
+                  <BriefingScopeCard
                     isGeneral
                     isSelected={selectedPlaceId === null}
                     title="General"
                     onPress={() => setSelectedPlaceId(null)}>
-                    {selectedPlaceId === null ? <ForecastPreview preview={preview} /> : null}
-                  </ForecastScopeCard>
+                    {selectedPlaceId === null ? <BriefingPreview preview={preview} /> : null}
+                  </BriefingScopeCard>
 
                   {places.map((place) => (
-                    <ForecastScopeCard
+                    <BriefingScopeCard
                       key={place.id}
                       avatarUri={place.avatarUri}
                       isSelected={selectedPlaceId === place.id}
                       title={place.name}
                       subtitle={place.address}
                       onPress={() => setSelectedPlaceId(place.id)}>
-                      {selectedPlaceId === place.id ? <ForecastPreview preview={preview} /> : null}
-                    </ForecastScopeCard>
+                      {selectedPlaceId === place.id ? <BriefingPreview preview={preview} /> : null}
+                    </BriefingScopeCard>
                   ))}
                 </View>
               </View>
@@ -390,7 +390,7 @@ export default function ForecastScreen() {
   );
 }
 
-function ForecastScopeCard({
+function BriefingScopeCard({
   avatarUri,
   children,
   isGeneral = false,
@@ -445,7 +445,7 @@ function ForecastScopeCard({
   );
 }
 
-function ForecastPreview({ preview }: { preview: ForecastRetrievedData | null }) {
+function BriefingPreview({ preview }: { preview: BriefingRetrievedData | null }) {
   const theme = useTheme();
 
   if (!preview) {

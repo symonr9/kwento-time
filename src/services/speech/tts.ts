@@ -1,7 +1,7 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as Speech from 'expo-speech';
 
-const FORECAST_SPEECH_TAG = 'kwento-forecast-speech';
+const BRIEFING_SPEECH_TAG = 'kwento-briefing-speech';
 let keepAwakeActivation: Promise<void> | null = null;
 let isKeepAwakeActive = false;
 
@@ -12,8 +12,8 @@ export type SpeechPlaybackCallbacks = {
   onStopped?: () => void;
 };
 
-async function activateForecastKeepAwake() {
-  keepAwakeActivation = activateKeepAwakeAsync(FORECAST_SPEECH_TAG)
+async function activateBriefingKeepAwake() {
+  keepAwakeActivation = activateKeepAwakeAsync(BRIEFING_SPEECH_TAG)
     .then(() => {
       isKeepAwakeActive = true;
     })
@@ -24,7 +24,7 @@ async function activateForecastKeepAwake() {
   await keepAwakeActivation;
 }
 
-async function deactivateForecastKeepAwake() {
+async function deactivateBriefingKeepAwake() {
   if (keepAwakeActivation) {
     await keepAwakeActivation.catch(() => {});
   }
@@ -34,7 +34,7 @@ async function deactivateForecastKeepAwake() {
   }
 
   try {
-    await deactivateKeepAwake(FORECAST_SPEECH_TAG);
+    await deactivateKeepAwake(BRIEFING_SPEECH_TAG);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (!message.includes('has not activated yet')) {
@@ -45,7 +45,7 @@ async function deactivateForecastKeepAwake() {
   }
 }
 
-export async function speakForecastScript(script: string, callbacks: SpeechPlaybackCallbacks = {}) {
+export async function speakBriefingScript(script: string, callbacks: SpeechPlaybackCallbacks = {}) {
   const trimmedScript = script.trim();
 
   if (!trimmedScript) {
@@ -53,20 +53,20 @@ export async function speakForecastScript(script: string, callbacks: SpeechPlayb
   }
 
   await Speech.stop();
-  await activateForecastKeepAwake();
+  await activateBriefingKeepAwake();
 
   Speech.speak(trimmedScript, {
     onDone: () => {
-      void deactivateForecastKeepAwake();
+      void deactivateBriefingKeepAwake();
       callbacks.onDone?.();
     },
     onError: (error) => {
-      void deactivateForecastKeepAwake();
+      void deactivateBriefingKeepAwake();
       callbacks.onError?.(error instanceof Error ? error : new Error(String(error)));
     },
     onStart: callbacks.onStart,
     onStopped: () => {
-      void deactivateForecastKeepAwake();
+      void deactivateBriefingKeepAwake();
       callbacks.onStopped?.();
     },
     pitch: 1,
@@ -74,19 +74,19 @@ export async function speakForecastScript(script: string, callbacks: SpeechPlayb
   });
 }
 
-export async function stopForecastSpeech() {
+export async function stopBriefingSpeech() {
   await Speech.stop();
-  await deactivateForecastKeepAwake();
+  await deactivateBriefingKeepAwake();
 }
 
-export async function pauseForecastSpeech() {
+export async function pauseBriefingSpeech() {
   await Speech.pause();
 }
 
-export async function resumeForecastSpeech() {
+export async function resumeBriefingSpeech() {
   await Speech.resume();
 }
 
-export async function isForecastSpeaking() {
+export async function isBriefingSpeaking() {
   return Speech.isSpeakingAsync();
 }

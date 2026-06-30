@@ -1,6 +1,6 @@
 # Apple CarPlay
 
-Kwento Time's CarPlay surface is an audio-first companion to Social Forecast. It is view-only: users choose what to hear and can quickly reference people/place associations, but all capture, editing, tagging, and relationship updates stay in the phone app.
+Kwento Time's CarPlay surface is an audio-first companion to Briefing. It is view-only: users choose what to hear and can quickly reference people/place associations, but all capture, editing, tagging, and relationship updates stay in the phone app.
 
 ## Platform boundary
 
@@ -17,26 +17,26 @@ Do not add CarPlay-only write flows. CarPlay must stay sparse, glanceable, and n
 
 The CarPlay home template has two choices:
 
-- Forecast
+- Briefing
 - People and Places
 
 Every template includes a Back action to return to the previous CarPlay template.
 
-## Forecast
+## Briefing
 
-Forecast shows:
+Briefing shows:
 
 - A General option with a distinct visual treatment for a general life overview.
 - All existing places, using avatar images when available.
 
-When a place is selected, the app retrieves the same deterministic Social Forecast context used by the phone app:
+When a place is selected, the app retrieves the same deterministic Briefing context used by the phone app:
 
 - People linked to the place.
 - Previous conversations with those people.
 - Open follow-ups and active talking points.
 - Relevant life updates.
 
-The selected forecast view should show only short summary text and start audio narration automatically only after explicit user action. Narration uses the deterministic `@/features/forecast` context and `@/services/speech` playback path. A progress line shows elapsed and remaining narration time.
+The selected briefing view should show only short summary text and start audio narration automatically only after explicit user action. Narration uses the deterministic `@/features/briefing` context and `@/services/speech` playback path. A progress line shows elapsed and remaining narration time.
 
 ## People and Places
 
@@ -51,9 +51,9 @@ This is a quick reference list:
 `@/features/carplay` contains pure view-model builders for the native CarPlay template layer:
 
 - `createCarPlayHomeMenu`
-- `createCarPlayForecastMenu`
-- `createCarPlayForecastSummary`
+- `createCarPlayBriefingMenu`
+- `createCarPlayBriefingSummary`
 - `createCarPlayPlaybackState`
 - `createCarPlayPeoplePlacesMenu`
 
-The native layer should stay thin: it should call the existing DB retrieval functions, pass the returned facts through the forecast scorer/context/narrator, and render these view models in CarPlay templates.
+The native layer should stay thin: it should call the existing DB retrieval functions, pass the returned facts through the briefing scorer/context/narrator, and render these view models in CarPlay templates.

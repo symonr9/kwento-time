@@ -34,7 +34,7 @@ type PendingExtraction = Awaited<ReturnType<typeof getConversationsPendingExtrac
 type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
 type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>[number];
 
-const forecastHref = '/forecast' as Href;
+const briefingHref = '/briefing' as Href;
 const tagsHref = '/tags' as Href;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -418,7 +418,7 @@ export default function HomeScreen() {
                     />
                   </Link>
 
-                  <Link href={forecastHref} asChild>
+                  <Link href={briefingHref} asChild>
                     <IconActionButton
                       icon={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
                       label="Briefing"

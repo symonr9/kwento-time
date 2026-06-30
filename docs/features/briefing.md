@@ -1,4 +1,4 @@
-# Feature Spec — Social Forecast (Spoken Place Briefing)
+# Feature Spec — Briefing (Spoken Place Briefing)
 
 **Status:** Planned · **Tier:** Free (deterministic mode) + Premium (LLM mode) · **Owner:** TBD
 **Related:** Place Mode ([src/features/places/](../../src/features/places/)), on-device AI direction in [PROJECT.md](../../PROJECT.md)
@@ -7,7 +7,7 @@
 
 ## 1. Summary
 
-A one-tap, **hands-free spoken briefing** the user plays *before walking into a place* (a party, church, the office, a friend's house). It tells them **who they're likely to see**, surfaces **recent unresolved follow-ups**, recaps **recent conversations and life events**, and gives a **prioritized rundown of what to talk about** — a "social/conversation forecast."
+A one-tap, **hands-free spoken briefing** the user plays *before walking into a place* (a party, church, the office, a friend's house). It tells them **who they're likely to see**, surfaces **recent unresolved follow-ups**, recaps **recent conversations and life events**, and gives a **prioritized rundown of what to talk about** — a "briefing."
 
 The intelligence is split in two on purpose:
 
@@ -36,7 +36,7 @@ Output is read aloud via **text-to-speech**, auto-playing, designed for driving 
 ```
 Home screen
   └─ [ Briefing ] button (large, prominent)
-       └─ Forecast form (or "Quick briefing" using saved defaults)
+       └─ Briefing form (or "Quick briefing" using saved defaults)
             • Place  • Length  • Signal emphasis/preset  • Scope  • Model  • Voice
        └─ [ Generate ]
             → retrieval + scoring (fast, deterministic)
@@ -77,10 +77,10 @@ Home screen
 
 | Stage | Lives in | Touches DB? | Deterministic? |
 |-------|----------|-------------|----------------|
-| 1. Retrieval | `src/db/queries/forecast.ts` | **Yes (only here)** | Yes |
-| 2. Scoring | `src/features/forecast/scoring.ts` | No (pure) | Yes |
-| 3. Context assembly | `src/features/forecast/context.ts` | No (pure) | Yes |
-| 4. Synthesis | `src/services/llm/` (+ template fallback in `forecast/`) | **No** | LLM: no / template: yes |
+| 1. Retrieval | `src/db/queries/briefing.ts` | **Yes (only here)** | Yes |
+| 2. Scoring | `src/features/briefing/scoring.ts` | No (pure) | Yes |
+| 3. Context assembly | `src/features/briefing/context.ts` | No (pure) | Yes |
+| 4. Synthesis | `src/services/llm/` (+ template fallback in `briefing/`) | **No** | LLM: no / template: yes |
 | 5. TTS playback | `src/services/speech/` | No | n/a |
 
 ---
@@ -158,7 +158,7 @@ Maps directly onto retrieval, scoring, length, and output.
 | **Narration mode** | Deterministic (free) · On-device LLM (Premium, w/ free trial) · *(advanced)* Remote Ollama; plus model & voice pickers | Selects the synthesis engine (§8) |
 | **Voice** | TTS voice, rate/pitch | Playback (§10) |
 
-Defaults are saved (proposed `forecast_preferences`) so "Quick briefing" needs zero configuration.
+Defaults are saved (proposed `briefing_preferences`) so "Quick briefing" needs zero configuration.
 
 ---
 
@@ -167,7 +167,7 @@ Defaults are saved (proposed `forecast_preferences`) so "Quick briefing" needs z
 Input: the bounded **BriefingContext** (§9). Output: a plain-text spoken **script**. The narrator runs in one of three engines; the first is the default and the guaranteed floor of quality.
 
 ### 8a. Deterministic mode — no LLM (default · free)
-A pure function in `src/features/forecast/narrator.ts` stitches the ranked context into natural sentences from templates (e.g. *"You'll likely see {name}. Last time you talked about {topic}, and you still owe them {followup}."*). No model, no download, no network — instant and identical every run. This is the **default**, works on every device, and ships **first** (before any LLM work). Even when Enhanced mode is on, this is the fallback whenever the model is missing, disabled, or fails validation.
+A pure function in `src/features/briefing/narrator.ts` stitches the ranked context into natural sentences from templates (e.g. *"You'll likely see {name}. Last time you talked about {topic}, and you still owe them {followup}."*). No model, no download, no network — instant and identical every run. This is the **default**, works on every device, and ships **first** (before any LLM work). Even when Enhanced mode is on, this is the fallback whenever the model is missing, disabled, or fails validation.
 
 ### 8b. Enhanced mode — on-device LLM (Premium · opt-in download)
 The user downloads a small GGUF model (§10); `src/services/llm` rewrites the *same* `BriefingContext` into smoother, more varied, more human narration. Fully offline once downloaded.
@@ -244,7 +244,7 @@ Generate with `npm run db:generate` when implemented (see [src/db/CLAUDE.md](../
 
 | Table | Purpose |
 |-------|---------|
-| `forecast_preferences` | Saved default filters, weight preset, length, model, voice (one row / singleton). |
+| `briefing_preferences` | Saved default filters, weight preset, length, model, voice (one row / singleton). |
 | `life_events` | Structured recent events per person (better than parsing summaries) → powers `recentEvent`. |
 | `interests` (or extend `tags`) | Represent user + person interests for `sharedInterest`. |
 | `ai_models` | On-device model registry: id, name, size, quant, source, checksum, downloaded state. *(Could be a file manifest instead.)* |
@@ -256,17 +256,17 @@ Generate with `npm run db:generate` when implemented (see [src/db/CLAUDE.md](../
 
 | Path | Responsibility |
 |------|----------------|
-| `src/db/queries/forecast.ts` | Deterministic retrieval queries (the only DB access). |
-| `src/features/forecast/scoring.ts` | Pure presence/salience scoring (unit-tested). |
-| `src/features/forecast/context.ts` | Pure selection + BriefingContext assembly within budget. |
-| `src/features/forecast/narrator.ts` | Deterministic narrator — the default (8a) **and** the LLM fallback (pure). |
-| `src/features/forecast/hooks/` | Orchestration hook (retrieve → score → synthesize → play). |
-| `src/features/forecast/components/` | Forecast form + playback UI. |
+| `src/db/queries/briefing.ts` | Deterministic retrieval queries (the only DB access). |
+| `src/features/briefing/scoring.ts` | Pure presence/salience scoring (unit-tested). |
+| `src/features/briefing/context.ts` | Pure selection + BriefingContext assembly within budget. |
+| `src/features/briefing/narrator.ts` | Deterministic narrator — the default (8a) **and** the LLM fallback (pure). |
+| `src/features/briefing/hooks/` | Orchestration hook (retrieve → score → synthesize → play). |
+| `src/features/briefing/components/` | Briefing form + playback UI. |
 | `src/services/llm/` | On-device LLM runtime wrapper + model manager (download/load/generate). |
 | `src/services/speech/` | TTS + playback/session control. |
-| `src/app/forecast/` | Route(s): form + playback screen; entry button on home. |
+| `src/app/briefing/` | Route(s): form + playback screen; entry button on home. |
 
-Dependency direction holds: features → services/db; the LLM service has no DB access. See [src/features/forecast/CLAUDE.md](../../src/features/forecast/CLAUDE.md) and [src/services/llm/CLAUDE.md](../../src/services/llm/CLAUDE.md).
+Dependency direction holds: features → services/db; the LLM service has no DB access. See [src/features/briefing/CLAUDE.md](../../src/features/briefing/CLAUDE.md) and [src/services/llm/CLAUDE.md](../../src/services/llm/CLAUDE.md).
 
 ---
 

@@ -48,7 +48,7 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
               <Stack.Screen name="conversations/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="conversations/new" options={{ headerShown: false }} />
               <Stack.Screen name="conversations/voice" options={{ headerShown: false }} />
-              <Stack.Screen name="forecast/index" options={{ headerShown: false }} />
+              <Stack.Screen name="briefing/index" options={{ headerShown: false }} />
               <Stack.Screen name="follow-ups/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="follow-ups/new" options={{ headerShown: false }} />
               <Stack.Screen name="my-life/new" options={{ headerShown: false }} />

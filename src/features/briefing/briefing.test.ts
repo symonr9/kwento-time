@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { buildBriefingContext, forecastLengthBudgets } from './context';
+import { buildBriefingContext, briefingLengthBudgets } from './context';
 import { narrateBriefing } from './narrator';
-import { scoreForecastData } from './scoring';
-import type { ForecastRetrievedData } from './types';
+import { scoreBriefingData } from './scoring';
+import type { BriefingRetrievedData } from './types';
 
 const now = new Date('2026-06-28T12:00:00.000Z');
 
@@ -18,7 +18,7 @@ function daysFromNow(days: number) {
   return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-const forecastData: ForecastRetrievedData = {
+const briefingData: BriefingRetrievedData = {
   generatedAt: now,
   lifeItems: [
     {
@@ -93,9 +93,9 @@ const forecastData: ForecastRetrievedData = {
   ],
 };
 
-describe('deterministic forecast', () => {
+describe('deterministic briefing', () => {
   it('prioritizes primary-place people before linked people when signals are close', () => {
-    const [first, second] = scoreForecastData(forecastData, now);
+    const [first, second] = scoreBriefingData(briefingData, now);
 
     assert.equal(first.name, 'Mara');
     assert.equal(first.presenceReason, 'primary place');
@@ -103,25 +103,25 @@ describe('deterministic forecast', () => {
   });
 
   it('builds a short context within the configured people and item budgets', () => {
-    const scored = scoreForecastData(forecastData, now);
-    const context = buildBriefingContext(forecastData, scored, 'short');
+    const scored = scoreBriefingData(briefingData, now);
+    const context = buildBriefingContext(briefingData, scored, 'short');
     const itemCount = context.people.reduce((count, person) => count + person.items.length, 0);
 
     assert.equal(context.length.value, 'short');
-    assert.equal(context.length.seconds, forecastLengthBudgets.short.seconds);
-    assert.ok(context.people.length <= forecastLengthBudgets.short.peopleCount);
-    assert.ok(itemCount <= forecastLengthBudgets.short.itemCount);
+    assert.equal(context.length.seconds, briefingLengthBudgets.short.seconds);
+    assert.ok(context.people.length <= briefingLengthBudgets.short.peopleCount);
+    assert.ok(itemCount <= briefingLengthBudgets.short.itemCount);
   });
 
   it('keeps follow-ups and recent context in the narration', () => {
-    const scored = scoreForecastData(forecastData, now);
-    const context = buildBriefingContext(forecastData, scored, 'medium');
+    const scored = scoreBriefingData(briefingData, now);
+    const context = buildBriefingContext(briefingData, scored, 'medium');
     const script = narrateBriefing(context);
 
     assert.match(script, /Before you arrive at Community Hall/);
     assert.match(script, /Ask Mara: How did the fundraiser go\?/);
     assert.match(script, /Recently with Noah: Mentioned weekend travel\./);
-    assert.match(script, /That is the current forecast\./);
+    assert.match(script, /That is the current briefing\./);
   });
 
   it('narrates an actionable empty state when no people are linked', () => {

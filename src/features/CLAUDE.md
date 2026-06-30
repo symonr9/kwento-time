@@ -13,13 +13,13 @@ features/
   reminders/       # follow-ups + reminder scheduling logic
   my-life/         # "How Are You?" — user's own life items (light/medium/personal)
   voice/           # record → transcribe → confirm flow (UI side of the AI pipeline)
-  forecast/        # Social Forecast — deterministic retrieval+scoring, narration, hands-free playback UI
-  carplay/         # Apple CarPlay view models for Forecast + read-only People/Places
+  briefing/        # Briefing — deterministic retrieval+scoring, narration, hands-free playback UI
+  carplay/         # Apple CarPlay view models for Briefing + read-only People/Places
 ```
 
-> **`forecast/` holds the deterministic brains** (pure `scoring.ts` / `context.ts` / `narrator.ts`) and the form/playback UI. It calls `@/db/queries/forecast` (the only DB access) and the `@/services/llm` + `@/services/speech` services. The on-device LLM never touches the DB — see [docs/features/social-forecast.md](../../docs/features/social-forecast.md).
+> **`briefing/` holds the deterministic brains** (pure `scoring.ts` / `context.ts` / `narrator.ts`) and the form/playback UI. It calls `@/db/queries/briefing` (the only DB access) and the `@/services/llm` + `@/services/speech` services. The on-device LLM never touches the DB — see [docs/features/briefing.md](../../docs/features/briefing.md).
 
-> **`carplay/` stays pure.** It shapes forecast/home/people-place data for a future native iOS CarPlay scene, but does not call native CarPlay APIs, mutate the DB, or introduce phone-only UI assumptions. See [docs/features/apple-carplay.md](../../docs/features/apple-carplay.md).
+> **`carplay/` stays pure.** It shapes briefing/home/people-place data for a future native iOS CarPlay scene, but does not call native CarPlay APIs, mutate the DB, or introduce phone-only UI assumptions. See [docs/features/apple-carplay.md](../../docs/features/apple-carplay.md).
 
 ## Conventions for a feature folder
 
