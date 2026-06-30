@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
   },
   addButton: {
-    minHeight: 40,
+    minHeight: 36,
     alignSelf: 'flex-start',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -402,11 +402,11 @@ const styles = StyleSheet.create({
   },
   inlineCreateInput: {
     flex: 1,
-    minWidth: 0,
+    minWidth: 0
   },
   inlineCreateButton: {
-    minHeight: 40,
-    minWidth: 52,
+    minHeight: 36,
+    minWidth: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.small,

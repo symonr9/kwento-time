@@ -439,8 +439,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   inlineCreateButton: {
-    minHeight: 40,
-    minWidth: 52,
+    minHeight: 36,
+    minWidth: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.small,

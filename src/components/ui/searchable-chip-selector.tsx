@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { SymbolView } from 'expo-symbols';
 
 export type SearchableChipOption<Value extends number | string | null> = {
   avatarUri?: string | null;
@@ -34,6 +35,7 @@ export function SearchableChipSelector<Value extends number | string | null>({
 }: SearchableChipSelectorProps<Value>) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const normalizedQuery = query.trim().toLowerCase();
   const selectedKeys = new Set(selectedValues.map((value) => String(value)));
   const matchingOptions = options.filter((option) => {
@@ -71,21 +73,52 @@ export function SearchableChipSelector<Value extends number | string | null>({
           {description}
         </ThemedText>
       ) : null}
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder={searchPlaceholder}
-        placeholderTextColor={theme.textSecondary}
-        autoCapitalize="none"
-        style={[
-          styles.searchInput,
-          {
-            backgroundColor: theme.background,
-            borderColor: theme.border,
-            color: theme.text,
-          },
-        ]}
-      />
+
+      {
+        options.length > 0 && (
+          <View style={styles.searchRow}>
+            {
+              showSearch && (
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={searchPlaceholder}
+                  placeholderTextColor={theme.textSecondary}
+                  autoCapitalize="none"
+                  style={[
+                    styles.searchInput,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.border,
+                      color: theme.text,
+                    },
+                  ]}
+                />
+              )
+            }
+            <Pressable
+              accessibilityLabel="Search"
+              accessibilityRole="button"
+              onPress={() => setShowSearch(!showSearch)}
+              style={({ pressed }) => [
+                styles.searchToggle,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  borderColor: theme.border,
+                  opacity: pressed ? 0.72 : 1,
+                },
+              ]}>
+              <SymbolView
+                name={{ ios: 'magnifyingglass.circle.fill', android: 'search', web: 'search' }}
+                size={20}
+                tintColor={theme.text}
+                fallback={<View style={[styles.searchToggleFallback, { backgroundColor: theme.text }]} />}
+              />
+            </Pressable>
+          </View>
+        )
+      }
+
       <FlatList
         data={sortedOptions}
         horizontal
@@ -141,13 +174,13 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   searchInput: {
-    minHeight: 44,
+    minHeight: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 16,
+    fontSize: 14,
   },
   chipList: {
     gap: Spacing.two,
@@ -167,5 +200,25 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     flexShrink: 1,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  searchToggle: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.medium,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 8px 18px rgba(36, 48, 58, 0.08)',
+  },
+  searchToggleFallback: {
+    width: 18,
+    height: 18,
+    borderRadius: Radius.small,
   },
 });

@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    minHeight: 36,
+    minHeight: 32,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.small,
     borderCurve: 'continuous',

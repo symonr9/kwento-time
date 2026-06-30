@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
   },
   addButton: {
-    minHeight: 40,
+    minHeight: 36,
     alignSelf: 'flex-start',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,

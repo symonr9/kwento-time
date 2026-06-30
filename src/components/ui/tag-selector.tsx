@@ -38,6 +38,7 @@ export function TagSelector({
             placeholder="Create a tag"
             returnKeyType="done"
             onSubmitEditing={onAddTag}
+            style={styles.newTagInput}
           />
         </View>
         <Pressable
@@ -81,8 +82,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   addButton: {
-    minHeight: 40,
-    minWidth: 52,
+    minHeight: 36,
+    minWidth: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.small,
@@ -91,5 +92,8 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#FFFFFF',
+  },
+  newTagInput: {
+    height: 16
   },
 });

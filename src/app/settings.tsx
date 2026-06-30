@@ -178,28 +178,7 @@ export default function SettingsScreen() {
               Settings
             </ThemedText>
           </View>
-
-          <View style={styles.metricGrid}>
-            <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
-              <ThemedText type="smallBold">On</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Local-first
-              </ThemedText>
-            </SurfaceCard>
-            <SurfaceCard tone="accentMuted" style={styles.metricCard}>
-              <ThemedText type="smallBold">JSON</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Manual backup
-              </ThemedText>
-            </SurfaceCard>
-            <SurfaceCard tone="highlightMuted" style={styles.metricCard}>
-              <ThemedText type="smallBold">Free</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Plan
-              </ThemedText>
-            </SurfaceCard>
-          </View>
-
+          
           {notice ? (
             <SurfaceCard tone="primaryMuted" style={styles.stateCard}>
               <ThemedText selectable>{notice}</ThemedText>

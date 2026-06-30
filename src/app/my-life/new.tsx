@@ -136,8 +136,8 @@ export default function NewMyLifeItemScreen() {
 
   return (
     <FormScreen
-      subtitle="How are you?"
-      title="Record what is current."
+      subtitle="What's something new in your life?"
+      title="Life Update"
       error={error}
       isSaving={isSaving}
       onSave={handleSave}>
