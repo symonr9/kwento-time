@@ -120,16 +120,11 @@ export default function NewConversationScreen() {
   async function handleSave() {
     const trimmedSummary = summary.trim();
 
-    if (!trimmedSummary) {
-      setError('Conversation note is required.');
-      return;
-    }
-
     const conversation: NewConversation = {
       audioUri: audioUri.trim() || undefined,
       placeId: selectedPlaceId ?? undefined,
-      rawTranscript: rawTranscript.trim() || trimmedSummary,
-      summary: trimmedSummary,
+      rawTranscript: rawTranscript.trim() || undefined,
+      summary: trimmedSummary || undefined,
       personId: selectedPersonId ?? undefined,
       source: 'manual',
     };
