@@ -1,12 +1,18 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { TextField, formControlStyles } from '@/components/ui/form-controls';
+import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
 import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { getConversationById } from '@/db/queries/conversations';
 import { createFollowUp } from '@/db/queries/follow-ups';
 import { getAllPeople } from '@/db/queries/people';
-import type { NewFollowUp, Person } from '@/db/schema';
+import type { FollowUp, NewFollowUp, Person } from '@/db/schema';
+
+const toneOptions: { label: string; value: FollowUp['tone'] }[] = [
+  { label: 'Light', value: 'light' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Personal', value: 'personal' },
+];
 
 function parseNumericParam(value: string | string[] | undefined) {
   const rawValue = Array.isArray(value) ? value[0] : value;
@@ -20,6 +26,7 @@ export default function NewFollowUpScreen() {
   const requestedPersonId = parseNumericParam(params.personId);
   const [people, setPeople] = useState<Person[]>([]);
   const [question, setQuestion] = useState('');
+  const [tone, setTone] = useState<FollowUp['tone']>('light');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(requestedPersonId);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +75,7 @@ export default function NewFollowUpScreen() {
       question: trimmedQuestion,
       conversationId: conversationId ?? undefined,
       personId: selectedPersonId ?? undefined,
+      tone,
     };
 
     setIsSaving(true);
@@ -103,6 +111,8 @@ export default function NewFollowUpScreen() {
         textAlignVertical="top"
         style={formControlStyles.notesInput}
       />
+
+      <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
 
       <SearchableChipSelector
         label="Person"

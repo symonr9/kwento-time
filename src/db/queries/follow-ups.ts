@@ -35,6 +35,7 @@ export async function getFollowUpDetails(id: number) {
     .select({
       id: followUps.id,
       question: followUps.question,
+      tone: followUps.tone,
       personId: followUps.personId,
       personName: people.name,
       conversationId: followUps.conversationId,

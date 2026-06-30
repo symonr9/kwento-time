@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { TextField, formControlStyles } from '@/components/ui/form-controls';
+import { SegmentedField, TextField, formControlStyles } from '@/components/ui/form-controls';
 import { FormScreen } from '@/components/ui/form-screen';
 import { SearchableChipSelector } from '@/components/ui/searchable-chip-selector';
 import { SurfaceCard } from '@/components/ui/surface-card';
@@ -15,8 +15,14 @@ import {
     updateFollowUp,
 } from '@/db/queries/follow-ups';
 import { getAllPeople } from '@/db/queries/people';
-import type { Person } from '@/db/schema';
+import type { FollowUp, Person } from '@/db/schema';
 import { useTheme } from '@/hooks/use-theme';
+
+const toneOptions: { label: string; value: FollowUp['tone'] }[] = [
+  { label: 'Light', value: 'light' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Personal', value: 'personal' },
+];
 
 function formatShortDate(value: Date | null) {
   if (!value) {
@@ -32,6 +38,7 @@ export default function FollowUpDetailsScreen() {
   const followUpId = Number(params.id);
   const [people, setPeople] = useState<Person[]>([]);
   const [question, setQuestion] = useState('');
+  const [tone, setTone] = useState<FollowUp['tone']>('light');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [conversationSummary, setConversationSummary] = useState<string | null>(null);
@@ -69,6 +76,7 @@ export default function FollowUpDetailsScreen() {
 
           setPeople(peopleRows);
           setQuestion(followUp.question);
+          setTone(followUp.tone);
           setSelectedPersonId(followUp.personId);
           setConversationId(followUp.conversationId);
           setConversationSummary(followUp.conversationSummary);
@@ -118,6 +126,7 @@ export default function FollowUpDetailsScreen() {
       await updateFollowUp(followUpId, {
         personId: selectedPersonId ?? undefined,
         question: trimmedQuestion,
+        tone,
       });
       if (selectedPersonId) {
         router.replace({ pathname: '/people/[id]', params: { id: String(selectedPersonId) } });
@@ -197,6 +206,8 @@ export default function FollowUpDetailsScreen() {
             textAlignVertical="top"
             style={formControlStyles.notesInput}
           />
+
+          <SegmentedField label="Tone" options={toneOptions} value={tone} onChange={setTone} />
 
           <SearchableChipSelector
             label="Person"
