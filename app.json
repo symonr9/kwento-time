@@ -67,7 +67,17 @@
           "contactsPermission": "Allow Kwento Time to import people you choose from Contacts."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-build-properties",
+      [
+        "llama.rn",
+        {
+          "enableEntitlements": true,
+          "entitlementsProfile": "production",
+          "forceCxx20": true,
+          "enableOpenCLAndHexagon": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
