@@ -46,15 +46,25 @@ let activeModelPath: string | null = null;
 
 async function loadLlamaRn(): Promise<LlamaRnModule> {
   try {
-    return await import('llama.rn');
+    const moduleName = 'llama.rn';
+    // Optional native dependency: keep Metro/web builds working until the dev-client includes llama.rn.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require(moduleName) as LlamaRnModule;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : 'llama.rn is not available in this build.');
   }
 }
 
 async function getPlatformOS() {
-  const { Platform } = await import('react-native');
-  return Platform.OS;
+  try {
+    const moduleName = 'react-native';
+    // Optional native dependency: Node tests should not parse React Native internals.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Platform } = require(moduleName) as { Platform: { OS: string } };
+    return Platform.OS;
+  } catch {
+    return 'web';
+  }
 }
 
 async function getContext(modelPath: string, platformOS: string) {
