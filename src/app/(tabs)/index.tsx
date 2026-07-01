@@ -11,7 +11,7 @@ import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-
 import { IconActionButton } from '@/components/ui/icon-action-button';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { getConversationsPendingExtraction, getRecentConversations } from '@/db/queries/conversations';
+import { getConversationsPendingStructure, getRecentConversations } from '@/db/queries/conversations';
 import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
 import { getActiveMyLifeItems, getLatestMyLifeItem } from '@/db/queries/my-life';
 import {
@@ -30,7 +30,7 @@ import {
 } from '@/services/preferences';
 
 type RecentConversation = Awaited<ReturnType<typeof getRecentConversations>>[number];
-type PendingExtraction = Awaited<ReturnType<typeof getConversationsPendingExtraction>>[number];
+type PendingStructure = Awaited<ReturnType<typeof getConversationsPendingStructure>>[number];
 type OpenFollowUp = Awaited<ReturnType<typeof getAllOpenFollowUpsWithPeople>>[number];
 type ExpiringTopic = Awaited<ReturnType<typeof getTopicsExpiringSoonWithPeople>>[number];
 
@@ -48,7 +48,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
-  const [pendingExtractions, setPendingExtractions] = useState<PendingExtraction[]>([]);
+  const [pendingStructures, setPendingStructures] = useState<PendingStructure[]>([]);
   const [expiringTopics, setExpiringTopics] = useState<ExpiringTopic[]>([]);
   const [followUps, setFollowUps] = useState<OpenFollowUp[]>([]);
   const [lifeItems, setLifeItems] = useState<MyLifeItem[]>([]);
@@ -76,7 +76,7 @@ export default function HomeScreen() {
     try {
       const [
         conversationRows,
-        pendingExtractionRows,
+        pendingStructureRows,
         expiringTopicRows,
         followUpRows,
         lifeRows,
@@ -88,7 +88,7 @@ export default function HomeScreen() {
         dismissedUntil,
       ] = await Promise.all([
         getRecentConversations(10),
-        getConversationsPendingExtraction(10),
+        getConversationsPendingStructure(10),
         getTopicsExpiringSoonWithPeople(new Date(), 10),
         getAllOpenFollowUpsWithPeople(10),
         getActiveMyLifeItems(),
@@ -107,7 +107,7 @@ export default function HomeScreen() {
         const isDismissed = dismissedUntil !== null && dismissedUntil > now;
 
         setConversations(conversationRows);
-        setPendingExtractions(pendingExtractionRows);
+        setPendingStructures(pendingStructureRows);
         setExpiringTopics(expiringTopicRows);
         setFollowUps(followUpRows);
         setLifeItems(lifeRows);
@@ -206,7 +206,7 @@ export default function HomeScreen() {
         conversation.summary,
         conversation.source,
         conversation.transcriptStatus,
-        conversation.extractionStatus,
+        conversation.structureStatus,
         conversation.personName,
         conversation.placeName,
         conversation.occurredAt.toISOString(),
@@ -491,7 +491,7 @@ export default function HomeScreen() {
                     </ThemedText>
                   </SurfaceCard>
                   <SurfaceCard tone="primaryMuted" style={styles.metricCard}>
-                    <ThemedText type="title">{pendingExtractions.length}</ThemedText>
+                    <ThemedText type="title">{pendingStructures.length}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
                       Need structure
                     </ThemedText>
@@ -500,20 +500,20 @@ export default function HomeScreen() {
               </ExpandableSection>
 
               {
-                pendingExtractions.length > 0 && (
+                pendingStructures.length > 0 && (
                   <ExpandableSection
                     title="Needs structure"
-                    count={pendingExtractions.length}
-                    defaultExpanded={pendingExtractions.length > 0}>
+                    count={pendingStructures.length}
+                    defaultExpanded={pendingStructures.length > 0}>
 
-                    {pendingExtractions.length === 0 ? (
+                    {pendingStructures.length === 0 ? (
                       <EmptyState
                         title="No confirmed transcripts waiting"
                         body="Confirmed transcripts will appear here before topics and follow-ups are saved."
                       />
                     ) : (
                       <View style={styles.list}>
-                        {pendingExtractions.map((conversation) => (
+                        {pendingStructures.map((conversation) => (
                           <Link
                             key={conversation.id}
                             href={{

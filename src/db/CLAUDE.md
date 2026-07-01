@@ -37,6 +37,6 @@ Build glue: `babel.config.js` inlines `.sql` via `babel-plugin-inline-import`; `
 
 `Person` . `Place` . `PersonPlace` (`isPrimary`) . `Conversation` (summary, transcript/audio metadata, createdAt) . `Topic` (talkingPoint, tone, isActive) . `TopicExpiry` . `FollowUp` (question, tone, resolved) . `FollowUpExpiry` . `Reminder` . `MyLifeItem` . `MyLifeItemExpiry` . `Icebreaker` . `Tag` . `ItemTag` (polymorphic m:n).
 
-Store **both** the raw transcript and the GPT-4o summary on `Conversation`; raw is the source of truth for future re-extraction.
+Store **both** the raw transcript and local summary on `Conversation`; raw is the source of truth for future local re-structuring.
 
 Read https://docs.expo.dev/versions/v56.0.0/sdk/sqlite/ and Drizzle expo-sqlite docs before wiring the client/migrator.

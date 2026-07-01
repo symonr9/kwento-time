@@ -13,11 +13,10 @@ export type TranscriptionResult = {
 export type TranscribeAudioInput = {
   audioUri: string;
   language?: string;
-  modelFilePath?: number | string;
 };
 
 export class TranscriptionUnavailableError extends Error {
-  constructor(message = 'Local Whisper transcription is not available on web.') {
+  constructor(message = 'Native speech-to-text is not available on web.') {
     super(message);
     this.name = 'TranscriptionUnavailableError';
   }
@@ -29,6 +28,6 @@ export function isLocalTranscriptionConfigured() {
 
 export async function transcribeAudio(_input: TranscribeAudioInput): Promise<TranscriptionResult> {
   throw new TranscriptionUnavailableError(
-    'Local Whisper transcription requires an iOS or Android development build.',
+    'Native speech-to-text is planned for iOS and Android only. You can enter the transcript manually on web.',
   );
 }

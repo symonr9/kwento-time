@@ -1,1 +1,1 @@
-export * from './extraction-draft';
+export * from './structure-draft';

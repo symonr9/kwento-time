@@ -207,9 +207,9 @@ export default function ConversationDetailsScreen() {
                   </ThemedText>
                 </View>
                 <View style={styles.rowHeader}>
-                  <ThemedText type="smallBold">Extraction</ThemedText>
+                  <ThemedText type="smallBold">Structure</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {conversation.extractionStatus}
+                    {conversation.structureStatus}
                   </ThemedText>
                 </View>
                   {conversation.audioUri ? (

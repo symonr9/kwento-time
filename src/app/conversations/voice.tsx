@@ -105,7 +105,7 @@ export default function VoiceConversationScreen() {
     try {
       const savedConversation = await logConversation({
         audioUri,
-        extractionStatus: 'not_needed',
+        structureStatus: 'not_needed',
         source: 'voice',
         transcriptStatus: 'pending_transcription',
       });

@@ -94,7 +94,7 @@ Given `{ placeId, at: Date, filters }`, retrieve candidate **people** and their 
   - **Follow-ups:** **only the most recent unresolved follow-ups** (e.g. top 1–2 by `createdAt desc, resolved = false`). *(Explicit requirement: only the most recent follow-ups are added.)*
   - **Topics:** active / expiring topics (fresher and expiring-soon rank higher).
   - **Recent conversations:** latest summary/snippet for recap.
-  - **Recent life events:** recent extracted events (future `life_events` table; until then, parsed from conversation summaries).
+  - **Recent life events:** recent structured events (future `life_events` table; until then, parsed from conversation summaries).
   - **Shared interests:** overlap between the person's tags/interests and the user's own.
 - Retrieval is **bounded** (caps per person and item type) so the context never balloons regardless of history size.
 

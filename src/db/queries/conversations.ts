@@ -67,7 +67,7 @@ export async function logStructuredConversation({
       .values({
         ...conversation,
         audioUri: conversation.audioUri ?? null,
-        extractionStatus: conversation.extractionStatus ?? 'completed',
+        structureStatus: conversation.structureStatus ?? 'completed',
         personId: conversation.personId ?? null,
         rawTranscript: conversation.rawTranscript ?? null,
         summary: conversation.summary ?? null,
@@ -202,7 +202,7 @@ export async function applyStructuredConversationDetails(
 
     const [updatedConversation] = await tx
       .update(conversations)
-      .set({ extractionStatus: 'completed' })
+      .set({ structureStatus: 'completed' })
       .where(eq(conversations.id, conversationId))
       .returning();
 
@@ -226,7 +226,7 @@ export async function getConversationDetails(id: number) {
       rawTranscript: conversations.rawTranscript,
       source: conversations.source,
       transcriptStatus: conversations.transcriptStatus,
-      extractionStatus: conversations.extractionStatus,
+      structureStatus: conversations.structureStatus,
       occurredAt: conversations.occurredAt,
       createdAt: conversations.createdAt,
       updatedAt: conversations.updatedAt,
@@ -299,7 +299,7 @@ export async function getRecentConversations(limit = 20) {
       summary: conversations.summary,
       source: conversations.source,
       transcriptStatus: conversations.transcriptStatus,
-      extractionStatus: conversations.extractionStatus,
+      structureStatus: conversations.structureStatus,
       occurredAt: conversations.occurredAt,
       personId: conversations.personId,
       personName: people.name,
@@ -313,7 +313,7 @@ export async function getRecentConversations(limit = 20) {
     .limit(limit);
 }
 
-/** Conversations still waiting on the GPT-4o structured-summary extraction pass. */
+/** Conversations still waiting for local summary/structure review. */
 export async function getConversationsPendingSummary() {
   const db = await getDb();
   return db
@@ -323,7 +323,7 @@ export async function getConversationsPendingSummary() {
     .orderBy(desc(conversations.occurredAt));
 }
 
-export async function getConversationsPendingExtraction(limit = 20) {
+export async function getConversationsPendingStructure(limit = 20) {
   const db = await getDb();
   return db
     .select({
@@ -340,12 +340,12 @@ export async function getConversationsPendingExtraction(limit = 20) {
     .from(conversations)
     .leftJoin(people, eq(conversations.personId, people.id))
     .leftJoin(places, eq(conversations.placeId, places.id))
-    .where(and(eq(conversations.transcriptStatus, 'confirmed'), eq(conversations.extractionStatus, 'pending')))
+    .where(and(eq(conversations.transcriptStatus, 'confirmed'), eq(conversations.structureStatus, 'pending')))
     .orderBy(desc(conversations.occurredAt))
     .limit(limit);
 }
 
-/** Write back the structured summary once extraction finishes (or re-runs). */
+/** Write back the local summary once structuring finishes or is edited. */
 export async function setConversationSummary(id: number, summary: string) {
   const db = await getDb();
   const [row] = await db

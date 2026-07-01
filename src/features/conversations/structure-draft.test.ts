@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { buildStructuredConversationDraft } from './extraction-draft';
+import { buildStructuredConversationDraft } from './structure-draft';
 
 describe('structured conversation draft', () => {
   it('separates follow-up questions from likely talking points', () => {

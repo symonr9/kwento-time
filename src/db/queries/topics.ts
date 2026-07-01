@@ -89,7 +89,7 @@ export async function getOpenTopicsAboutUser() {
     .orderBy(desc(topics.lastMentionedAt));
 }
 
-/** Topics extracted from a particular conversation. */
+/** Topics drafted from a particular conversation. */
 export async function getTopicsForConversation(conversationId: number) {
   const db = await getDb();
   return db.select().from(topics).where(eq(topics.conversationId, conversationId));

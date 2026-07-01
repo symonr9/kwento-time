@@ -116,7 +116,7 @@ export default function ReviewConversationTranscriptScreen() {
 
     try {
       await updateConversation(conversationId, {
-        extractionStatus: 'pending',
+        structureStatus: 'pending',
         personId: selectedPersonId,
         placeId: selectedPlaceId,
         rawTranscript: trimmedTranscript,
@@ -242,7 +242,7 @@ export default function ReviewConversationTranscriptScreen() {
     { label: 'No place', value: null },
     ...places.map((place) => ({ avatarUri: place.avatarUri, label: place.name, value: place.id })),
   ];
-  const extractionPreview = rawTranscript.trim() ? buildStructuredConversationDraft(rawTranscript) : null;
+  const structurePreview = rawTranscript.trim() ? buildStructuredConversationDraft(rawTranscript) : null;
 
   return (
     <FormScreen
@@ -310,7 +310,7 @@ export default function ReviewConversationTranscriptScreen() {
         style={formControlStyles.notesInput}
       />
 
-      {extractionPreview ? <ExtractionPreview draft={extractionPreview} /> : null}
+      {structurePreview ? <StructurePreview draft={structurePreview} /> : null}
 
       <SelectableChipField
         label="Person"
@@ -355,7 +355,7 @@ export default function ReviewConversationTranscriptScreen() {
   );
 }
 
-function ExtractionPreview({ draft }: { draft: ReturnType<typeof buildStructuredConversationDraft> }) {
+function StructurePreview({ draft }: { draft: ReturnType<typeof buildStructuredConversationDraft> }) {
   const theme = useTheme();
   const topicsLabel = `${draft.topics.length} talking ${draft.topics.length === 1 ? 'point' : 'points'}`;
   const followUpsLabel = `${draft.followUps.length} follow-${draft.followUps.length === 1 ? 'up' : 'ups'}`;

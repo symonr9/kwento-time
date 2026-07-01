@@ -4,7 +4,7 @@ import { conversations } from './conversations';
 import { people } from './people';
 import { timestamps } from './timestamps';
 
-/** A talking point about a person (often extracted from a conversation). */
+/** A talking point about a person, often drafted from a conversation. */
 export const topics = sqliteTable(
   'topics',
   {

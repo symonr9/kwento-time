@@ -6,8 +6,8 @@ import { timestamps } from './timestamps';
 
 /**
  * A logged conversation. `rawTranscript` is the source of truth (kept so notes
- * can be re-extracted as prompts improve); `summary` holds the GPT-4o structured
- * summary once extraction runs. `source` distinguishes manual text from voice.
+ * can be re-structured as local drafting improves); `summary` holds the local
+ * summary. `source` distinguishes manual text from voice.
  */
 export const conversations = sqliteTable(
   'conversations',
@@ -24,7 +24,7 @@ export const conversations = sqliteTable(
     })
       .notNull()
       .default('confirmed'),
-    extractionStatus: text('extraction_status', {
+    structureStatus: text('structure_status', {
       enum: ['not_needed', 'pending', 'in_progress', 'completed', 'failed'],
     })
       .notNull()
@@ -39,7 +39,7 @@ export const conversations = sqliteTable(
     index('conversations_place_idx').on(t.placeId),
     index('conversations_occurred_idx').on(t.occurredAt),
     index('conversations_transcript_status_idx').on(t.transcriptStatus),
-    index('conversations_extraction_status_idx').on(t.extractionStatus),
+    index('conversations_structure_status_idx').on(t.structureStatus),
   ],
 );
 

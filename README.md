@@ -160,7 +160,7 @@ Builds and store submissions run through **EAS**. Profiles live in [eas.json](ea
 | `git push -u origin feat/<short-name>` | Push the branch. |
 | `gh pr create --fill` | Open a pull request (GitHub CLI). |
 
-🔒 **Never commit secrets.** The OpenAI key and any signing/credentials must stay out of the repo — they're git-ignored (`.env*`, keystores, certs). Load secrets from the environment / EAS Secrets, and **review `git diff --staged` before every commit.** If a secret ever lands in a commit, rotate it immediately (removing it later doesn't erase it from history). See the Secrets section in [CLAUDE.md](CLAUDE.md).
+🔒 **Never commit secrets.** Signing credentials and any future third-party service keys must stay out of the repo — they're git-ignored (`.env*`, keystores, certs). Load secrets from the environment / EAS Secrets, and **review `git diff --staged` before every commit.** If a secret ever lands in a commit, rotate it immediately (removing it later doesn't erase it from history). See the Secrets section in [CLAUDE.md](CLAUDE.md).
 
 ---
 

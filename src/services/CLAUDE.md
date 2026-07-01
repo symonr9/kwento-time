@@ -6,8 +6,7 @@ The **side-effecting boundary** of the app: anything that touches the OS, networ
 
 ```
 services/
-  ai/              # OpenAI GPT-4o extraction; prompts + response schema
-  audio/           # expo-audio recording + Whisper.rn transcription wrapper
+  audio/           # expo-audio recording + native/on-device transcription wrapper
   auth/            # expo-local-authentication biometric lock
   background/      # nightly deterministic jobs
   backup/          # manual JSON export/import validation + restore UX
@@ -20,8 +19,8 @@ services/
 
 ## Rules
 
-- **Network only here, and only when opted in.** Outbound calls are GPT-4o extraction (`ai/`) and optional backup/sync. Everything else is on-device and offline.
-- **`ai/` runs only after transcript confirmation.** Persist raw transcript first, then extract. Keep prompts versioned so old transcripts can be re-processed.
+- **Network only here, and only when opted in.** Optional backup/sync is the planned outbound surface. Capture, transcription, structuring, reminders, and briefings stay on-device/offline.
+- **Transcript structuring is local.** Persist raw transcript first, then draft topics/follow-ups deterministically after confirmation. Do not add a transcription or capture-time LLM API call.
 - **Keep native SDK imports isolated.** Expo/native modules belong in service wrappers (`device-contacts.ts`, `recorder.ts`, `tts.ts`). Pure helpers and tests should not import native modules.
 - **`background/` tasks are deterministic and idempotent.** They call pure logic and `@/db/queries`; scheduling is the service's job.
 - **`auth/` gates app open**, enforced at the root layout in `@/app`.

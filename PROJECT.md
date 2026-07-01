@@ -18,7 +18,7 @@ It is **not a CRM.** No pipelines, no contacts-as-leads. It is a private memory 
 
 1. **Local-first, offline-always.** Every core feature works with no network. SQLite on the device is the source of truth.
 2. **Privacy by design.** No accounts, no server-side user data — **the device is the identity.** Data is encrypted at rest by the OS. No telemetry of user content.
-3. **AI on the boundary, opt-in.** AI augments; it never silently mutates data. The user confirms before anything is saved, and AI features degrade gracefully when models/network are absent.
+3. **AI on the boundary, opt-in.** AI augments; it never silently mutates data. The user confirms before anything is saved, and AI features degrade gracefully when local models are absent.
 4. **Warmth over management.** Language and UX are personal and kind, never salesy or "productivity-tool" cold.
 5. **Performance is a feature.** Must stay fast with 1,000+ people and 10,000+ conversations on-device.
 
@@ -30,7 +30,7 @@ It is **not a CRM.** No pipelines, no contacts-as-leads. It is a private memory 
 - Networkers, organizers, pastors/community leaders, salespeople-as-humans, the socially conscientious.
 
 **Use cases**
-- Log a conversation (typed now; voice + AI extraction later) and trust it'll resurface.
+- Log a conversation (typed now; native/on-device voice later) and trust it'll resurface.
 - Before an event, get primed on who'll be there and what to talk about.
 - Be nudged to follow up before a relationship goes cold.
 - Track the user's own life ("How Are You?") so they can answer "how've you been?" well.
@@ -43,9 +43,9 @@ It is **not a CRM.** No pipelines, no contacts-as-leads. It is a private memory 
 |---------|-------------|--------|
 | People & profiles | CRUD, relationship health score, last-contacted | ✅ Phase 1 (data layer done) |
 | People Tags | User-defined groupings (m:n) | Schema ready |
-| Conversation logging | Manual text now; voice + AI later | ✅ manual (data layer) |
-| On-device voice notes | expo-av record → Whisper.rn transcription (offline) → confirm | Planned |
-| AI entity extraction | GPT-4o extracts person/topics/events/follow-ups after user confirms transcript | Planned |
+| Conversation logging | Manual text now; native/on-device voice later | ✅ manual (data layer) |
+| On-device voice notes | expo-audio record → native/on-device speech-to-text → confirm | Planned |
+| Local transcript structuring | Deterministic local draft of topics/follow-ups after user confirms transcript | Planned |
 | Topic expiry system | active → expiring (7d) → extended → archived; 30-day timer | Schema ready |
 | Place Mode | Swipeable card deck priming who's at a place & what to talk about | Schema ready |
 | **Briefing (NEW)** | A spoken, hands-free place briefing — who you'll likely see, recent follow-ups, talking points — over a **deterministic retrieval + scoring layer**, narrated via TTS. **Deterministic mode is free & offline; an optional on-device LLM (Premium, free trial) smooths the narration.** See [docs/features/briefing.md](docs/features/briefing.md). | Planned |
@@ -63,8 +63,8 @@ It is **not a CRM.** No pipelines, no contacts-as-leads. It is a private memory 
 | App framework | **Expo SDK 56**, Expo Router (typed routes), React 19, React Native 0.85 | Development builds (no Expo Go). Read [versioned docs](https://docs.expo.dev/versions/v56.0.0/) before writing native code. |
 | Database | **expo-sqlite** | Single on-device SQLite file, WAL, FK-enforced. |
 | ORM / migrations | **Drizzle ORM + Drizzle Kit** | Schema-first, type-safe; runtime migrations via `<MigrationGate>`. |
-| On-device transcription | **Whisper.rn** | Offline, free; for voice notes. |
-| Cloud extraction AI | **OpenAI GPT-4o** (via SDK, optionally Cloudflare Worker proxy) | Only AI surface that uses the network; opt-in, post-confirmation. |
+| On-device transcription | **Native iOS/Android speech-to-text** | Offline or OS-provided local transcription where available; no transcription API call. A future native library is acceptable if it stays offline. |
+| Local structuring | **Deterministic transcript parser** | Drafts topics/follow-ups from confirmed transcripts without network calls. |
 | **On-device LLM (NEW)** | **llama.rn** (GGUF) — optional, Premium | Smooths Briefing narration (Enhanced mode); **fully offline, downloaded post-install — never bundled in the binary.** Deterministic mode needs no model. Alternatives: react-native-executorch, Cactus. Native module → dev-client rebuild; no Expo Go / web. |
 | **Text-to-speech (NEW)** | **expo-speech** (OS TTS, offline) | Hands-free briefing playback. Neural offline TTS (Piper/Kokoro) is a future upgrade. |
 | Background jobs | Expo Background Fetch + Task Manager | Nightly health-score recompute, topic-expiry checks, reminder scheduling. |
@@ -72,14 +72,14 @@ It is **not a CRM.** No pipelines, no contacts-as-leads. It is a private memory 
 | Security | **expo-local-authentication** + OS encryption-at-rest | Biometric lock; iOS Keychain / Android Keystore. |
 | Builds / delivery | **EAS Build + EAS Submit + EAS Update** | iOS built in cloud (dev on Windows); OTA JS updates. |
 
-### Two distinct AI surfaces (do not conflate)
+### Two distinct local intelligence surfaces (do not conflate)
 
-| | **Capture-time extraction** | **Briefing-time narration** |
+| | **Capture-time structuring** | **Briefing-time narration** |
 |---|---|---|
-| Model | Cloud GPT-4o | Deterministic templates (default) **or** offline tiny LLM (llama.rn, Premium) |
+| Model | Native/on-device speech-to-text + deterministic parser | Deterministic templates (default) **or** offline tiny LLM (llama.rn, Premium) |
 | When | After user confirms a transcript | When user taps "Briefing" |
-| Job | Extract structured data (person/topics/events/follow-ups) | Synthesize/prioritize/narrate already-retrieved data |
-| Network | Yes (opt-in) | **No — fully offline** |
+| Job | Draft structured data (topics/follow-ups) | Synthesize/prioritize/narrate already-retrieved data |
+| Network | **No — fully offline** | **No — fully offline** |
 | Writes DB? | Yes (structured rows) | **Never** |
 
 ---
@@ -89,7 +89,6 @@ It is **not a CRM.** No pipelines, no contacts-as-leads. It is a private memory 
 Deliberately minimal — the product is local-first, optimizing for fast iteration over cloud ops.
 
 - **No application backend.** No servers, no job queue, no user database. All compute (scoring, expiry, briefings) runs on-device.
-- **Optional Cloudflare Worker** — a thin proxy that holds the OpenAI key as a Worker secret so it never ships in the app bundle. The only "service" we operate, and only for capture-time extraction.
 - **Model distribution (Briefing — Enhanced mode only):**
   - **No model is bundled in the app binary** — models download post-install, on opt-in, via `expo-file-system`.
   - Default ~50–100 MB tiny model (e.g. SmolLM2-135M-Instruct GGUF); optional larger models the user chooses, from **Hugging Face** GGUF URLs or a **Cloudflare R2 / CDN** mirror.
@@ -103,7 +102,7 @@ Deliberately minimal — the product is local-first, optimizing for fast iterati
 
 Single SQLite DB via Drizzle. Core entities (see [src/db/schema/](src/db/schema/)):
 
-`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (raw transcript + GPT-4o summary + audio URI) · `Topic` · `TopicExpiry` (lifecycle) · `FollowUp` · `Reminder` · `MyLifeItem`.
+`Person` · `Tag` + `PersonTag` (m:n) · `Place` + `PersonPlace` (m:n, `isPrimary`) · `Conversation` (raw transcript + local summary + audio URI) · `Topic` · `TopicExpiry` (lifecycle) · `FollowUp` · `Reminder` · `MyLifeItem`.
 
 **Likely additions for Briefing** (future migrations — see the feature spec for detail): a structured `life_events` table, an `interests` representation for "shared interests," `briefing_preferences` (default filters/weights/length/voice), an on-device `ai_models` registry (or file-system-backed), and optional `briefings` history/cache.
 
@@ -111,23 +110,23 @@ Single SQLite DB via Drizzle. Core entities (see [src/db/schema/](src/db/schema/
 
 ## 9. Non-functional requirements
 
-- **Privacy/Security:** no PII leaves the device except opt-in GPT-4o extraction and opt-in backup. Biometric lock. Never log user content to analytics. Never commit secrets ([CLAUDE.md](CLAUDE.md) → Secrets).
+- **Privacy/Security:** no PII leaves the device except opt-in backup/sync. Biometric lock. Never log user content to analytics. Never commit secrets ([CLAUDE.md](CLAUDE.md) → Secrets).
 - **Performance:** list/detail queries stay fast at 1,000+ people / 10,000+ conversations (indexes, pagination, no N+1). Briefing generation target: retrieval+scoring < ~150 ms; LLM synthesis within a few seconds on a tiny model.
 - **Offline:** all core flows + Briefing work in airplane mode.
 - **Accessibility / hands-free:** Briefing is designed for driving — large targets, auto-play, voice output, minimal interaction.
-- **App size:** be deliberate about bundling models; the iOS cellular-download cap (~200 MB) means bundling a large model hurts install conversion. Prefer a tiny bundled default + opt-in downloads.
+- **App size:** be deliberate about bundling models. Prefer deterministic defaults + opt-in downloads for optional local models.
 
 ---
 
 ## 10. Roadmap (build phases)
 
 1. **Foundation** — Expo + Drizzle schema + SQLite init + People CRUD + manual conversation logging. ✅ *(data layer complete)*
-2. **Voice capture** — expo-av recording → Whisper.rn transcription → confirmation UI.
-3. **Cloud extraction** — GPT-4o entity extraction → Drizzle writes.
+2. **Voice capture** — expo-audio recording → native/on-device speech-to-text → confirmation UI.
+3. **Local structuring** — deterministic transcript draft → user confirmation → Drizzle writes.
 4. **Place Mode + "How Are You?"** — card deck + user life items.
 5. **Engagement engine** — topic-expiry jobs + local notifications + health-score recompute.
 6. **Hardening & launch** — biometric lock + freemium gating + backup/export + TestFlight/App Store.
-7. **Briefing** — on-device LLM + deterministic retrieval/scoring + TTS hands-free briefings. *(Builds on Place Mode (4) and benefits from extraction (3); the deterministic layer can ship before the LLM via the template fallback.)*
+7. **Briefing** — on-device LLM + deterministic retrieval/scoring + TTS hands-free briefings. *(Builds on Place Mode (4); the deterministic layer can ship before the LLM via the template fallback.)*
 
 ---
 
@@ -139,7 +138,7 @@ Single SQLite DB via Drizzle. Core entities (see [src/db/schema/](src/db/schema/
 | **On-device LLM = native module.** Needs a dev-build rebuild; bigger binary; battery/thermal cost. | Accept; gate behind Premium; lazy-load the model; expose model choice + download so users control footprint. |
 | **iOS dev from Windows.** No local iOS builds. | Use EAS cloud builds + physical iPhone (documented in README). |
 | **Integer PKs vs UUIDs.** Simpler/faster but harder for multi-device record-merge sync. | Integer PKs now; revisit if record-level sync is ever needed (whole-DB iCloud backup is unaffected). |
-| **AI cost creep on Premium.** Heavy loggers raise GPT-4o spend. | Track per-user cost; the briefing LLM is free (offline), so the marquee Premium feature has ~zero marginal cost. |
+| **Local model quality.** Small local models can read awkwardly or hallucinate. | Keep them narration-only over deterministic context, validate names/facts, and always fall back to deterministic templates. |
 
 ---
 

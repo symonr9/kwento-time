@@ -31,18 +31,18 @@ This project runs **Expo SDK 56** (React 19.2, React Native 0.85.3) - newer than
 
 ## Architecture Principles
 
-1. **Local-first, always offline.** Every feature must work with no network. The only network call in the whole app is optional GPT-4o extraction and optional backup/sync. SQLite is the source of truth.
+1. **Local-first, always offline.** Every feature must work with no network. Optional backup/sync is the only planned network surface. SQLite is the source of truth.
 2. **Privacy by design.** No accounts, no auth server - **the device is the identity.** Data is encrypted at rest by the OS (iOS Keychain / Android Keystore). No telemetry of user content.
-3. **AI is opt-in and on the boundary.** Transcription runs on-device. GPT-4o is called **only after the user confirms** a transcript. Persist both the raw transcript and structured summary; raw transcript is the source of truth for re-processing.
+3. **AI is opt-in and on the boundary.** Transcription uses native/on-device speech-to-text. Do not add a transcription or capture-time API call. Persist both the raw transcript and local structured summary; raw transcript is the source of truth for re-processing.
 4. **Determinism on-device.** Health scores, expiry, reminder scheduling, briefing retrieval, and review flows are deterministic local jobs.
 5. **Performance is a feature.** Target 1,000+ people and 10,000+ conversation notes per device. Index deliberately, paginate/virtualize lists, avoid N+1 reads.
 
-### Two AI Surfaces - Keep Them Separate
+### Two Local Intelligence Surfaces - Keep Them Separate
 
-| | Capture-time **extraction** | Briefing-time **narration** |
+| | Capture-time **structuring** | Briefing-time **narration** |
 |---|---|---|
-| Model | Cloud **GPT-4o** (opt-in, post-confirm) | **Deterministic templates** (default, free) or offline tiny LLM (`llama.rn`, Premium + trial) |
-| Job | Extract structured rows | Synthesize/prioritize/narrate already-retrieved data |
+| Model | Native/on-device speech-to-text + deterministic local drafting | **Deterministic templates** (default, free) or offline tiny LLM (`llama.rn`, Premium + trial) |
+| Job | Turn confirmed transcripts into suggested topics/follow-ups | Synthesize/prioritize/narrate already-retrieved data |
 | DB access | Writes structured rows | **Never reads or writes the DB** |
 
 **Deterministic-retrieval rule (Briefing):** a deterministic SQL + scoring layer retrieves and ranks the data; the LLM is a narrator over a fixed fact set and gets bounded context, never the database. A non-LLM template narrator must produce the same briefing when no model is present. See [docs/features/briefing.md](docs/features/briefing.md).
@@ -51,11 +51,11 @@ This project runs **Expo SDK 56** (React 19.2, React Native 0.85.3) - newer than
 
 ```
 expo-audio record (on-device)
-  -> Whisper.rn transcription (on-device, no network)
+  -> native/on-device speech-to-text (no network)
   -> raw transcript written to SQLite immediately
   -> user reviews + confirms transcript
-  -> GPT-4o entity extraction (direct from device, or via Cloudflare Worker proxy)
-  -> structured data written to SQLite
+  -> deterministic local structuring suggestions
+  -> user confirms suggested topics/follow-ups
   -> local notification scheduler triggered
 ```
 
@@ -66,8 +66,7 @@ Keep the UX instant: never block the UI on the network. Write the transcript bef
 - **Expo SDK 56 + Expo Router** (file-based routing, typed routes enabled) - frontend.
 - **expo-sqlite** - on-device database.
 - **Drizzle ORM** (SQLite adapter) - typed, schema-first query builder.
-- **expo-audio + Whisper.rn** - recording and on-device transcription.
-- **OpenAI SDK (GPT-4o)** - entity extraction, called from device or Worker proxy.
+- **expo-audio + native/on-device speech-to-text** - recording and local transcription. A future native library is okay if it stays offline.
 - **llama.rn** - optional offline GGUF LLM for Enhanced Briefing narration. Native module -> dev-client rebuild, no Expo Go/web.
 - **expo-speech** - offline OS text-to-speech for hands-free briefing playback.
 - **expo-contacts** - permissioned contact import/binding, isolated in `@/services/contacts`.
@@ -90,8 +89,7 @@ Topic, follow-up, and life-update expiry are surfaced together in the Keep Curre
 ## Secrets - Never Commit
 
 - **No secrets in source, ever.** No API keys, tokens, passwords, certs, `.env` files, keystores (`*.jks`/`*.p12`/`*.p8`), or `*.mobileprovision` in committed files.
-- **Load secrets from the environment**, not from code: use `expo-constants`, EAS env vars, EAS Secrets, or a Worker proxy.
-- **Prefer the Cloudflare Worker proxy** for OpenAI so the key never ships inside the app bundle.
+- **Load secrets from the environment**, not from code: use `expo-constants`, EAS env vars, or EAS Secrets for any future third-party service.
 - **Before every commit, review `git status` and `git diff --staged`.** If a secret is ever committed, rotate it immediately; removing it later is not enough.
 - Don't commit `node_modules/`, `.expo/`, generated `/ios` and `/android`, build output, or logs.
 
@@ -125,8 +123,8 @@ Topic, follow-up, and life-update expiry are surfaced together in the Keep Curre
 Historical specs are in docs; do not treat this list as current implementation status.
 
 1. Expo setup + Drizzle schema + SQLite init + People CRUD + manual conversation logging.
-2. Audio recording -> transcription -> confirmation UI.
-3. GPT-4o entity extraction -> Drizzle writes.
+2. Audio recording -> native/on-device transcription -> confirmation UI.
+3. Local transcript structuring -> Drizzle writes.
 4. Places, life updates, tags, icebreakers, and review workflows.
 5. Topic/follow-up/life-update expiry jobs + local notifications + health-score engine.
 6. Biometric lock + freemium gating + backup/import/export + TestFlight/App Store.
