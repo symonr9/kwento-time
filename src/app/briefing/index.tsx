@@ -22,7 +22,7 @@ import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
 import type { Place, Tag } from '@/db/schema';
 import {
   buildBriefingContext,
-  narrateBriefing,
+  createBriefingScript,
   scoreBriefingData,
   type BriefingContext,
   type BriefingLength,
@@ -306,7 +306,8 @@ export default function BriefingScreen() {
             });
       const scored = scoreBriefingData(retrieved, generatedAt);
       const nextContext = buildBriefingContext(retrieved, scored, length);
-      const nextScript = narrateBriefing(nextContext);
+      const narration = await createBriefingScript(nextContext);
+      const nextScript = narration.script;
       setContext(nextContext);
       setSelectionSummary(formatBriefingSelection(retrieved));
       setScript(nextScript);

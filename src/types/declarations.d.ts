@@ -13,3 +13,30 @@ declare module '*.module.css' {
   const classes: { readonly [key: string]: string };
   export default classes;
 }
+
+declare module '*.gguf' {
+  const asset: number;
+  export default asset;
+}
+
+declare module 'llama.rn' {
+  export function initLlama(options: {
+    model: string;
+    n_ctx: number;
+    n_gpu_layers?: number;
+    use_mlock?: boolean;
+  }): Promise<{
+    completion(
+      params: {
+        messages: { content: string; role: 'system' | 'user' }[];
+        n_predict: number;
+        stop: string[];
+        temperature: number;
+        top_k: number;
+        top_p: number;
+      },
+      onPartialCompletion?: (data: { token?: string }) => void,
+    ): Promise<{ text?: string }>;
+    release?: () => Promise<void> | void;
+  }>;
+}

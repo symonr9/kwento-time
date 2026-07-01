@@ -6,6 +6,7 @@ import { describe, it } from 'node:test';
 import { buildBriefingContext, briefingLengthBudgets } from './context';
 import { narrateBriefing } from './narrator';
 import { scoreBriefingData } from './scoring';
+import { createBriefingScript } from './synthesis';
 import type { BriefingRetrievedData } from './types';
 
 const now = new Date('2026-06-28T12:00:00.000Z');
@@ -186,5 +187,31 @@ describe('deterministic briefing', () => {
     });
 
     assert.match(script, /training for a 10K/);
+  });
+
+  it('uses LLM narration when validation succeeds', async () => {
+    const scored = scoreBriefingData(briefingData, now);
+    const context = buildBriefingContext(briefingData, scored, 'short');
+    const result = await createBriefingScript(context, async () => ({
+      engine: 'llm',
+      script: 'Before Community Hall, keep Mara and Noah in mind.',
+    }));
+
+    assert.equal(result.source, 'llm');
+    assert.equal(result.script, 'Before Community Hall, keep Mara and Noah in mind.');
+  });
+
+  it('falls back to deterministic narration when LLM generation fails validation', async () => {
+    const scored = scoreBriefingData(briefingData, now);
+    const context = buildBriefingContext(briefingData, scored, 'short');
+    const result = await createBriefingScript(context, async () => ({
+      detail: 'Generated narration mentioned an unknown name.',
+      reason: 'validation-failed',
+    }));
+
+    assert.equal(result.source, 'template-fallback');
+    assert.equal(result.fallbackReason, 'validation-failed');
+    assert.match(result.script, /Community Hall/);
+    assert.match(result.script, /Mara/);
   });
 });
