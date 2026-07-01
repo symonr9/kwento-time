@@ -6,13 +6,13 @@ The spoken, hands-free **briefing**: a user can select one place, or create a cu
 
 ```
 retrieve (DB)  ->  score (pure)  ->  assemble context (pure)  ->  narrate  ->  speak
-@/db/queries       scoring.ts        context.ts                 LLM | template @/services/speech
-/briefing.ts                                                    (@/services/llm)
+@/db/queries       scoring.ts        context.ts                 LLM first @/services/speech
+/briefing.ts                                                    template fallback
 ```
 
 - **Deterministic retrieval is the ONLY DB access.** It lives in `@/db/queries/briefing` and supports both place-based and custom selections.
 - **The LLM never touches the DB.** It receives a bounded `BriefingContext` and returns a narration script. No queries, no writes, no invented names.
-- **Deterministic mode is default and free.** `narrator.ts` must fully work without any model.
+- **LLM narration is the default user experience.** `narrator.ts` must still fully work without any model as a hidden fallback and test oracle.
 
 ## Files
 
@@ -31,5 +31,5 @@ briefing/
 - Only the most recent unresolved follow-ups enter context, with hard caps per the spec.
 - Signals to combine (normalized 0-1): selected-place affinity when applicable, relationship health, recency, topic freshness, unresolved follow-ups, shared interests, recent events, and timing.
 - The selected **length** sets the word/item/token budget; honor it in `context.ts` and synthesis.
-- Enhanced mode tries `@/services/llm`; on missing/disabled/failed model or name-validation failure, fall back to `narrator.ts`, then hand the script to `@/services/speech`.
-- Deterministic mode is free; Enhanced LLM mode is Premium/trial-gated. Never gate the deterministic path.
+- Narration tries `@/services/llm`; on web, missing native runtime, missing bundled model, timeout, validation failure, or native error, fall back to `narrator.ts`, then hand the script to `@/services/speech`.
+- Never expose a mode picker for deterministic vs LLM in the main UX. The fallback is operational, not a user-facing engine choice.

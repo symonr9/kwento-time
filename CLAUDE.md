@@ -41,11 +41,11 @@ This project runs **Expo SDK 56** (React 19.2, React Native 0.85.3) - newer than
 
 | | Capture-time **structuring** | Briefing-time **narration** |
 |---|---|---|
-| Model | Native/on-device speech-to-text + deterministic local drafting | **Deterministic templates** (default, free) or offline tiny LLM (`llama.rn`, Premium + trial) |
+| Model | Native/on-device speech-to-text + deterministic local drafting | **Bundled offline tiny LLM** (`llama.rn`) with hidden deterministic fallback |
 | Job | Turn confirmed transcripts into suggested topics/follow-ups | Synthesize/prioritize/narrate already-retrieved data |
 | DB access | Writes structured rows | **Never reads or writes the DB** |
 
-**Deterministic-retrieval rule (Briefing):** a deterministic SQL + scoring layer retrieves and ranks the data; the LLM is a narrator over a fixed fact set and gets bounded context, never the database. A non-LLM template narrator must produce the same briefing when no model is present. See [docs/features/briefing.md](docs/features/briefing.md).
+**Deterministic-retrieval rule (Briefing):** a deterministic SQL + scoring layer retrieves and ranks the data; the LLM is a narrator over a fixed fact set and gets bounded context, never the database. A non-LLM template narrator remains as an internal fallback/test oracle when no model is present, web is running, validation fails, or native inference errors. See [docs/features/briefing.md](docs/features/briefing.md).
 
 ## Hybrid AI Pipeline
 
@@ -67,7 +67,7 @@ Keep the UX instant: never block the UI on the network. Write the transcript bef
 - **expo-sqlite** - on-device database.
 - **Drizzle ORM** (SQLite adapter) - typed, schema-first query builder.
 - **expo-audio + native/on-device speech-to-text** - recording and local transcription. A future native library is okay if it stays offline.
-- **llama.rn** - optional offline GGUF LLM for Enhanced Briefing narration. Native module -> dev-client rebuild, no Expo Go/web.
+- **llama.rn** - offline GGUF LLM for default Briefing narration. Native module -> dev-client rebuild, no Expo Go/web.
 - **expo-speech** - offline OS text-to-speech for hands-free briefing playback.
 - **expo-contacts** - permissioned contact import/binding, isolated in `@/services/contacts`.
 - **Apple CarPlay (planned iOS native integration)** - audio-first Briefing + read-only People/Places reference. Spec: [docs/features/apple-carplay.md](docs/features/apple-carplay.md).
@@ -128,7 +128,7 @@ Historical specs are in docs; do not treat this list as current implementation s
 4. Places, life updates, tags, icebreakers, and review workflows.
 5. Topic/follow-up/life-update expiry jobs + local notifications + health-score engine.
 6. Biometric lock + freemium gating + backup/import/export + TestFlight/App Store.
-7. **Briefing** - deterministic retrieval/scoring + template narrator + TTS, then optional on-device LLM.
+7. **Briefing** - deterministic retrieval/scoring + bundled on-device LLM narration + hidden template fallback + TTS.
 8. **Apple CarPlay** - native iOS entitlement/scene bridge for Briefing and read-only People/Places.
 
 ## Developer Context

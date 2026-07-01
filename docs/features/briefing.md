@@ -1,6 +1,6 @@
 # Feature Spec — Briefing (Spoken Place Briefing)
 
-**Status:** Planned · **Tier:** Free (deterministic mode) + Premium (LLM mode) · **Owner:** TBD
+**Status:** Planned · **Tier:** Offline bundled LLM with hidden deterministic fallback · **Owner:** TBD
 **Related:** Place Mode ([src/features/places/](../../src/features/places/)), on-device AI direction in [PROJECT.md](../../PROJECT.md)
 
 ---
@@ -12,9 +12,7 @@ A one-tap, **hands-free spoken briefing** the user plays *before walking into a 
 The intelligence is split in two on purpose:
 
 1. A **deterministic retrieval + scoring layer** pulls and ranks data from SQLite. **This is the only thing that touches the database.**
-2. A **narrator** turns that ranked, bounded context into a spoken script — in one of two user-chosen modes (§8):
-   - **Deterministic mode** (default · free · fully offline): a template narrator composes the script directly from the data. No model, no download, instant.
-   - **Enhanced mode** (Premium · opt-in model download): an **on-device LLM** smooths the *same* context into more natural, varied narration. It only synthesizes/prioritizes/narrates — it never queries the DB, never invents people, never writes anything.
+2. A **narrator** turns that ranked, bounded context into a spoken script. The user-facing narrator is a bundled **on-device LLM**: no cloud call, no post-install model download, no R2/CDN dependency. It only synthesizes/prioritizes/narrates — it never queries the DB, never invents people, never writes anything. A template narrator remains as an internal fallback/test oracle for web, missing native runtime, validation failure, or native errors.
 
 Output is read aloud via **text-to-speech**, auto-playing, designed for driving / eyes-free use. The user controls **how long** the briefing is and **how** data is retrieved (filters/form).
 
@@ -155,7 +153,7 @@ Maps directly onto retrieval, scoring, length, and output.
 | **Advanced weights** | Per-signal sliders (Custom preset) | Overrides individual weights |
 | **People scope** | Max people; include "maybes" (weakly-linked); tag filter | Presence threshold + candidate set |
 | **Content filters** | Include/exclude follow-ups, topics, events, interests; tone filter (light/medium/personal) | Item categories retrieved |
-| **Narration mode** | Deterministic (free) · On-device LLM (Premium, w/ free trial) · *(advanced)* Remote Ollama; plus model & voice pickers | Selects the synthesis engine (§8) |
+| **Narration** | Bundled on-device LLM with hidden template fallback; plus voice picker | Selects spoken synthesis/playback settings (§8) |
 | **Voice** | TTS voice, rate/pitch | Playback (§10) |
 
 Defaults are saved (proposed `briefing_preferences`) so "Quick briefing" needs zero configuration.
@@ -166,13 +164,13 @@ Defaults are saved (proposed `briefing_preferences`) so "Quick briefing" needs z
 
 Input: the bounded **BriefingContext** (§9). Output: a plain-text spoken **script**. The narrator runs in one of three engines; the first is the default and the guaranteed floor of quality.
 
-### 8a. Deterministic mode — no LLM (default · free)
-A pure function in `src/features/briefing/narrator.ts` stitches the ranked context into natural sentences from templates (e.g. *"You'll likely see {name}. Last time you talked about {topic}, and you still owe them {followup}."*). No model, no download, no network — instant and identical every run. This is the **default**, works on every device, and ships **first** (before any LLM work). Even when Enhanced mode is on, this is the fallback whenever the model is missing, disabled, or fails validation.
-
-### 8b. Enhanced mode — on-device LLM (Premium · opt-in download)
-The user downloads a small GGUF model (§10); `src/services/llm` rewrites the *same* `BriefingContext` into smoother, more varied, more human narration. Fully offline once downloaded.
+### 8a. Default mode — bundled on-device LLM
+The app ships with a tiny GGUF model (§10); `src/services/llm` rewrites the *same* `BriefingContext` into smoother, more varied, more human narration. Fully offline from first launch, with no model download or CDN dependency.
 - **Engine: `llama.rn`** (GGUF). Prompt: a fixed system template — *"You are a briefing assistant. Narrate a concise, warm spoken briefing for the user before they arrive at {place}. Use ONLY the facts below, in priority order. ~{words} words. Conversational, second person, no bullet lists, easy to listen to while driving. Do not invent names or facts."* — then the serialized context.
-- **Guardrails:** low temperature; hard token cap from the length budget; **name validation** — if the output names a person not in the context, discard it and fall back to 8a. The LLM can never drop factual accuracy below deterministic mode.
+- **Guardrails:** low temperature; hard token cap from the length budget; user/DB text serialized as quoted data, not instructions; **name/place validation** — if the output names a person or place not in the context, discard it and fall back to 8b. The LLM can never drop factual accuracy below the internal fallback floor.
+
+### 8b. Hidden fallback — deterministic template narrator
+A pure function in `src/features/briefing/narrator.ts` stitches the ranked context into natural sentences from templates (e.g. *"You'll likely see {name}. Last time you talked about {topic}, and you still owe them {followup}."*). No model, no download, no network — instant and stable. It is not a main UX choice, but it must fully work for web, tests, missing bundled model assets, native runtime failures, low-memory failures, empty/too-long LLM output, and validation failures.
 
 ### 8c. Remote Ollama — advanced / online (optional · not default)
 For power users running **[Ollama](https://ollama.com) on their own desktop/home server**, the app can call that server's HTTP API as the narration engine for top-tier quality. **Online and opt-in** — *not* the offline default; it sends the (already-bounded) context to the user's own machine, so data stays under their control but connectivity is required. Clearly labelled; never relied on for hands-free driving without a connection. (Ollama cannot run on the phone itself — see §10.)
@@ -181,9 +179,9 @@ For power users running **[Ollama](https://ollama.com) on their own desktop/home
 
 | Mode | Tier |
 |------|------|
-| Deterministic (8a) | **Free** — always available, fully offline. |
-| On-device LLM (8b) | **Premium**, with a **free trial** (e.g. first _N_ briefings or a short time window — exact mechanic TBD) so users feel the upgrade before paying. |
-| Remote Ollama (8c) | Premium / advanced; requires the user's own Ollama server. |
+| Bundled on-device LLM (8a) | Default briefing experience; fully offline. |
+| Hidden template fallback (8b) | Operational fallback/test oracle; not a user-facing mode picker. |
+| Remote Ollama (8c) | Future advanced option only if explicitly added; requires the user's own Ollama server. |
 
 ---
 
@@ -214,17 +212,17 @@ type BriefingContext = {
 
 ## 10. Model management
 
-> **Policy: no model is ever bundled in the app binary.** Models are **downloaded after install**, on demand, into app storage. This keeps the binary/download small (the iOS over-the-air install cap is ~200 MB), means only users who opt into Enhanced mode pay the storage cost, and lets us add/upgrade models without shipping a new build.
+> **Policy: one tiny open-licensed model is bundled in the app binary for v1.** This intentionally trades install size and binary updates for zero setup, no post-install download, no Cloudflare R2/CDN dependency, and fully offline first-run briefings.
 
-- **On-device runtime: `llama.rn`** (GGUF). The first time a user enables Enhanced mode, they pick and download a model — an **"Ollama-style" in-app pull**: browse the registry → download → use.
-- **Default download:** a tiny model in the **~50–100 MB** class — e.g. **SmolLM2-135M-Instruct GGUF** (Q4_K_M ≈ 105 MB, Q3_K_M ≈ 94 MB). Usable for narration given §8b's guardrails; weak in the open-ended sense.
-- **Optional larger models (user choice):** SmolLM2-360M (~270 MB) or Qwen2.5-0.5B-Instruct (~400 MB) for better fluency, on Wi-Fi.
-- **Registry & download:** entries of `{ id, name, size, quant, sourceUrl, checksum }`. Download via `expo-file-system`; show size + progress; verify checksum; allow delete. Proposed `ai_models` table (or a file-system manifest).
-- **Sources:** Hugging Face direct GGUF URLs or a Cloudflare R2 / CDN mirror.
+- **On-device runtime: `llama.rn`** (GGUF). The model is resolved from the native bundle and loaded lazily on first briefing generation.
+- **Bundled default:** a tiny model in the **~90-110 MB** class — e.g. **SmolLM2-135M-Instruct GGUF** Q4. Usable for narration given §8a's guardrails; weak in the open-ended sense.
+- **Optional larger models (future):** SmolLM2-360M (~270 MB) or Qwen2.5-0.5B-Instruct (~400 MB) for better fluency, likely as optional downloads only after v1.
+- **Manifest:** static entries of `{ id, name, sizeBytes, quant, bundledAsset, checksum }`. If the native runtime requires a filesystem path, copy the bundled asset into app storage via `expo-file-system` and verify checksum/size before use.
+- **Source of bundled model:** an open-licensed GGUF checked in or attached through build assets. Do not include private prompts, user examples, secrets, or fine-tunes containing personal data.
 
-> **About Ollama (your preference).** Ollama is a **desktop/server** runtime — it does **not** run on iOS/Android, so it can't be the on-device engine. Every "Ollama on mobile" app is really a *client to an Ollama server running elsewhere*. We honor the preference two ways: **(1) as your dev tool** — use Ollama on your machine to discover/pull/test/quantize candidate models, then export the GGUF and host it for the app to download; **(2) optional remote backend** (§8c) — users can point the app at their own Ollama server when online. On-device inference uses `llama.rn` + GGUF, wrapped in an Ollama-style pull UX so it *feels* like Ollama.
+> **About Ollama.** Ollama is a **desktop/server** runtime — it does **not** run on iOS/Android, so it can't be the on-device engine. It remains useful as a dev-side tool to compare candidate models and prompts before choosing the bundled GGUF. A remote Ollama client is future/advanced only and is not part of the offline default.
 
-- **Tradeoffs to surface in-app:** bigger model = better wording but more storage, RAM, battery/thermal, slower first token. Default stays tiny; deterministic mode (§8a) needs no model at all.
+- **Tradeoffs to account for:** bigger model = better wording but more install size, RAM, battery/thermal, and slower first token. Default stays tiny; the hidden deterministic fallback (§8b) needs no model at all.
 
 ---
 
@@ -247,7 +245,7 @@ Generate with `npm run db:generate` when implemented (see [src/db/CLAUDE.md](../
 | `briefing_preferences` | Saved default filters, weight preset, length, model, voice (one row / singleton). |
 | `life_events` | Structured recent events per person (better than parsing summaries) → powers `recentEvent`. |
 | `interests` (or extend `tags`) | Represent user + person interests for `sharedInterest`. |
-| `ai_models` | On-device model registry: id, name, size, quant, source, checksum, downloaded state. *(Could be a file manifest instead.)* |
+| `ai_models` | Future optional-download registry if larger models are added. V1 can use a static bundled-model manifest instead. |
 | `briefings` (optional) | History/cache of generated briefings (context + script + timestamp) for replay and debugging. |
 
 ---
@@ -262,7 +260,7 @@ Generate with `npm run db:generate` when implemented (see [src/db/CLAUDE.md](../
 | `src/features/briefing/narrator.ts` | Deterministic narrator — the default (8a) **and** the LLM fallback (pure). |
 | `src/features/briefing/hooks/` | Orchestration hook (retrieve → score → synthesize → play). |
 | `src/features/briefing/components/` | Briefing form + playback UI. |
-| `src/services/llm/` | On-device LLM runtime wrapper + model manager (download/load/generate). |
+| `src/services/llm/` | On-device LLM runtime wrapper + bundled model resolver + prompt/validation/generate API. |
 | `src/services/speech/` | TTS + playback/session control. |
 | `src/app/briefing/` | Route(s): form + playback screen; entry button on home. |
 
@@ -274,8 +272,8 @@ Dependency direction holds: features → services/db; the LLM service has no DB 
 
 1. **Deterministic MVP (no LLM):** retrieval + scoring + context + **template narrator** + `expo-speech` playback + basic form. Ships value immediately, fully offline, fully deterministic.
 2. **Length & form polish:** presets, advanced weight sliders, saved preferences, hands-free playback controls + keep-awake + audio routing.
-3. **On-device LLM (Premium):** integrate `llama.rn`; **download** (never bundle) the tiny default model on opt-in; LLM synthesis with the deterministic narrator as fallback + name-validation guardrail; Premium gating + free trial.
-4. **Model registry:** downloadable larger models with size/quality tradeoffs surfaced; Ollama-style pull UX; user selection.
+3. **On-device LLM default:** integrate `llama.rn`; bundle the tiny default model; LLM synthesis with the deterministic narrator as fallback + name/place/length validation guardrails.
+4. **Native hardening:** real-device latency, RAM, battery/thermal, asset-copy/checksum, and low-end Android testing.
 5. **Stretch:** structured `life_events`, semantic shared-interest matching, neural TTS, CarPlay/Android Auto.
 
 ---
@@ -283,18 +281,18 @@ Dependency direction holds: features → services/db; the LLM service has no DB 
 ## 15. Risks, tradeoffs & open questions
 
 **Risks/tradeoffs**
-- Tiny LLM fluency/hallucination → mitigated by narration-only scope, low temperature, name-validation, deterministic fallback. Deterministic mode is always available, so quality never falls below a known floor.
-- Native module (llama.rn) → dev-client rebuild, battery/thermal cost; gate behind Premium, lazy-load, keep default model tiny.
-- App size → **no model ships in the binary** (§10). Deterministic mode needs no model; Enhanced-mode models are downloaded post-install on opt-in.
+- Tiny LLM fluency/hallucination → mitigated by narration-only scope, low temperature, prompt-injection-resistant serialization, name/place validation, length caps, and deterministic fallback. The fallback is always available, so quality never falls below a known floor.
+- Native module (llama.rn) → dev-client rebuild, no Expo Go/web, battery/thermal cost; lazy-load and keep default model tiny.
+- App size → the bundled model increases every install. This is an intentional tradeoff for no download/CDN/R2 overhead and offline first-run briefings.
 - Driving safety/UX → auto-play, minimal taps, big targets; never require reading while moving.
 
 **Decided**
-- **No model in the app binary** — all models download post-install on opt-in (§10).
-- **Two user-facing modes**: deterministic (free, offline, default) and on-device LLM (Premium, free trial); remote Ollama is an optional advanced/online backend (§8).
+- **Bundle one tiny model in the app binary** for v1 (§10).
+- **One main user-facing narration path**: bundled on-device LLM, with deterministic fallback hidden operationally (§8).
 
 **Open questions (confirm before/while building)**
 1. **Presence vs health emphasis:** should "reconnect mode" prioritize *fading* relationships even if less likely present, or always gate on presence first? (Default: presence gates inclusion; health tunes ordering.)
-2. **Free-trial mechanic for Enhanced mode:** count-based (first _N_ LLM briefings free) vs time-based (X days)? (Lean: count-based — the value is felt per-use, not on a clock.)
+2. **Bundled model exact quant:** SmolLM2-135M Q4_K_M vs ARM-optimized quant after a real-device spike.
 3. **Runtime:** confirm `llama.rn` vs `react-native-executorch` vs Cactus after a quick spike on a real device (latency, size, iOS/Android parity).
 4. **Calendar context source:** birthdays from `Person.birthday` only, or integrate device calendar (adds a permission + scope)?
 5. **"Likely to see" without check-ins:** with no location/check-in data yet, presence is inferred from place links + recency — is that sufficient for v1, or do we add lightweight check-ins?
