@@ -77,7 +77,8 @@
           "forceCxx20": true,
           "enableOpenCLAndHexagon": false
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
