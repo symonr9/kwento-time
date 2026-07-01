@@ -21,7 +21,7 @@ export const bundledBriefingModel: BundledBriefingModel = {
   id: 'smollm2-135m-instruct-q4',
   // Lazy so Node tests do not try to execute the GGUF binary; Metro still sees it in native builds.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  loadAssetModule: () => require('@/assets/models/SmolLM2-135M-Instruct-Q4_K_M.gguf'),
+  loadAssetModule: () => require('../../../assets/models/SmolLM2-135M-Instruct-Q4_K_M.gguf'),
   name: 'SmolLM2 135M Instruct Q4',
   quantization: 'Q4_K_M',
   sizeBytesApprox: 105454432,
