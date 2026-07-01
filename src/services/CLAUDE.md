@@ -1,28 +1,31 @@
-# src/services — Device & external integrations
+# src/services - Device & external integrations
 
-The **side-effecting boundary** of the app: anything that touches the OS, the network, or device hardware. Features call services; services don't call features.
+The **side-effecting boundary** of the app: anything that touches the OS, network, filesystem, device hardware, permissions, or native SDKs. Features call services; services do not call features.
 
 ## Layout
 
 ```
 services/
-  ai/              # OpenAI GPT-4o entity extraction; prompt templates + response schema
-  audio/           # expo-av recording + Whisper.rn on-device transcription wrapper
-  llm/             # on-device GGUF LLM (llama.rn) runtime + model manager — Briefing narration (offline, NO DB access)
-  speech/          # text-to-speech (expo-speech) + hands-free playback/session control
-  notifications/   # expo-notifications — schedule/cancel local reminders
-  background/      # Expo Background Fetch tasks: nightly health recompute, expiry checks, reminder scheduling
-  auth/            # expo-local-authentication — biometric lock (Face ID / Touch ID)
-  backup/          # iCloud sync / manual JSON export + import (GDPR export/delete)
+  ai/              # OpenAI GPT-4o extraction; prompts + response schema
+  audio/           # expo-audio recording + Whisper.rn transcription wrapper
+  auth/            # expo-local-authentication biometric lock
+  background/      # nightly deterministic jobs
+  backup/          # manual JSON export/import validation + restore UX
+  contacts/        # expo-contacts wrapper + pure normalization
+  llm/             # optional on-device GGUF LLM for Enhanced Briefing narration
+  notifications/   # expo-notifications local reminders
+  preferences/     # key-value user preferences (theme, dismissed reminders)
+  speech/          # expo-speech playback/session control
 ```
 
 ## Rules
 
-- **Network only here, and only when opted in.** The *only* outbound calls in the app are GPT-4o extraction (`ai/`) and optional backup (`backup/`). Everything else is on-device and offline. Transcription (`audio/`) is **on-device, no network**.
-- **`ai/` is called only after the user confirms a transcript.** Persist the raw transcript first (via `@/db`), then extract. Keep prompts versioned in `ai/` so transcripts can be re-processed as prompts improve. The OpenAI key may be proxied through a Cloudflare Worker to keep it off the device — design `ai/` so the base URL is swappable.
-- **`background/` tasks must be deterministic and idempotent** — they run nightly and may re-run. They call into pure logic in `@/features` (e.g. `health-score`, expiry transitions) and into `@/db/queries`; the *scheduling* is the service's job, the *math* is the feature's.
+- **Network only here, and only when opted in.** Outbound calls are GPT-4o extraction (`ai/`) and optional backup/sync. Everything else is on-device and offline.
+- **`ai/` runs only after transcript confirmation.** Persist raw transcript first, then extract. Keep prompts versioned so old transcripts can be re-processed.
+- **Keep native SDK imports isolated.** Expo/native modules belong in service wrappers (`device-contacts.ts`, `recorder.ts`, `tts.ts`). Pure helpers and tests should not import native modules.
+- **`background/` tasks are deterministic and idempotent.** They call pure logic and `@/db/queries`; scheduling is the service's job.
 - **`auth/` gates app open**, enforced at the root layout in `@/app`.
-- Each service exposes a small typed API via `index.ts` and hides the SDK behind it — so swapping a provider (or mocking in tests) touches one file.
-- Respect freemium caps (5 AI notes/mo on free) before calling `ai/`; check via the shared gating check, not ad hoc.
+- Each service exposes a small typed API via `index.ts` and hides provider-specific SDK details.
+- Respect freemium caps before calling paid/limited services; check via shared gating, not ad hoc.
 
-Read https://docs.expo.dev/versions/v56.0.0/ for the current API of each Expo module (av, notifications, background-fetch/task-manager, local-authentication) before wiring.
+Read https://docs.expo.dev/versions/v56.0.0/ for the current API of each Expo module before wiring.

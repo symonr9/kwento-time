@@ -1,40 +1,43 @@
-# src/features — Domain feature modules
+# src/features - Domain feature modules
 
-Each subfolder is a **vertical slice** of one domain area: its data hooks, business logic, and feature-specific UI. This is where most app code lives.
+Each subfolder is a **vertical slice** of one domain area: data hooks, business logic, and feature-specific UI. Most app code lives here.
 
-## Layout (one folder per domain)
+## Layout
 
 ```
 features/
   people/          # profiles, tags, relationship health score
   conversations/   # logging, transcript review/confirm, history
-  topics/          # talking points + expiry lifecycle (active→expiring→extended→archived)
-  places/          # Place Mode swipeable card deck, person↔place links
+  topics/          # talking points + expiry lifecycle
+  places/          # place profiles, person-place links
   reminders/       # follow-ups + reminder scheduling logic
-  my-life/         # "How Are You?" — user's own life items (light/medium/personal)
-  voice/           # record → transcribe → confirm flow (UI side of the AI pipeline)
-  briefing/        # Briefing — deterministic retrieval+scoring, narration, hands-free playback UI
-  carplay/         # Apple CarPlay view models for Briefing + read-only People/Places
+  my-life/         # user's own life updates
+  voice/           # record -> transcribe -> confirm flow
+  briefing/        # select place/custom people/life updates, then narration/playback
+  icebreakers/     # reusable icebreaker questions with tone + tags
+  review/          # Keep Current flows for stale/expiring items
+  carplay/         # planned CarPlay view models for Briefing + read-only People/Places
 ```
 
-> **`briefing/` holds the deterministic brains** (pure `scoring.ts` / `context.ts` / `narrator.ts`) and the form/playback UI. It calls `@/db/queries/briefing` (the only DB access) and the `@/services/llm` + `@/services/speech` services. The on-device LLM never touches the DB — see [docs/features/briefing.md](../../docs/features/briefing.md).
+> **`briefing/` holds the deterministic brains** (pure scoring/context/narrator code) and playback orchestration. It calls `@/db/queries/briefing` for retrieval and `@/services/llm` + `@/services/speech` for synthesis/playback. The on-device LLM never touches the DB.
 
-> **`carplay/` stays pure.** It shapes briefing/home/people-place data for a future native iOS CarPlay scene, but does not call native CarPlay APIs, mutate the DB, or introduce phone-only UI assumptions. See [docs/features/apple-carplay.md](../../docs/features/apple-carplay.md).
+> **`carplay/` stays pure.** It shapes briefing/home/people-place data for a future native iOS CarPlay scene, but does not call native CarPlay APIs, mutate the DB, or introduce phone-only UI assumptions.
 
-## Conventions for a feature folder
+## Feature Folder Convention
 
 ```
 people/
-  components/      # UI used only by this feature (e.g. person-card.tsx)
-  hooks/           # data hooks wrapping @/db/queries (e.g. use-people.ts)
-  <logic>.ts       # pure domain logic (e.g. health-score.ts)
-  index.ts         # public surface — what the rest of the app may import
+  components/      # UI used only by this feature
+  hooks/           # data hooks wrapping @/db/queries
+  <logic>.ts       # pure domain logic
+  index.ts         # public surface
 ```
 
 ## Rules
 
-- **Depend downward only:** features may import from `@/db`, `@/services`, `@/lib`, `@/components`, `@/constants`, `@/types`. Features should **not** import each other's internals — go through a feature's `index.ts`, or lift the shared piece up.
-- **Pure domain logic stays pure.** Health-score math, expiry-state transitions, and gating checks must be deterministic, side-effect-free, and unit-testable. Scheduling/IO that runs them lives in `@/services` (background, notifications).
+- **Depend downward only:** features may import from `@/db`, `@/services`, `@/lib`, `@/components`, `@/constants`, and `@/types`.
+- Features should not import each other's internals. Go through a feature's `index.ts`, or lift shared pieces up.
+- **Pure domain logic stays pure.** Health-score math, expiry transitions, scoring, filtering, and gating checks should be side-effect-free and unit-testable.
 - Data hooks call `@/db/queries`; they never embed Drizzle/SQL.
 - UI here is feature-specific. Promote to `@/components` only when a second feature needs it.
-- **Freemium gating** (25 people / 1 place / 5 notes/mo on free) should be a single shared check (e.g. `@/features/billing` or `@/lib/limits`) reused everywhere, not re-implemented per screen.
+- Freemium gating should be one shared check reused everywhere.
