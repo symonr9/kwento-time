@@ -118,10 +118,27 @@ describe('deterministic briefing', () => {
     const context = buildBriefingContext(briefingData, scored, 'medium');
     const script = narrateBriefing(context);
 
-    assert.match(script, /Before you arrive at Community Hall/);
-    assert.match(script, /Ask Mara: How did the fundraiser go\?/);
-    assert.match(script, /Recently with Noah: Mentioned weekend travel\./);
-    assert.match(script, /That is the current briefing\./);
+    assert.match(script, /Community Hall/);
+    assert.match(script, /Mara/);
+    assert.match(script, /Noah/);
+    assert.match(script, /How did the fundraiser go\?/);
+    assert.match(script, /Mentioned weekend travel\./);
+    assert.match(script, /You have been preparing for the reunion\./);
+    assert.match(script, /\n\n/);
+  });
+
+  it('keeps deterministic narration stable while allowing seeded variation', () => {
+    const scored = scoreBriefingData(briefingData, now);
+    const context = buildBriefingContext(briefingData, scored, 'medium');
+    const firstScript = narrateBriefing(context);
+    const secondScript = narrateBriefing(context);
+    const nextDayScript = narrateBriefing({
+      ...context,
+      generatedAt: daysFromNow(1).toISOString(),
+    });
+
+    assert.equal(firstScript, secondScript);
+    assert.notEqual(firstScript, nextDayScript);
   });
 
   it('narrates an actionable empty state when no people are linked', () => {
@@ -168,7 +185,6 @@ describe('deterministic briefing', () => {
       },
     });
 
-    assert.match(script, /Here is the general overview/);
     assert.match(script, /training for a 10K/);
   });
 });
