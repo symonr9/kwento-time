@@ -6,6 +6,8 @@ import {
   requestPermissionsAsync,
 } from 'expo-contacts';
 
+import { buildDeviceContactName } from './contact-normalization';
+
 export type DeviceContactPerson = {
   avatarUri?: string | null;
   name: string;
@@ -22,27 +24,8 @@ const contactListFields = [
 
 type ContactListDetails = Awaited<ReturnType<typeof Contact.getAllDetails<typeof contactListFields>>>[number];
 
-function buildName({
-  familyName,
-  fullName,
-  givenName,
-}: {
-  familyName?: string | null;
-  fullName?: string | null;
-  givenName?: string | null;
-}) {
-  return (
-    fullName?.trim() ||
-    [givenName, familyName]
-      .map((part) => part?.trim())
-      .filter(Boolean)
-      .join(' ')
-      .trim()
-  );
-}
-
 function toDeviceContactPerson(details: ContactListDetails): DeviceContactPerson | null {
-  const name = buildName(details);
+  const name = buildDeviceContactName(details);
 
   if (!name) {
     return null;
@@ -83,7 +66,7 @@ async function toDeviceContactPersonFromContact(contact: Contact): Promise<Devic
     contact.getThumbnail().catch(() => null),
     safelyReadContactNotes(contact),
   ]);
-  const name = buildName({ familyName, fullName, givenName });
+  const name = buildDeviceContactName({ familyName, fullName, givenName });
 
   if (!name) {
     return null;
