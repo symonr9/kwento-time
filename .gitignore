@@ -85,5 +85,11 @@ pids
 *.tgz
 .yarn-integrity
 
+
+# ─────────────────────────────────────────────────────────────
+# Models
+# ─────────────────────────────────────────────────────────────
+assets/models/*.gguf
+
 # Stray npm cache dir created by a malformed --cache path on Windows
 Userssyr09AppDataRoamingnpm-cache/
