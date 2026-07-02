@@ -1,14 +1,16 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState, type ComponentProps } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-row';
+import { SearchField } from '@/components/ui/search-field';
 import { SurfaceCard } from '@/components/ui/surface-card';
+import { TabScreenHeader } from '@/components/ui/tab-screen-header';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { createOrUpdatePersonFromContact, getPeopleListSummaries } from '@/db/queries/people';
 import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
@@ -32,7 +34,7 @@ export default function PeopleScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const loadPeople = useCallback(async (isActive = true) => {
+  const loadPeople = useCallback(async (shouldApply: () => boolean = () => true) => {
     setIsLoading(true);
     setError(null);
 
@@ -42,18 +44,18 @@ export default function PeopleScreen() {
         getAllTags(),
         getItemTagLinks('person'),
       ]);
-      if (isActive) {
+      if (shouldApply()) {
         setPeople(rows);
         setTags(tagRows);
         setTagLinks(linkRows);
       }
     } catch (err) {
-      if (isActive) {
+      if (shouldApply()) {
         const message = err instanceof Error ? err.message : String(err);
         setError(`Loading people, tags, and tag links failed: ${message}`);
       }
     } finally {
-      if (isActive) {
+      if (shouldApply()) {
         setIsLoading(false);
       }
     }
@@ -63,7 +65,7 @@ export default function PeopleScreen() {
     useCallback(() => {
       let isActive = true;
 
-      void loadPeople(isActive);
+      void loadPeople(() => isActive);
 
       return () => {
         isActive = false;
@@ -161,35 +163,7 @@ export default function PeopleScreen() {
         ]}
         contentInsetAdjustmentBehavior="automatic">
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <View style={styles.hero}>
-              <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
-              <ThemedText type="subtitle" themeColor="primary">
-                People
-              </ThemedText>
-            </View>
-
-            <Link href="/settings" asChild>
-              <Pressable
-                accessibilityLabel="Open settings"
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.settingsButton,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    borderColor: theme.border,
-                    opacity: pressed ? 0.72 : 1,
-                  },
-                ]}>
-                <SymbolView
-                  name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
-                  size={20}
-                  tintColor={theme.text}
-                  fallback={<View style={[styles.settingsFallback, { backgroundColor: theme.text }]} />}
-                />
-              </Pressable>
-            </Link>
-          </View>
+          <TabScreenHeader title="People" />
 
           <View style={styles.filterPanel}>
             <View style={styles.importActions}>
@@ -206,20 +180,10 @@ export default function PeopleScreen() {
                 onPress={confirmImportAllContacts}
               />
             </View>
-            <TextInput
+            <SearchField
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search people"
-              placeholderTextColor={theme.textSecondary}
-              autoCapitalize="none"
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                  color: theme.text,
-                },
-              ]}
             />
             <HorizontalFilterChipRow
               selectedValue={selectedTagId}
@@ -307,36 +271,10 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     gap: Spacing.three,
   },
-  header: {
-    minHeight: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  headerMark: {
-    width: 40,
-    height: 4,
-    borderRadius: Radius.small,
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.medium,
-    borderCurve: 'continuous',
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 8px 18px rgba(36, 48, 58, 0.08)',
-  },
   settingsFallback: {
     width: 18,
     height: 18,
     borderRadius: Radius.small,
-  },
-  hero: {
-    gap: Spacing.two,
-    paddingBottom: Spacing.three,
   },
   filterPanel: {
     gap: Spacing.two,
@@ -356,15 +294,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
-  },
-  searchInput: {
-    minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
   },
   list: {
     gap: Spacing.two,

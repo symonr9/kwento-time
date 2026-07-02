@@ -282,7 +282,7 @@ export default function SettingsScreen() {
                 ]}>
                 <ThemedText
                   type="smallBold"
-                  style={isBiometricEnabled ? styles.primaryButtonText : undefined}>
+                  themeColor={isBiometricEnabled ? 'onPrimary' : undefined}>
                   {isBiometricEnabled ? 'On' : 'Off'}
                 </ThemedText>
               </Pressable>
@@ -321,9 +321,9 @@ export default function SettingsScreen() {
                   },
                 ]}>
                 {isExporting ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={theme.onPrimary} />
                 ) : (
-                  <ThemedText type="smallBold" style={styles.primaryButtonText}>
+                  <ThemedText type="smallBold" themeColor="onPrimary">
                     Generate
                   </ThemedText>
                 )}
@@ -515,9 +515,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
   },
   secondaryButton: {
     flexGrow: 1,

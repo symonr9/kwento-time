@@ -38,7 +38,7 @@ export default function KeepCurrentScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const loadReviewItems = useCallback(async (isActive = true) => {
+  const loadReviewItems = useCallback(async (shouldApply: () => boolean = () => true) => {
     setIsLoading(true);
     setError(null);
 
@@ -50,17 +50,17 @@ export default function KeepCurrentScreen() {
         getMyLifeItemsExpiringSoon(now, 50),
       ]);
 
-      if (isActive) {
+      if (shouldApply()) {
         setTopics(topicRows);
         setFollowUps(followUpRows);
         setLifeItems(lifeRows);
       }
     } catch (err) {
-      if (isActive) {
+      if (shouldApply()) {
         setError(err instanceof Error ? err.message : 'Unable to load review items.');
       }
     } finally {
-      if (isActive) {
+      if (shouldApply()) {
         setIsLoading(false);
       }
     }
@@ -69,7 +69,7 @@ export default function KeepCurrentScreen() {
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
-      void loadReviewItems(isActive);
+      void loadReviewItems(() => isActive);
 
       return () => {
         isActive = false;
@@ -312,7 +312,7 @@ function ReviewButton({
           opacity: pressed ? 0.72 : 1,
         },
       ]}>
-      <ThemedText type="smallBold" style={tone === 'primary' ? styles.primaryButtonText : undefined}>
+      <ThemedText type="smallBold" themeColor={tone === 'primary' ? 'onPrimary' : undefined}>
         {label}
       </ThemedText>
     </Pressable>
@@ -382,9 +382,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
   },
   stateCard: {
     alignItems: 'center',

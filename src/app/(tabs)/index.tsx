@@ -1,7 +1,7 @@
 import { Link, useFocusEffect, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -9,7 +9,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ExpandableSection } from '@/components/ui/expandable-section';
 import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-row';
 import { IconActionButton } from '@/components/ui/icon-action-button';
+import { SearchField } from '@/components/ui/search-field';
 import { SurfaceCard } from '@/components/ui/surface-card';
+import { TabScreenHeader } from '@/components/ui/tab-screen-header';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getConversationsPendingStructure, getRecentConversations } from '@/db/queries/conversations';
 import { getAllOpenFollowUpsWithPeople, resolveFollowUp } from '@/db/queries/follow-ups';
@@ -69,7 +71,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const loadHome = useCallback(async (isActive = true) => {
+  const loadHome = useCallback(async (shouldApply: () => boolean = () => true) => {
     setIsLoading(true);
     setError(null);
 
@@ -100,7 +102,7 @@ export default function HomeScreen() {
         clearExpiredLifeUpdateReminderDismissal(),
       ]);
 
-      if (isActive) {
+      if (shouldApply()) {
         const now = new Date();
         const hasRecentLifeUpdate =
           latestLifeUpdate !== undefined && now.getTime() - latestLifeUpdate.createdAt.getTime() < DAY_MS;
@@ -118,11 +120,11 @@ export default function HomeScreen() {
         setShowLifeUpdateReminder(!hasRecentLifeUpdate && !isDismissed);
       }
     } catch (err) {
-      if (isActive) {
+      if (shouldApply()) {
         setError(err instanceof Error ? err.message : 'Unable to load home.');
       }
     } finally {
-      if (isActive) {
+      if (shouldApply()) {
         setIsLoading(false);
       }
     }
@@ -132,7 +134,7 @@ export default function HomeScreen() {
     useCallback(() => {
       let isActive = true;
 
-      void loadHome(isActive);
+      void loadHome(() => isActive);
 
       return () => {
         isActive = false;
@@ -305,35 +307,7 @@ export default function HomeScreen() {
         ]}
         contentInsetAdjustmentBehavior="automatic">
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <View style={styles.hero}>
-              <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
-              <ThemedText type="subtitle" themeColor="primary">
-                Kwento Time
-              </ThemedText>
-            </View>
-
-            <Link href="/settings" asChild>
-              <Pressable
-                accessibilityLabel="Open settings"
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.settingsButton,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    borderColor: theme.border,
-                    opacity: pressed ? 0.72 : 1,
-                  },
-                ]}>
-                <SymbolView
-                  name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
-                  size={20}
-                  tintColor={theme.text}
-                  fallback={<View style={[styles.settingsFallback, { backgroundColor: theme.text }]} />}
-                />
-              </Pressable>
-            </Link>
-          </View>
+          <TabScreenHeader title="Kwento Time" />
 
           {isLoading ? (
             <SurfaceCard style={styles.stateCard}>
@@ -394,7 +368,7 @@ export default function HomeScreen() {
                           opacity: pressed ? 0.72 : 1,
                         },
                       ]}>
-                      <ThemedText type="smallBold" style={styles.lifeReminderActionText}>
+                      <ThemedText type="smallBold" themeColor="onPrimary">
                         Create life update
                       </ThemedText>
                     </Pressable>
@@ -689,20 +663,10 @@ export default function HomeScreen() {
               <ExpandableSection title="Recent conversations" count={filteredConversations.length}>
 
                 <View style={styles.filterPanel}>
-                  <TextInput
+                  <SearchField
                     value={conversationSearch}
                     onChangeText={setConversationSearch}
                     placeholder="Search conversations"
-                    placeholderTextColor={theme.textSecondary}
-                    autoCapitalize="none"
-                    style={[
-                      styles.searchInput,
-                      {
-                        backgroundColor: theme.background,
-                        borderColor: theme.border,
-                        color: theme.text,
-                      },
-                    ]}
                   />
                   <HorizontalFilterChipRow
                     selectedValue={conversationPersonId}
@@ -781,20 +745,10 @@ export default function HomeScreen() {
               <ExpandableSection title="Life topics" count={filteredLifeItems.length}>
 
                 <View style={styles.filterPanel}>
-                  <TextInput
+                  <SearchField
                     value={lifeSearch}
                     onChangeText={setLifeSearch}
                     placeholder="Search life topics"
-                    placeholderTextColor={theme.textSecondary}
-                    autoCapitalize="none"
-                    style={[
-                      styles.searchInput,
-                      {
-                        backgroundColor: theme.background,
-                        borderColor: theme.border,
-                        color: theme.text,
-                      },
-                    ]}
                   />
                   <HorizontalFilterChipRow
                     selectedValue={lifeTone}
@@ -865,37 +819,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     gap: Spacing.three,
-  },
-  header: {
-    minHeight: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  headerMark: {
-    width: 40,
-    height: 4,
-    borderRadius: Radius.small,
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.medium,
-    borderCurve: 'continuous',
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 8px 18px rgba(36, 48, 58, 0.08)',
-  },
-  settingsFallback: {
-    width: 18,
-    height: 18,
-    borderRadius: Radius.small,
-  },
-  hero: {
-    gap: Spacing.two,
-    paddingBottom: Spacing.three,
   },
   section: {
     gap: Spacing.two,
@@ -989,19 +912,7 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
   },
-  lifeReminderActionText: {
-    color: '#FFFFFF',
-  },
   filterPanel: {
     gap: Spacing.two,
-  },
-  searchInput: {
-    minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
   },
 });

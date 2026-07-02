@@ -232,6 +232,7 @@ function StructuredTopicsField({
         style={({ pressed }) => [
           styles.addButton,
           {
+            backgroundColor: theme.backgroundElement,
             borderColor: theme.border,
             opacity: pressed ? 0.72 : 1,
           },
@@ -303,6 +304,7 @@ function StructuredFollowUpsField({
         style={({ pressed }) => [
           styles.addButton,
           {
+            backgroundColor: theme.backgroundElement,
             borderColor: theme.border,
             opacity: pressed ? 0.72 : 1,
           },
@@ -334,7 +336,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
   removeButton: {
     minHeight: 40,

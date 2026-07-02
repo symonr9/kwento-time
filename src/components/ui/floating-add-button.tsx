@@ -111,8 +111,8 @@ export function FloatingAddButton() {
         <SymbolView
           name={{ ios: 'plus', android: 'add', web: 'add' }}
           size={28}
-          tintColor="#FFFFFF"
-          fallback={<View style={styles.fallbackIcon} />}
+          tintColor={theme.onPrimary}
+          fallback={<View style={[styles.fallbackIcon, { backgroundColor: theme.onPrimary }]} />}
         />
       </Pressable>
     </>
@@ -170,6 +170,5 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: Radius.small,
-    backgroundColor: '#FFFFFF',
   },
 });

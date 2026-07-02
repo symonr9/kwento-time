@@ -51,7 +51,7 @@ export function TagSelector({
               opacity: pressed ? 0.78 : 1,
             },
           ]}>
-          <ThemedText type="smallBold" style={styles.addButtonText}>
+          <ThemedText type="smallBold" themeColor="onPrimary">
             Add
           </ThemedText>
         </Pressable>
@@ -89,9 +89,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.two,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
   },
   newTagInput: {
     height: 16

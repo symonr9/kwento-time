@@ -470,9 +470,9 @@ export default function BriefingScreen() {
                   },
                 ]}>
                 {isGenerating ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={theme.onPrimary} />
                 ) : (
-                  <ThemedText type="smallBold" style={styles.generateButtonText}>
+                  <ThemedText type="smallBold" themeColor="onPrimary">
                     Generate and play
                   </ThemedText>
                 )}
@@ -710,8 +710,8 @@ function CustomLifeUpdateOption({ onPress, selected }: { onPress: () => void; se
           <SymbolView
             name={{ ios: 'checkmark', android: 'check', web: 'check' }}
             size={14}
-            tintColor="#FFFFFF"
-            fallback={<ThemedText type="smallBold" style={styles.checkFallback}>✓</ThemedText>}
+            tintColor={theme.onPrimary}
+            fallback={<ThemedText type="smallBold" themeColor="onPrimary">✓</ThemedText>}
           />
         ) : null}
       </View>
@@ -761,8 +761,8 @@ function CustomPersonOption({
           <SymbolView
             name={{ ios: 'checkmark', android: 'check', web: 'check' }}
             size={14}
-            tintColor="#FFFFFF"
-            fallback={<ThemedText type="smallBold" style={styles.checkFallback}>✓</ThemedText>}
+            tintColor={theme.onPrimary}
+            fallback={<ThemedText type="smallBold" themeColor="onPrimary">✓</ThemedText>}
           />
         ) : null}
       </View>
@@ -980,9 +980,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 14,
   },
-  checkFallback: {
-    color: '#FFFFFF',
-  },
   searchInput: {
     minHeight: 44,
     borderWidth: StyleSheet.hairlineWidth,
@@ -1032,9 +1029,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  generateButtonText: {
-    color: '#FFFFFF',
   },
   metricGrid: {
     flexDirection: 'row',

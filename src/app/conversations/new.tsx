@@ -247,7 +247,7 @@ export default function NewConversationScreen() {
                 opacity: pressed || isCreatingPerson ? 0.78 : 1,
               },
             ]}>
-            <ThemedText type="smallBold" style={styles.inlineCreateButtonText}>
+            <ThemedText type="smallBold" themeColor="onPrimary">
               Add
             </ThemedText>
           </Pressable>
@@ -297,7 +297,7 @@ export default function NewConversationScreen() {
                 opacity: pressed || isCreatingPlace ? 0.78 : 1,
               },
             ]}>
-            <ThemedText type="smallBold" style={styles.inlineCreateButtonText}>
+            <ThemedText type="smallBold" themeColor="onPrimary">
               Add
             </ThemedText>
           </Pressable>
@@ -360,7 +360,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
   addButtonText: {
     textAlign: 'center',
@@ -401,9 +400,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.two,
-  },
-  inlineCreateButtonText: {
-    color: '#FFFFFF',
   },
 });
 
@@ -483,6 +479,7 @@ function StructuredTopicsField({
         style={({ pressed }) => [
           styles.addButton,
           {
+            backgroundColor: theme.backgroundElement,
             borderColor: theme.border,
             opacity: pressed ? 0.72 : 1,
           },
@@ -571,6 +568,7 @@ function StructuredFollowUpsField({
         style={({ pressed }) => [
           styles.addButton,
           {
+            backgroundColor: theme.backgroundElement,
             borderColor: theme.border,
             opacity: pressed ? 0.72 : 1,
           },

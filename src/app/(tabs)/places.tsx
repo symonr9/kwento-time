@@ -1,15 +1,16 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { AvatarPreview } from '@/components/ui/avatar-preview';
 import { EmptyState } from '@/components/ui/empty-state';
 import { HorizontalFilterChipRow } from '@/components/ui/horizontal-filter-chip-row';
+import { SearchField } from '@/components/ui/search-field';
 import { SurfaceCard } from '@/components/ui/surface-card';
-import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { TabScreenHeader } from '@/components/ui/tab-screen-header';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { getPlacesListSummaries } from '@/db/queries/places';
 import { getAllTags, getItemTagLinks } from '@/db/queries/tags';
 import type { Tag } from '@/db/schema';
@@ -91,51 +92,13 @@ export default function PlacesScreen() {
         ]}
         contentInsetAdjustmentBehavior="automatic">
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <View style={styles.hero}>
-              <View style={[styles.headerMark, { backgroundColor: theme.primary }]} />
-              <ThemedText type="subtitle" themeColor="primary">
-                Places
-              </ThemedText>
-            </View>
-
-            <Link href="/settings" asChild>
-              <Pressable
-                accessibilityLabel="Open settings"
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.settingsButton,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    borderColor: theme.border,
-                    opacity: pressed ? 0.72 : 1,
-                  },
-                ]}>
-                <SymbolView
-                  name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
-                  size={20}
-                  tintColor={theme.text}
-                  fallback={<View style={[styles.settingsFallback, { backgroundColor: theme.text }]} />}
-                />
-              </Pressable>
-            </Link>
-          </View>
+          <TabScreenHeader title="Places" />
 
           <View style={styles.filterPanel}>
-            <TextInput
+            <SearchField
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search places"
-              placeholderTextColor={theme.textSecondary}
-              autoCapitalize="none"
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                  color: theme.text,
-                },
-              ]}
             />
             <HorizontalFilterChipRow
               selectedValue={selectedTagId}
@@ -217,48 +180,8 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     gap: Spacing.three,
   },
-  header: {
-    minHeight: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  headerMark: {
-    width: 40,
-    height: 4,
-    borderRadius: Radius.small,
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.medium,
-    borderCurve: 'continuous',
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 8px 18px rgba(36, 48, 58, 0.08)',
-  },
-  settingsFallback: {
-    width: 18,
-    height: 18,
-    borderRadius: Radius.small,
-  },
-  hero: {
-    gap: Spacing.two,
-    paddingBottom: Spacing.three,
-  },
   filterPanel: {
     gap: Spacing.two,
-  },
-  searchInput: {
-    minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.small,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
   },
   list: {
     gap: Spacing.two,

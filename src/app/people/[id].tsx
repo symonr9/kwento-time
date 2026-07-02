@@ -323,10 +323,10 @@ export default function PersonDetailsScreen() {
                   <SymbolView
                     name={{ ios: 'square.and.pencil', android: 'edit', web: 'edit' }}
                     size={18}
-                    tintColor="#FFFFFF"
-                    fallback={<View style={styles.primaryEditFallback} />}
+                    tintColor={theme.onPrimary}
+                    fallback={<View style={[styles.primaryEditFallback, { backgroundColor: theme.onPrimary }]} />}
                   />
-                  <ThemedText type="smallBold" style={styles.primaryEditText}>
+                  <ThemedText type="smallBold" themeColor="onPrimary">
                     Edit person
                   </ThemedText>
                 </Pressable>
@@ -812,10 +812,6 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: Radius.small,
-    backgroundColor: '#FFFFFF',
-  },
-  primaryEditText: {
-    color: '#FFFFFF',
   },
   actionRow: {
     flexDirection: 'row',

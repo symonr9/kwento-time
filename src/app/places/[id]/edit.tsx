@@ -233,9 +233,9 @@ export default function EditPlaceScreen() {
                   },
                 ]}>
                 {isSaving ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={theme.onPrimary} />
                 ) : (
-                  <ThemedText type="smallBold" style={styles.saveButtonText}>
+                  <ThemedText type="smallBold" themeColor="onPrimary">
                     Save
                   </ThemedText>
                 )}
@@ -344,9 +344,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
   },
   stateCard: {
     alignItems: 'center',

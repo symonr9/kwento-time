@@ -411,7 +411,7 @@ function InlineCreateField({
             opacity: pressed || disabled ? 0.78 : 1,
           },
         ]}>
-        <ThemedText type="smallBold" style={styles.inlineCreateButtonText}>
+        <ThemedText type="smallBold" themeColor="onPrimary">
           {buttonLabel}
         </ThemedText>
       </Pressable>
@@ -472,8 +472,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.two,
-  },
-  inlineCreateButtonText: {
-    color: '#FFFFFF',
   },
 });

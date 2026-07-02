@@ -106,7 +106,7 @@ export function BiometricGate({ children }: { children: ReactNode }) {
             opacity: pressed ? 0.78 : 1,
           },
         ]}>
-        <ThemedText type="smallBold" style={styles.unlockText}>
+        <ThemedText type="smallBold" themeColor="onPrimary">
           Unlock
         </ThemedText>
       </Pressable>
@@ -137,8 +137,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
-  },
-  unlockText: {
-    color: '#FFFFFF',
   },
 });

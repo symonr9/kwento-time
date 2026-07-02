@@ -167,7 +167,7 @@ export default function VoiceConversationScreen() {
               opacity: pressed || isStarting || isStopping ? 0.78 : 1,
             },
           ]}>
-          <ThemedText type="smallBold" style={styles.recordButtonText}>
+          <ThemedText type="smallBold" themeColor={isRecording ? 'onAccent' : 'onPrimary'}>
             {isRecording ? 'Stop recording' : recordingUri ? 'Record again' : 'Start recording'}
           </ThemedText>
         </Pressable>
@@ -203,8 +203,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
-  },
-  recordButtonText: {
-    color: '#FFFFFF',
   },
 });
