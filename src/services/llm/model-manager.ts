@@ -1,8 +1,8 @@
 export type BundledBriefingModel = {
-  assetModule: number | null;
   checksumMd5: string | null;
   expectedSizeBytes: number | null;
   id: string;
+  loadAssetModule: (() => number) | null;
   name: string;
   quantization: string;
   sizeBytesApprox: number;
@@ -16,13 +16,15 @@ export class BundledModelUnavailableError extends Error {
 }
 
 export const bundledBriefingModel: BundledBriefingModel = {
-  assetModule: null,
-  checksumMd5: null,
-  expectedSizeBytes: null,
+  checksumMd5: 'bc06d8c77458b8feb18301a760b374c7',
+  expectedSizeBytes: 105454432,
   id: 'smollm2-135m-instruct-q4',
+  // Lazy so Node tests do not try to execute the GGUF binary; Metro still sees it in native builds.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  loadAssetModule: () => require('@/assets/models/SmolLM2-135M-Instruct-Q4_K_M.gguf'),
   name: 'SmolLM2 135M Instruct Q4',
-  quantization: 'Q4',
-  sizeBytesApprox: 110 * 1024 * 1024,
+  quantization: 'Q4_K_M',
+  sizeBytesApprox: 105454432,
 };
 
 function loadExpoAsset(): typeof import('expo-asset') {
@@ -40,13 +42,13 @@ function loadExpoFileSystem(): typeof import('expo-file-system') {
 }
 
 export async function resolveBundledBriefingModelPath(): Promise<string> {
-  if (bundledBriefingModel.assetModule === null) {
+  if (bundledBriefingModel.loadAssetModule === null) {
     throw new BundledModelUnavailableError();
   }
 
   const { Asset } = loadExpoAsset();
   const { File } = loadExpoFileSystem();
-  const asset = Asset.fromModule(bundledBriefingModel.assetModule);
+  const asset = Asset.fromModule(bundledBriefingModel.loadAssetModule());
   const downloadedAsset = await asset.downloadAsync();
   const localUri = downloadedAsset.localUri ?? downloadedAsset.uri;
 

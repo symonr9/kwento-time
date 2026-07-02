@@ -6,6 +6,7 @@ import { describe, it } from 'node:test';
 import type { BriefingContext } from '@/features/briefing/types';
 
 import { buildBriefingPrompt } from './prompt';
+import { bundledBriefingModel } from './model-manager';
 import { validateBriefingNarration } from './validation';
 
 const context: BriefingContext = {
@@ -45,6 +46,15 @@ const context: BriefingContext = {
 };
 
 describe('briefing LLM prompt and validation', () => {
+  it('records the bundled GGUF model identity and integrity metadata', () => {
+    assert.equal(bundledBriefingModel.id, 'smollm2-135m-instruct-q4');
+    assert.equal(bundledBriefingModel.quantization, 'Q4_K_M');
+    assert.equal(bundledBriefingModel.expectedSizeBytes, 105454432);
+    assert.equal(bundledBriefingModel.sizeBytesApprox, 105454432);
+    assert.equal(bundledBriefingModel.checksumMd5, 'bc06d8c77458b8feb18301a760b374c7');
+    assert.equal(typeof bundledBriefingModel.loadAssetModule, 'function');
+  });
+
   it('serializes context as user data and keeps anti-injection rules in the system message', () => {
     const prompt = buildBriefingPrompt(context);
 
